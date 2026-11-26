@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { CONTACT_HREF } from '../data/contact';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { ProjectList } from '../components/ProjectList';
@@ -277,7 +278,7 @@ export function Landing() {
           <p className="text-zinc-400 font-sans font-light max-w-2xl mx-auto mb-12 text-lg">
             Whether you need a crushing mix, custom sound design, or have a strange software project in mind—my comms are open.
           </p>
-          <a href="mailto:SpaceKid700@gmail.com" className="inline-flex items-center gap-3 px-8 py-5 border border-brand-orange text-brand-orange font-bold uppercase tracking-widest hover:bg-brand-orange hover:text-black transition-colors box-glow hover:box-glow-intense text-sm">
+          <a href={CONTACT_HREF} className="inline-flex items-center gap-3 px-8 py-5 border border-brand-orange text-brand-orange font-bold uppercase tracking-widest hover:bg-brand-orange hover:text-black transition-colors box-glow hover:box-glow-intense text-sm">
             [+] Send Transmission
           </a>
         </ScrollReveal>

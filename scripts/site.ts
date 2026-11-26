@@ -26,7 +26,8 @@ export const STATIC_PAGES: Array<{ path: string; title?: string; description: st
     description:
       'Sample packs by SPACEKID, including the DataBend Process Pack. Not pristine. Not genre-correct. Just useful chaos. Preview every sample in the browser.',
   },
-  { path: '/services', title: 'Services', description: 'Music production, mixing and mastering by SPACEKID.' },
+  { path: '/services', title: 'Services', description:
+      'Music production, mixing, mastering, sound design and audio software by SPACEKID: examples of the work, how a project runs, and how to get a quote.' },
   {
     path: '/download',
     title: 'Download',

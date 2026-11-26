@@ -1,193 +1,340 @@
-import { Layout } from '../components/Layout';
-import { usePageTitle } from '../lib/usePageTitle';
-import { ScrollReveal } from '../components/ScrollReveal';
-import { Disc, SlidersHorizontal } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, Code2, Disc, Mail, Music2, SlidersHorizontal, Waves } from 'lucide-react';
+import { Layout } from '../components/Layout';
+import { ScrollReveal } from '../components/ScrollReveal';
+import { YoutubeFacade } from '../components/YoutubeFacade';
+import { SpotifyFacade } from '../components/SpotifyFacade';
+import { usePageTitle } from '../lib/usePageTitle';
+import { CONTACT_EMAIL, CONTACT_HREF } from '../data/contact';
 
-const CornerAccentsOrange = () => (
-  <>
-    <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-brand-orange/50" />
-    <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-brand-orange/50" />
-    <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-brand-orange/50" />
-    <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-brand-orange/50" />
-  </>
-);
+const ORANGE = 'text-brand-orange';
+const GREEN = 'text-[#1DB954]';
 
-const CornerAccentsGreen = () => (
-  <>
-    <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-[#1DB954]/50" />
-    <div className="absolute top-0 right-0 w-2 h-2 border-t-2 border-r-2 border-[#1DB954]/50" />
-    <div className="absolute bottom-0 left-0 w-2 h-2 border-b-2 border-l-2 border-[#1DB954]/50" />
-    <div className="absolute bottom-0 right-0 w-2 h-2 border-b-2 border-r-2 border-[#1DB954]/50" />
-  </>
-);
+const SECTIONS = [
+  { id: 'production', label: 'Production' },
+  { id: 'mixing', label: 'Mixing & Mastering' },
+  { id: 'sound-design', label: 'Sound Design' },
+  { id: 'software', label: 'Software' },
+  { id: 'process', label: 'How It Works' },
+  { id: 'contact', label: 'Contact' },
+];
+
+const OVERVIEW = [
+  {
+    icon: Disc,
+    title: 'Production',
+    text: 'Taking a song from a demo or an idea to a finished arrangement: beats, instruments, sound choices, vocal production.',
+    href: '#production',
+  },
+  {
+    icon: SlidersHorizontal,
+    title: 'Mixing',
+    text: 'Balancing your stems so every part is heard and the song sounds the way you meant it to.',
+    href: '#mixing',
+  },
+  {
+    icon: Music2,
+    title: 'Mastering',
+    text: 'Final level, tone and loudness for streaming, so the track holds up next to the references you choose.',
+    href: '#mixing',
+  },
+  {
+    icon: Waves,
+    title: 'Sound Design',
+    text: 'Custom sounds and samples for a track, a game or a sample pack, often made with my own processing tools.',
+    href: '#sound-design',
+  },
+  {
+    icon: Code2,
+    title: 'Audio Software',
+    text: 'Plugins, standalone tools and web audio experiments, built for a specific sound or workflow.',
+    href: '#software',
+  },
+];
+
+function SectionHeading({ icon: Icon, color, children }: { icon: typeof Disc; color: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-4 mb-8">
+      <Icon className={`w-8 h-8 shrink-0 ${color}`} aria-hidden />
+      <h2 className="text-2xl md:text-3xl font-display font-black tracking-widest text-white uppercase">{children}</h2>
+    </div>
+  );
+}
+
+function Panel({ children, accent = 'hover:border-brand-orange/50' }: { children: ReactNode; accent?: string }) {
+  return (
+    <div className={`border border-zinc-800 bg-zinc-900/40 p-6 md:p-10 transition-colors ${accent}`}>{children}</div>
+  );
+}
+
+/** Small "get in touch" line at the end of each service. */
+function AskAbout({ what }: { what: string }) {
+  return (
+    <a
+      href="#contact"
+      className="group/ask mt-8 inline-flex items-center gap-2 font-mono text-sm text-zinc-300 hover:text-brand-orange transition-colors"
+    >
+      Ask about {what}
+      <ArrowRight className="w-4 h-4 group-hover/ask:translate-x-1 transition-transform" aria-hidden />
+    </a>
+  );
+}
+
+const sectionClass = 'scroll-mt-32 max-w-5xl mx-auto px-6 py-16 md:py-20 border-t border-zinc-900';
+const prose = 'font-sans font-light text-zinc-300 text-lg leading-relaxed';
 
 export function ServicesPage() {
   usePageTitle('Services');
   return (
     <Layout>
-      <div className="pt-24 pb-24">
-        <h1 className="sr-only">Services: music production and mixing</h1>
-        <ScrollReveal className="max-w-7xl mx-auto px-6 mb-12">
-          <Link to="/" className="inline-block text-zinc-400 hover:text-white font-mono text-sm uppercase tracking-widest transition-colors">
-             [← Return to Base]
+      <div className="pt-24 pb-16">
+        {/* Intro */}
+        <ScrollReveal className="max-w-5xl mx-auto px-6 pb-12">
+          <Link to="/" className="inline-block text-zinc-400 hover:text-white font-mono text-sm uppercase tracking-widest transition-colors mb-10">
+            ← Home
           </Link>
+          <h1 className="text-4xl md:text-5xl font-display font-black tracking-widest text-white uppercase mb-6">Services</h1>
+          <p className={`${prose} max-w-2xl`}>
+            I produce, mix and master music for artists, make sounds and samples, and build audio software. Below is
+            what each of those involves, some of the work, and how a project runs. If you have something in mind,{' '}
+            <a href="#contact" className="text-brand-orange hover:underline">send me a message</a>.
+          </p>
         </ScrollReveal>
 
-        {/* Audio / Music Production Section */}
-        <section id="production">
-          <ScrollReveal className="max-w-7xl mx-auto px-6">
-            <div className="flex items-center gap-4 mb-12">
-              <Disc className="w-8 h-8 text-brand-orange" />
-              <h2 className="text-3xl font-display font-black tracking-widest text-white uppercase">
-                Music Production
-              </h2>
+        {/* Jump links: sticky under the main navbar */}
+        <nav
+          aria-label="Services sections"
+          className="sticky top-16 z-30 border-y border-zinc-900 bg-brand-dark/85 backdrop-blur-md"
+        >
+          <ul className="max-w-5xl mx-auto px-6 flex gap-5 overflow-x-auto whitespace-nowrap py-3 font-mono text-xs uppercase tracking-widest">
+            {SECTIONS.map(s => (
+              <li key={s.id}>
+                <a href={`#${s.id}`} className="text-zinc-400 hover:text-white transition-colors">{s.label}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        {/* Overview */}
+        <section aria-labelledby="overview-heading" className="max-w-5xl mx-auto px-6 py-16">
+          <h2 id="overview-heading" className="sr-only">What I offer</h2>
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {OVERVIEW.map(({ icon: Icon, title, text, href }) => (
+              <li key={title}>
+                <a
+                  href={href}
+                  className="group/card h-full flex flex-col gap-3 border border-zinc-800 bg-zinc-900/30 p-6 hover:border-brand-orange/50 transition-colors"
+                >
+                  <Icon className="w-6 h-6 text-brand-orange" aria-hidden />
+                  <span className="font-display font-bold text-white tracking-wide uppercase">{title}</span>
+                  <span className="font-sans font-light text-zinc-400 text-sm leading-relaxed flex-1">{text}</span>
+                  <span className="font-mono text-xs text-zinc-500 group-hover/card:text-brand-orange transition-colors">
+                    See examples →
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Production */}
+        <section id="production" className={sectionClass}>
+          <ScrollReveal>
+            <SectionHeading icon={Disc} color={ORANGE}>Music Production</SectionHeading>
+            <div className={`${prose} max-w-2xl space-y-4 mb-10`}>
+              <p>
+                Production covers everything between the idea and the mix: the beat or instrumental, the arrangement,
+                choosing and designing the sounds, and recording and editing vocals. You can bring a voice memo, a
+                rough demo or a finished topline; I work from whatever stage the song is at.
+              </p>
+              <p>
+                The goal is a record that still carries what you felt when you wrote it, whether it plays on studio
+                monitors or on phone speakers.
+              </p>
             </div>
 
-            <div className="max-w-2xl mb-16 space-y-6">
-              <p className="font-sans font-light text-xl text-zinc-200 leading-relaxed">
-                Every record is a transmission problem.
-              </p>
-              <div className="space-y-4">
-                <p className="font-sans font-light text-zinc-400">
-                  An emotion has to survive translation:
-                </p>
-                <div className="font-mono text-sm text-zinc-500 space-y-1 pl-4 border-l border-zinc-800">
-                  <p>— from idea,</p>
-                  <p>— to arrangement,</p>
-                  <p>— to speakers,</p>
-                  <p>— to someone’s headphones at 2AM.</p>
-                </div>
-              </div>
-              <p className="font-sans font-light text-zinc-300">
-                My job is to make sure as little gets lost as possible.
-              </p>
-            </div>
-
-            <div className="mt-8 border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm p-6 md:p-12 relative overflow-hidden group hover:border-brand-orange/50 transition-colors shadow-2xl">
-              <CornerAccentsOrange />
-              <div className="absolute top-0 right-0 w-1 h-full bg-brand-orange" />
-              <div className="flex flex-col lg:flex-row-reverse gap-12 items-center relative z-10">
-                <div className="flex-1 space-y-6">
-                  <div className="inline-block px-3 py-1 bg-brand-orange/10 border border-brand-orange/30 text-brand-orange font-mono text-xs uppercase tracking-widest mb-2">
-                    Production Credit // TAPASH
-                  </div>
-                  <h3 className="text-3xl lg:text-4xl font-display font-black text-white uppercase tracking-wider leading-tight">
-                    TAPASH <span className="text-zinc-600 block text-2xl mt-1">"LEK"</span>
+            <Panel>
+              <div className="flex flex-col lg:flex-row-reverse gap-10 items-center">
+                <div className="flex-1 space-y-4">
+                  <p className="font-mono text-xs uppercase tracking-widest text-brand-orange">Production credit</p>
+                  <h3 className="text-3xl font-display font-black text-white uppercase tracking-wider">
+                    TAPASH — "LEK"
                   </h3>
-                  <p className="text-zinc-400 font-sans leading-relaxed text-lg font-light">
-                    I worked with TAPASH to build the production and vocal framing for "LEK". The focus was to design a clean, low-end heavy environment that supports his vocal delivery without getting in its way.
+                  <p className="text-zinc-400 font-sans font-light leading-relaxed">
+                    I produced "LEK" with TAPASH, including the vocal production. The brief was a clean arrangement
+                    with heavy low end that leaves room for his delivery.
                   </p>
                 </div>
-                <div className="w-full lg:w-[500px] shrink-0">
-                  <div className="aspect-video w-full border border-zinc-800 bg-black relative shadow-2xl box-glow group-hover:box-glow-intense transition-shadow duration-500 rounded-sm overflow-hidden">
-                    <iframe 
-                      width="100%" 
-                      height="100%" 
-                      src="https://www.youtube-nocookie.com/embed/OwpVegoO0ZE" 
-                      title="TAPASH - LEK (Produced by SPACEKID)" 
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                      referrerPolicy="strict-origin-when-cross-origin" 
-                      allowFullScreen
-                      className="absolute inset-0 w-full h-full grayscale-[50%] hover:grayscale-0 transition-all duration-700"
-                    ></iframe>
-                  </div>
-                  <div className="mt-4 font-mono text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" /> Live External Transmission
+                <div className="w-full lg:w-[480px] shrink-0">
+                  <div className="aspect-video w-full border border-zinc-800 bg-black relative overflow-hidden rounded-sm">
+                    <YoutubeFacade videoId="OwpVegoO0ZE" title="TAPASH - LEK (produced by SPACEKID)" />
                   </div>
                 </div>
+              </div>
+            </Panel>
+
+            <div className="mt-6">
+              <SpotifyFacade
+                playlistId="5NB8mh1pEwDTLB4Q6AR2jG"
+                title="Production playlist"
+                caption="Tracks I produced"
+              />
+            </div>
+            <AskAbout what="production" />
+          </ScrollReveal>
+        </section>
+
+        {/* Mixing & Mastering */}
+        <section id="mixing" className={sectionClass}>
+          <ScrollReveal>
+            <SectionHeading icon={SlidersHorizontal} color={GREEN}>Mixing &amp; Mastering</SectionHeading>
+            <div className={`${prose} max-w-2xl space-y-4 mb-10`}>
+              <p>
+                Mixing is balancing the recorded parts: levels, EQ, compression, space and automation, so every part
+                is heard and the song sounds the way you intended. I start from your rough mix and references and
+                keep the choices you've already made unless we agree to change them.
+              </p>
+              <p>
+                Mastering is the last step: overall tone, level and loudness, checked against references and on
+                different playback systems so the track translates to streaming, cars, earbuds and club systems. I
+                can master songs I mixed or mixes from someone else.
+              </p>
+            </div>
+
+            <SpotifyFacade
+              playlistId="7l3XH6hGx4AEyNy2WOqLUQ"
+              title="Mixing and mastering playlist"
+              caption="Tracks I mixed and/or mastered"
+            />
+            <AskAbout what="mixing or mastering" />
+          </ScrollReveal>
+        </section>
+
+        {/* Sound design */}
+        <section id="sound-design" className={sectionClass}>
+          <ScrollReveal>
+            <SectionHeading icon={Waves} color={ORANGE}>Sound Design &amp; Samples</SectionHeading>
+            <div className={`${prose} max-w-2xl space-y-4 mb-10`}>
+              <p>
+                Custom sounds for a track, a game, a video or an instrument: textures, hits, transitions and
+                processed recordings. A lot of it comes out of my own tools, so the results tend toward glitch,
+                noise and heavily processed material rather than clean library sounds.
+              </p>
+            </div>
+            <Panel>
+              <p className="font-mono text-xs uppercase tracking-widest text-brand-orange mb-3">Example</p>
+              <h3 className="text-2xl font-display font-black text-white uppercase tracking-wider mb-3">Sample packs</h3>
+              <p className="text-zinc-400 font-sans font-light leading-relaxed mb-5">
+                My released packs, including the DataBend Process Pack. Every sample can be previewed in the browser.
+              </p>
+              <Link to="/samples" className="font-mono text-sm text-brand-orange hover:underline">Browse the samples →</Link>
+            </Panel>
+            <AskAbout what="sound design" />
+          </ScrollReveal>
+        </section>
+
+        {/* Software */}
+        <section id="software" className={sectionClass}>
+          <ScrollReveal>
+            <SectionHeading icon={Code2} color={ORANGE}>Audio Software</SectionHeading>
+            <div className={`${prose} max-w-2xl space-y-4 mb-10`}>
+              <p>
+                I build audio tools: standalone apps, effects and browser-based instruments using the Web Audio API.
+                If you need a tool for a particular sound, an installation or an interactive piece, I can help design
+                and build it.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                { to: '/download', title: 'DATABEND', text: 'An offline audio destroyer for glitch, noise and sound design.' },
+                { to: '/waveset-quantizer', title: 'Waveset Quantizer', text: 'Clusters the cycles of a sound and rebuilds it from the averages. Runs in the browser.' },
+                { to: '/archive', title: 'Archive labs', text: 'Interactive Web Audio experiments that go with the archive posts.' },
+              ].map(t => (
+                <Link
+                  key={t.to}
+                  to={t.to}
+                  className="block border border-zinc-800 bg-zinc-900/30 p-6 hover:border-brand-orange/50 transition-colors"
+                >
+                  <span className="block font-display font-bold text-white uppercase tracking-wide mb-2">{t.title}</span>
+                  <span className="block font-sans font-light text-zinc-400 text-sm leading-relaxed">{t.text}</span>
+                </Link>
+              ))}
+            </div>
+            <AskAbout what="a software project" />
+          </ScrollReveal>
+        </section>
+
+        {/* Process */}
+        <section id="process" className={sectionClass}>
+          <ScrollReveal>
+            <SectionHeading icon={ArrowRight} color={ORANGE}>How It Works</SectionHeading>
+            <ol className="grid gap-4 md:grid-cols-2 mb-12">
+              {[
+                ['Get in touch', 'Tell me what the project is, what you need, links to a demo or references, and your deadline.'],
+                ['Quote', 'I reply with what I\'d do, a price and a timeline. Nothing starts until we agree on those.'],
+                ['First version', 'I send a first pass to listen to on your own speakers and headphones.'],
+                ['Revisions and delivery', 'You send notes, I revise, and when you\'re happy I deliver the final files.'],
+              ].map(([title, text], i) => (
+                <li key={title} className="border border-zinc-800 bg-zinc-900/30 p-6">
+                  <span className="font-mono text-xs text-brand-orange">0{i + 1}</span>
+                  <span className="block font-display font-bold text-white uppercase tracking-wide mt-2 mb-2">{title}</span>
+                  <span className="block font-sans font-light text-zinc-400 text-sm leading-relaxed">{text}</span>
+                </li>
+              ))}
+            </ol>
+
+            <div className="grid gap-10 md:grid-cols-2">
+              <div>
+                <h3 className="font-display font-bold text-white uppercase tracking-wide mb-4">What to send</h3>
+                <ul className="list-disc pl-5 space-y-2 font-sans font-light text-zinc-400 marker:text-brand-orange/60">
+                  <li>For mixing: every track as a separate WAV stem, all starting at the same point, at the session's sample rate (24-bit or 32-bit float).</li>
+                  <li>Leave effects on stems if they're part of the sound; take processing off the master bus.</li>
+                  <li>For mastering: a stereo WAV with no limiter on the master, peaking a few dB below 0 dBFS.</li>
+                  <li>Your rough mix and one or two reference tracks.</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-white uppercase tracking-wide mb-4">What you get</h3>
+                <ul className="list-disc pl-5 space-y-2 font-sans font-light text-zinc-400 marker:text-brand-orange/60">
+                  <li>A final WAV master at full resolution, ready for distribution.</li>
+                  <li>An MP3 for quick listening and sharing.</li>
+                  <li>Instrumental and other alternate versions, if you need them.</li>
+                  <li>Stems of the final mix, on request.</li>
+                </ul>
               </div>
             </div>
 
-            <div className="mt-8 border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm p-6 md:p-12 relative overflow-hidden group hover:border-brand-orange/50 transition-colors shadow-2xl mb-24">
-              <CornerAccentsOrange />
-              <div className="flex flex-col gap-6 relative z-10">
-                <div className="inline-block px-3 py-1 bg-brand-orange/10 border border-brand-orange/30 text-brand-orange font-mono text-xs uppercase tracking-widest self-start">
-                  Selected Works // Audio
-                </div>
-                <h3 className="text-2xl font-display font-black text-white uppercase tracking-wider leading-tight">
-                  Production Playlist
-                </h3>
-                <div className="w-full">
-                  <iframe 
-                    data-testid="embed-iframe" 
-                    style={{ borderRadius: '12px' }} 
-                    title="Spotify playlist: music production"
-                    src="https://open.spotify.com/embed/playlist/5NB8mh1pEwDTLB4Q6AR2jG?utm_source=generator&theme=0" 
-                    width="100%" 
-                    height="352" 
-                    frameBorder={0} 
-                    allowFullScreen={false} 
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-                    loading="lazy"
-                  ></iframe>
-                </div>
-              </div>
+            <div className="mt-12 max-w-2xl">
+              <h3 className="font-display font-bold text-white uppercase tracking-wide mb-4">Rates and turnaround</h3>
+              <p className="font-sans font-light text-zinc-400 leading-relaxed">
+                Every project gets its own quote, because mastering one song and producing an EP are very different
+                jobs. Tell me what you have, what you need and when you need it, and I'll reply with a price and a
+                timeline.
+              </p>
             </div>
           </ScrollReveal>
         </section>
 
-        {/* Mixing & Mastering Section */}
-        <section id="mixing">
-          <ScrollReveal className="max-w-7xl mx-auto px-6">
-            <div className="flex items-center gap-4 mb-12">
-              <SlidersHorizontal className="w-8 h-8 text-[#1DB954]" />
-              <h2 className="text-3xl font-display font-black tracking-widest text-white uppercase">
-                 Mixing &amp; Mastering
-              </h2>
-            </div>
-
-            <div className="max-w-2xl mb-16 space-y-6">
-              <p className="font-mono text-xs font-bold text-[#1DB954]">// TRANSMISSION SHIFT</p>
-              <p className="font-sans font-light text-xl text-zinc-200 leading-relaxed">
-                The song already knows what it wants to be.
-              </p>
-              <div className="font-sans font-light text-zinc-400 space-y-2 pl-4 border-l border-zinc-800">
-                <p>Mixing is removing everything that keeps it from arriving intact.</p>
-                <p>Mastering is preparing it for the outside world.</p>
-              </div>
-            </div>
-
-            <div className="mt-8 border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm p-6 md:p-12 relative overflow-hidden group hover:border-[#1DB954]/50 transition-colors shadow-2xl">
-              <CornerAccentsGreen />
-              <div className="absolute top-0 left-0 w-1 h-full bg-[#1DB954]" />
-              <div className="flex flex-col lg:flex-row gap-12 items-center relative z-10">
-                <div className="flex-1 space-y-6">
-                  <div className="inline-block px-3 py-1 bg-[#1DB954]/10 border border-[#1DB954]/30 text-[#1DB954] font-mono text-xs uppercase tracking-widest mb-2">
-                     Engineering Portfolio // Mix &amp; Master
-                  </div>
-                  <h3 className="text-3xl lg:text-4xl font-display font-black text-white uppercase tracking-wider leading-tight">
-                    Selected Works <span className="text-zinc-600 block text-2xl mt-1">Mix &amp; Master Credits</span>
-                  </h3>
-                  <p className="text-zinc-400 font-sans leading-relaxed text-lg font-light">
-                     A collection of tracks where I provided mixing and mastering services. Focused on maintaining the creator's emotional intent while making sure the master translates beautifully to any playback system.
-                  </p>
-                </div>
-                <div className="w-full lg:w-[450px] shrink-0">
-                  <div className="w-full relative shadow-2xl transition-shadow duration-500 rounded-xl overflow-hidden bg-black/50">
-                    <iframe 
-                      data-testid="embed-iframe" 
-                      style={{ borderRadius: '12px' }} 
-                      title="Spotify playlist: mixing"
-                      src="https://open.spotify.com/embed/playlist/7l3XH6hGx4AEyNy2WOqLUQ?utm_source=generator&theme=0" 
-                      width="100%" 
-                      height="352" 
-                      frameBorder="0" 
-                      allowFullScreen={false} 
-                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-                      loading="lazy"
-                      className="w-full grayscale-[50%] hover:grayscale-0 transition-all duration-700 block"
-                    ></iframe>
-                  </div>
-                  <div className="mt-4 font-mono text-[10px] text-zinc-600 uppercase tracking-[0.2em] text-center flex items-center justify-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-[#1DB954] animate-pulse" /> Spotify Direct Transmission
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Contact */}
+        <section id="contact" className={`${sectionClass} text-center`}>
+          <ScrollReveal>
+            <h2 className="text-3xl md:text-4xl font-display font-black tracking-widest text-white uppercase mb-6">
+              Start a Project
+            </h2>
+            <p className="font-sans font-light text-zinc-400 max-w-xl mx-auto mb-10 text-lg leading-relaxed">
+              Email me with what you're working on, which service you need, a link to a demo or references, and your
+              deadline.
+            </p>
+            <a
+              href={CONTACT_HREF}
+              className="inline-flex items-center gap-3 px-6 sm:px-8 py-5 border border-brand-orange text-brand-orange font-bold tracking-widest hover:bg-brand-orange hover:text-black transition-colors text-sm break-all"
+            >
+              <Mail className="w-4 h-4" aria-hidden />
+              Email {CONTACT_EMAIL}
+            </a>
           </ScrollReveal>
         </section>
-
       </div>
     </Layout>
   );

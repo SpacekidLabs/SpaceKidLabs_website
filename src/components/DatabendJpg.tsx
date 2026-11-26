@@ -561,6 +561,8 @@ export function DatabendJpg() {
         <div className="flex items-center gap-2">
           {/* FX Rack view toggle */}
           <button 
+            aria-label="Effect sliders"
+            aria-pressed={showFxControls}
             onClick={() => setShowFxControls(!showFxControls)}
             className={`px-3 py-1.5 border rounded text-[10px] font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
               showFxControls 
@@ -574,6 +576,8 @@ export function DatabendJpg() {
 
           {/* Slice Guide Lines */}
           <button 
+            aria-label="Slice guide lines"
+            aria-pressed={showGridOverlay}
             onClick={() => setShowGridOverlay(!showGridOverlay)}
             className={`px-3 py-1.5 border rounded text-[10px] font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
               showGridOverlay 
@@ -710,6 +714,7 @@ export function DatabendJpg() {
           </button>
 
           <button 
+            aria-label="Export PNG"
             onClick={triggerScreenshotDownload}
             className="px-3 py-1.5 bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-850 hover:border-cyan-500 text-zinc-300 hover:text-white font-mono text-[9px] uppercase font-bold tracking-wider rounded-sm transition-all flex items-center gap-1.5 cursor-pointer outline-none shadow-md"
             title="Download as PNG"

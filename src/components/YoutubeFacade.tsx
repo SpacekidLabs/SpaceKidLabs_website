@@ -35,6 +35,12 @@ export function YoutubeFacade({ videoId, listId, title }: YoutubeFacadeProps) {
           <img 
             src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`} 
             alt={title}
+            loading="lazy"
+            // Videos without an HD thumbnail get YouTube's 120x90 grey placeholder; fall back to hqdefault.
+            onLoad={e => {
+              const img = e.currentTarget;
+              if (img.naturalWidth <= 120 && img.src.includes('maxresdefault')) img.src = img.src.replace('maxresdefault', 'hqdefault');
+            }}
             className="w-full h-full object-cover grayscale-[50%] group-hover:grayscale-0 transition-all duration-700" 
           />
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors duration-500">

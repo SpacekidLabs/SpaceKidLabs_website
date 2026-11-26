@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { CONTACT_EMAIL, CONTACT_HREF } from '../data/contact';
 import { Github, Youtube, Cloud, Headphones, Instagram } from 'lucide-react';
 
 export function Footer() {
@@ -20,7 +21,7 @@ export function Footer() {
             </p>
           </div>
           <p className="text-zinc-500 font-mono text-xs">
-            {'>'} SYSTEM_MAILTO: <a href="mailto:SpaceKid700@gmail.com" className="text-brand-orange hover:underline">SpaceKid700@gmail.com</a>
+            {'>'} SYSTEM_MAILTO: <a href={CONTACT_HREF} className="text-brand-orange hover:underline">{CONTACT_EMAIL}</a>
           </p>
         </div>
         
