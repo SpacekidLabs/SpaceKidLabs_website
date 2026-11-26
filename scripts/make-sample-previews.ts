@@ -4,7 +4,8 @@
  * For every sample in src/data/samples.ts it:
  *   1. downloads the original from Google Drive into a cache folder (outside the repo),
  *   2. converts it to a compressed MP3 in public/audio/<name>.mp3 (served by the site itself),
- *   3. writes the preview path and the real duration back into src/data/samples.ts.
+ *   3. writes the preview path, duration, file size, format and a small waveform outline (peaks)
+ *      back into src/data/samples.ts.
  * The originals stay on Drive; the download buttons still link there.
  *
  * Needs ffmpeg and ffprobe (brew install ffmpeg). Re-run after adding or replacing samples:
@@ -13,7 +14,7 @@
  * and pass --force to re-encode existing previews.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { SAMPLES } from '../src/data/samples';
@@ -47,6 +48,38 @@ function run(cmd: string, args: string[]): string {
   return r.stdout;
 }
 
+
+/** Number of bars in each waveform outline. */
+const PEAK_BARS = 64;
+/** One character per bar, 0 (silent) to 63 (loudest), so 64 bars fit in a 64-character string. */
+const PEAK_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+
+/** Loudest point in each of PEAK_BARS slices of the sound, scaled so the loudest bar is full height. */
+function peaks(file: string): string {
+  const r = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-ac', '1', '-ar', '8000', '-f', 'f32le', '-'], {
+    maxBuffer: 1 << 28,
+  });
+  if (r.status !== 0) throw new Error(`ffmpeg peaks failed: ${r.stderr}`);
+  const pcm = new Float32Array(r.stdout.buffer, r.stdout.byteOffset, Math.floor(r.stdout.byteLength / 4));
+  const bars = new Array(PEAK_BARS).fill(0);
+  for (let i = 0; i < pcm.length; i++) {
+    const bar = Math.min(PEAK_BARS - 1, Math.floor((i / pcm.length) * PEAK_BARS));
+    bars[bar] = Math.max(bars[bar], Math.abs(pcm[i]));
+  }
+  const loudest = Math.max(...bars) || 1;
+  return bars.map(v => PEAK_ALPHABET[Math.round((v / loudest) * 63)]).join('');
+}
+
+/** "WAV 24-bit", "WAV 32-bit float", "MP3" */
+function formatLabel(file: string): string {
+  const [codec, bits] = run('ffprobe', [
+    '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=codec_name,bits_per_sample', '-of', 'csv=p=0', file,
+  ]).trim().split(',');
+  if (codec.startsWith('pcm_f')) return `WAV ${bits}-bit float`;
+  if (codec.startsWith('pcm_')) return `WAV ${bits}-bit`;
+  return codec.toUpperCase();
+}
+
 async function download(driveId: string, file: string) {
   if (existsSync(file)) return;
   const res = await fetch(`https://drive.google.com/uc?export=download&id=${driveId}`);
@@ -78,7 +111,14 @@ for (const sample of SAMPLES) {
   const seconds = Number(
     run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', original]).trim(),
   );
-  updated.push({ ...sample, duration: formatDuration(seconds), preview: `/audio/${base}.mp3` });
+  updated.push({
+    ...sample,
+    duration: formatDuration(seconds),
+    preview: `/audio/${base}.mp3`,
+    format: formatLabel(original),
+    sizeBytes: statSync(original).size,
+    peaks: peaks(original),
+  });
   process.stdout.write('.');
 }
 
@@ -86,7 +126,8 @@ const header = readFileSync(DATA_FILE, 'utf8').split('export const SAMPLES')[0];
 const rows = updated.map(
   s =>
     `  { id: ${s.id}, name: ${JSON.stringify(s.name)}, category: ${JSON.stringify(s.category)}, ` +
-    `duration: ${JSON.stringify(s.duration)}, preview: ${JSON.stringify(s.preview)}, driveId: ${JSON.stringify(s.driveId)} },`,
+    `duration: ${JSON.stringify(s.duration)}, format: ${JSON.stringify(s.format)}, sizeBytes: ${s.sizeBytes}, ` +
+    `preview: ${JSON.stringify(s.preview)}, driveId: ${JSON.stringify(s.driveId)},\n    peaks: ${JSON.stringify(s.peaks)} },`,
 );
 writeFileSync(DATA_FILE, `${header}export const SAMPLES = [\n${rows.join('\n')}\n];\n`);
-console.log(`\n${updated.length} previews in public/audio, durations written to src/data/samples.ts`);
+console.log(`\n${updated.length} previews in public/audio, durations, sizes and waveforms written to src/data/samples.ts`);
