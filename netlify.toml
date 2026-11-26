@@ -5,6 +5,12 @@
 [build.environment]
   NODE_VERSION = "22"
 
+# Built JS/CSS files get a new name whenever they change, so browsers can keep them for a year.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
 # Send every page route to the React app (client-side routing).
 # /api/proxy-audio is handled by netlify/functions/proxy-audio.mts first.
 [[redirects]]

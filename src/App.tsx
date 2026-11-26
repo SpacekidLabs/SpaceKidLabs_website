@@ -7,6 +7,7 @@ import { SamplesPage } from './pages/Samples';
 import { Archive } from './pages/Archive';
 
 import { WavesetQuantizer } from './pages/WavesetQuantizer';
+import { NotFoundPage } from './pages/NotFound';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/download" element={<DownloadPage />} />
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/samples" element={<SamplesPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

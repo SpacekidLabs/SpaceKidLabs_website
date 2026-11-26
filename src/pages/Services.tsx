@@ -1,4 +1,5 @@
 import { Layout } from '../components/Layout';
+import { usePageTitle } from '../lib/usePageTitle';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { Mic, Disc, SlidersHorizontal, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -22,6 +23,7 @@ const CornerAccentsGreen = () => (
 );
 
 export function ServicesPage() {
+  usePageTitle('Services');
   return (
     <Layout>
       <div className="pt-24 pb-24">

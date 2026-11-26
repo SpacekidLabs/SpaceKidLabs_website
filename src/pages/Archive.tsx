@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, ReactElement, ReactNode } from 'rea
 import { motion } from 'motion/react';
 import { Link, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { usePageTitle } from '../lib/usePageTitle';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { Archive as ArchiveIcon, ExternalLink } from 'lucide-react';
 import { ArchivePost } from '../components/ArchivePost';
@@ -244,6 +245,12 @@ function SortedPosts({ children, activeSlug }: SortedPostsProps) {
   const childrenArray = React.Children.toArray(children) as ReactElement[];
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
+  // Tab title for single-post view; the Archive page sets it for the index view.
+  const activePost = activeSlug
+    ? childrenArray.find(child => (child.props.slug || getSlug(child.props.title)) === activeSlug)
+    : undefined;
+  usePageTitle(activeSlug ? (activePost?.props.title ?? 'Post not found') : null);
+
   // 1. Map each child to include dynamic consolidated tags
   const processedPosts = childrenArray.map(child => {
     if (child.props && Array.isArray(child.props.tags)) {
@@ -429,6 +436,7 @@ function SortedPosts({ children, activeSlug }: SortedPostsProps) {
 
 export function Archive() {
   const { slug } = useParams<{ slug: string }>();
+  usePageTitle(slug ? null : 'Archive');
   const [activeVowel, setActiveVowel] = useState<string | null>(null);
   const [activeFreq, setActiveFreq] = useState<number | null>(null);
   const [activeRatioId, setActiveRatioId] = useState<string | null>(null);

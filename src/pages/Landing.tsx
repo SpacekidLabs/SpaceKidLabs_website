@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Layout } from '../components/Layout';
+import { usePageTitle } from '../lib/usePageTitle';
 import { ProjectList } from '../components/ProjectList';
 import { DatabendPreview } from '../components/DatabendPreview';
 import { PeopleVstPreview } from '../components/PeopleVstPreview';
@@ -27,6 +28,7 @@ const CornerAccents = () => (
 );
 
 export function Landing() {
+  usePageTitle(undefined);
   return (
     <Layout>
       {/* Hero Section */}

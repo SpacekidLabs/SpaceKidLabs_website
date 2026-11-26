@@ -43,18 +43,15 @@ src/
   pages/        One file per route
   components/   Layout, navigation and the interactive audio labs
   data/         Sample pack metadata
-  lib/          Shared helpers
-public/         Static images
+  lib/          Shared helpers (including per-page tab titles)
+public/         Favicon, touch icon and link-preview image
+scripts/        One-off helper scripts
 server.ts       Express server: serves the app and proxies audio
 ```
 
 **Audio proxy.** Sample previews are stored on Google Drive. `server.ts` exposes `GET /api/proxy-audio?id=<driveId>`, which streams the file from Drive with range support so the browser can play and seek it.
 
-**Helper scripts.** `fetch-names.ts` rebuilds the sample list from Drive file IDs, and `download-img-2.ts` fetches the sample-pack cover art into `public/`. Run either with `npx tsx <file>`.
-
-## Environment variables
-
-Copy `.env.example` to `.env.local` if you need them. The site itself doesn't currently require any keys; `GEMINI_API_KEY` and `APP_URL` are left over from the Google AI Studio template the project started from.
+**Helper scripts.** `scripts/fetch-names.ts` rebuilds the sample list from Drive file IDs, and `scripts/download-cover-art.ts` downloads the sample-pack cover art into `public/`. Run either with `npx tsx scripts/<file>`.
 
 ## Deploying
 

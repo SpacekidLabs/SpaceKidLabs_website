@@ -1,4 +1,5 @@
 import { Layout } from '../components/Layout';
+import { usePageTitle } from '../lib/usePageTitle';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { Archive, Download, Play, Pause, FileAudio, ChevronDown, ChevronRight, Folder } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -283,6 +284,7 @@ const CategoryFolder: React.FC<{
 }
 
 export function SamplesPage() {
+  usePageTitle('Samples');
   const [currentlyPlaying, setCurrentlyPlaying] = useState<number | null>(null);
 
   const groupedSamples = useMemo(() => {

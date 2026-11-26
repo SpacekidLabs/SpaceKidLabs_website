@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { Layout } from '../components/Layout';
+import { usePageTitle } from '../lib/usePageTitle';
 import { Terminal, Copy, AlertOctagon, Download, CheckCircle, Apple } from 'lucide-react';
 import { useState } from 'react';
 import { ScrollReveal } from '../components/ScrollReveal';
@@ -14,6 +15,7 @@ const CornerAccents = () => (
 );
 
 export function DownloadPage() {
+  usePageTitle('Download');
   const [copied, setCopied] = useState(false);
 
   const copyChecksum = () => {
