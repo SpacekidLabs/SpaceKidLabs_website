@@ -12,6 +12,8 @@ export default defineConfig(() => {
       },
     },
     build: {
+      // Never inline font files into the CSS; browsers only download the character sets a page needs.
+      assetsInlineLimit: (file: string) => (/\.woff2?$/.test(file) ? false : undefined),
       rollupOptions: {
         output: {
           // Libraries change far less often than the site, so give them their own files.
