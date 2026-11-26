@@ -1,0 +1,6 @@
+{
+  "name": "SPACEKID LABS",
+  "description": "An experimental audio research, music production, and interactive DSP portfolio of SPACEKID.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
