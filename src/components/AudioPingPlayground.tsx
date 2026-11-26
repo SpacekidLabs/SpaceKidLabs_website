@@ -14,15 +14,24 @@ export function AudioPingPlayground() {
   const animationRef = useRef<number | null>(null);
   const masterVolumeNodeRef = useRef<GainNode | null>(null);
   const activeOscillatorsRef = useRef<any[]>([]);
+  const ctxRef = useRef<AudioContext | null>(null);
+
+  // Close the audio context when the post closes or the page changes.
+  useEffect(() => () => {
+    ctxRef.current?.close().catch(() => {});
+    ctxRef.current = null;
+  }, []);
 
   // Initialize Audio Context on user gesture
   const initAudio = () => {
-    if (audioCtx) return audioCtx;
+    if (ctxRef.current) return ctxRef.current;
 
     try {
       const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
       const ctx = new AudioCtxClass();
-      
+      ctxRef.current = ctx;
+      if (ctx.state === 'suspended') ctx.resume();
+
       const analyserNode = ctx.createAnalyser();
       analyserNode.fftSize = 512;
       

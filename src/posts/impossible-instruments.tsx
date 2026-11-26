@@ -1,4 +1,8 @@
+import { lazyLab } from '../lib/lazyNamed';
 import type { PostMeta } from './types';
+
+const WaveguidePlayground = lazyLab(() => import('../components/WaveguidePlayground'), 'WaveguidePlayground');
+const ImpossibleInstruments = lazyLab(() => import('../components/ImpossibleInstruments'), 'ImpossibleInstruments');
 
 export const meta: PostMeta = {
   title: "Building Instruments That Don't Exist",
@@ -133,7 +137,7 @@ export default function Post() {
         {/* 03 STRIKE EVERYTHING */}
         <div className="border border-zinc-900/65 bg-black/45 p-5 rounded-sm">
           <h4 className="font-mono text-xs font-bold text-[#ec4899] mb-3">// 03 — STRIKE EVERYTHING</h4>
-          <div className="space-y-4 text-sm text-zinc-305 font-sans font-light leading-relaxed">
+          <div className="space-y-4 text-sm text-zinc-300 font-sans font-light leading-relaxed">
             <p>
               Most acoustic instruments begin with an impact. <br />
               A pick. A bow catching a string. A hammer. A breath.
@@ -156,7 +160,7 @@ export default function Post() {
         {/* 04 STOP CHASING REALISM */}
         <div className="border border-zinc-900/65 bg-black/45 p-5 rounded-sm">
           <h4 className="font-mono text-xs font-bold text-[#ec4899] mb-3">// 04 — STOP CHASING REALISM</h4>
-          <div className="space-y-4 text-sm text-zinc-305 font-sans font-light leading-relaxed">
+          <div className="space-y-4 text-sm text-zinc-300 font-sans font-light leading-relaxed">
             <p>
               This is where physical modeling gets interesting. Not when it perfectly recreates a violin. But when it stops trying to.
             </p>
@@ -192,10 +196,19 @@ export default function Post() {
 
       <div className="py-6 border-t border-b border-zinc-900 text-center max-w-lg mx-auto my-8 space-y-2">
         <p className="text-xs font-mono text-zinc-550 uppercase tracking-widest">// IMPOSSIBLE CHORDS</p>
-        <p className="text-sm text-zinc-305 font-mono">
+        <p className="text-sm text-zinc-300 font-mono">
           Because sometimes the machine teaches itself how to sing. <br />
           And sometimes it teaches you how to build instruments nobody has imagined yet.
         </p>
+      </div>
+      {/* Interactive Lab Segment */}
+      <div className="mt-8 border-t border-zinc-900 pt-8">
+        <WaveguidePlayground />
+      </div>
+
+      {/* Interactive Lab Segment */}
+      <div className="mt-8 border-t border-zinc-900 pt-8">
+        <ImpossibleInstruments />
       </div>
     </>
   );

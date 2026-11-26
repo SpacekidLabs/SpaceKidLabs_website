@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Play, Square, Volume2, VolumeX, Info, Sparkles, RefreshCw, Layers } from 'lucide-react';
 import { motion } from 'motion/react';
+import { fadeOutAndClose } from '../lib/audio';
 
 const FREQ_BANDS = [
   { label: 'Sub-Bass', freq: 120, range: '20-200Hz' },
@@ -47,43 +48,14 @@ export function NoiseFossilLab() {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-
-    // Stop Source
-    if (sourceRef.current) {
-      try { sourceRef.current.stop(); } catch (e) {}
-      try { sourceRef.current.disconnect(); } catch (e) {}
-      sourceRef.current = null;
-    }
-
-    // Stop Noise
-    if (noiseSourceRef.current) {
-      try { noiseSourceRef.current.stop(); } catch (e) {}
-      try { noiseSourceRef.current.disconnect(); } catch (e) {}
-      noiseSourceRef.current = null;
-    }
-
-    // Disconnect filter bank
-    noiseFiltersRef.current.forEach(f => {
-      try { f.disconnect(); } catch (e) {}
-    });
+    // Fade out, then close the context: closing stops and frees every node, with no click.
+    fadeOutAndClose(audioCtxRef.current, masterGainRef.current);
+    audioCtxRef.current = null;
+    masterGainRef.current = null;
+    sourceRef.current = null;
+    noiseSourceRef.current = null;
     noiseFiltersRef.current = [];
-
-    noiseGainsRef.current.forEach(g => {
-      try { g.disconnect(); } catch (e) {}
-    });
     noiseGainsRef.current = [];
-
-    if (masterGainRef.current) {
-      try { masterGainRef.current.disconnect(); } catch (e) {}
-      masterGainRef.current = null;
-    }
-
-    if (audioCtxRef.current) {
-      if (audioCtxRef.current.state !== 'closed') {
-        audioCtxRef.current.close().catch(() => {});
-      }
-      audioCtxRef.current = null;
-    }
 
     setIsPlaying(false);
     setSourceBandEnergies([0, 0, 0, 0, 0, 0]);
@@ -262,6 +234,8 @@ export function NoiseFossilLab() {
       }
 
       const ctx = new AudioCtxClass();
+      // iOS Safari can create the context suspended; resuming inside the tap unlocks audio.
+      if (ctx.state === 'suspended') ctx.resume();
       audioCtxRef.current = ctx;
 
       // Master output Node

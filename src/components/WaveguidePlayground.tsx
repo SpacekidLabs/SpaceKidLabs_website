@@ -20,6 +20,13 @@ export function WaveguidePlayground() {
   const animationRef = useRef<number | null>(null);
   const amplitudeRef = useRef<number>(0);
   const activeFeedbackRef = useRef<number>(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  // Close the audio context when the post closes or the page changes.
+  useEffect(() => () => {
+    audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current = null;
+  }, []);
 
   // Handle fallback if AudioContext is not available
   useEffect(() => {
@@ -167,8 +174,14 @@ export function WaveguidePlayground() {
     if (!isAudioSupported) return;
 
     try {
-      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
-      const audioCtx = new AudioCtxClass();
+      // One context for every pluck (a new one per pluck piled up and was never closed).
+      if (!audioCtxRef.current) {
+        const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+        audioCtxRef.current = new AudioCtxClass();
+      }
+      const audioCtx = audioCtxRef.current;
+      // iOS Safari can create the context suspended; resuming inside the tap unlocks audio.
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       
       const sampleRate = audioCtx.sampleRate;
       const duration = 2.0; 

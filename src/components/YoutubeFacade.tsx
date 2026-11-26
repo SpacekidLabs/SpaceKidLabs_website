@@ -13,10 +13,7 @@ export function YoutubeFacade({ videoId, listId, title }: YoutubeFacadeProps) {
   const src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1${listId ? `&list=${listId}` : ''}`;
 
   return (
-    <div 
-      className="absolute inset-0 w-full h-full cursor-pointer group"
-      onClick={() => setIsPlaying(true)}
-    >
+    <div className="absolute inset-0 w-full h-full group">
       {isPlaying ? (
         <iframe 
           width="100%" 
@@ -29,7 +26,12 @@ export function YoutubeFacade({ videoId, listId, title }: YoutubeFacadeProps) {
           className="w-full h-full border-none"
         ></iframe>
       ) : (
-        <>
+        <button
+          type="button"
+          onClick={() => setIsPlaying(true)}
+          aria-label={`Play video: ${title}`}
+          className="absolute inset-0 w-full h-full cursor-pointer"
+        >
           <img 
             src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`} 
             alt={title}
@@ -40,7 +42,7 @@ export function YoutubeFacade({ videoId, listId, title }: YoutubeFacadeProps) {
               <Play className="w-6 h-6 text-white fill-current" />
             </div>
           </div>
-        </>
+        </button>
       )}
     </div>
   );

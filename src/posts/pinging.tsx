@@ -1,4 +1,7 @@
+import { lazyLab } from '../lib/lazyNamed';
 import type { PostMeta } from './types';
+
+const AudioPingPlayground = lazyLab(() => import('../components/AudioPingPlayground'), 'AudioPingPlayground');
 
 export const meta: PostMeta = {
   title: "Pinging: It's Not Just for Filters",
@@ -143,6 +146,10 @@ export default function Post() {
 
       <div className="p-4 bg-zinc-950/70 border border-zinc-900 rounded-sm font-mono text-xs text-zinc-400 leading-relaxed">
         <span className="text-[#38bdf8] font-bold">💡 SUMMARY:</span> And sometimes that's how you find your favorite synth hiding in the effects folder.
+      </div>
+      {/* Interactive Lab Segment */}
+      <div className="mt-8 border-t border-zinc-900 pt-8">
+        <AudioPingPlayground />
       </div>
     </>
   );

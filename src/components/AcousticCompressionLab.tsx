@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Play, Square, Volume2, VolumeX, Info, Activity, RefreshCw, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
+import { fadeOutAndClose } from '../lib/audio';
 
 interface BandConfig {
   freq: number;
@@ -61,43 +62,14 @@ export function AcousticCompressionLab() {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-
-    if (sourceRef.current) {
-      try { sourceRef.current.stop(); } catch (e) {}
-      try { sourceRef.current.disconnect(); } catch (e) {}
-      sourceRef.current = null;
-    }
-
-    // Clean Filter Bank
-    filterNodesRef.current.forEach(f => {
-      try { f.disconnect(); } catch (e) {}
-    });
+    // Fade out, then close the context: closing stops and frees every node, with no click.
+    fadeOutAndClose(audioCtxRef.current, masterGainRef.current);
+    audioCtxRef.current = null;
+    masterGainRef.current = null;
+    sourceRef.current = null;
     filterNodesRef.current = [];
-
-    // Clean Gain Nodes
-    gainNodesRef.current.forEach(g => {
-      try { g.disconnect(); } catch (e) {}
-    });
     gainNodesRef.current = [];
-
-    // Clean Additive Oscillators
-    oscillatorNodesRef.current.forEach(o => {
-      try { o.stop(); } catch (e) {}
-      try { o.disconnect(); } catch (e) {}
-    });
     oscillatorNodesRef.current = [];
-
-    if (masterGainRef.current) {
-      try { masterGainRef.current.disconnect(); } catch (e) {}
-      masterGainRef.current = null;
-    }
-
-    if (audioCtxRef.current) {
-      if (audioCtxRef.current.state !== 'closed') {
-        audioCtxRef.current.close().catch(() => {});
-      }
-      audioCtxRef.current = null;
-    }
 
     setIsPlaying(false);
     setInputBandLevels(new Array(8).fill(0));
@@ -297,6 +269,8 @@ export function AcousticCompressionLab() {
       }
 
       const ctx = new AudioCtxClass();
+      // iOS Safari can create the context suspended; resuming inside the tap unlocks audio.
+      if (ctx.state === 'suspended') ctx.resume();
       audioCtxRef.current = ctx;
 
       // Master output level gain

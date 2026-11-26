@@ -189,7 +189,7 @@ export function WavesetsVisualizer() {
 
   // --- WAVESET OPERATORS ---
 
-  const handleToggleSelect = (id: string, e: React.MouseEvent) => {
+  const handleToggleSelect = (id: string, e: { shiftKey: boolean }) => {
     if (e.shiftKey) {
       // Range select
       const index = wavesets.findIndex(w => w.id === id);
@@ -413,6 +413,13 @@ export function WavesetsVisualizer() {
                 <div
                   key={w.id}
                   onClick={(e) => handleToggleSelect(w.id, e)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggleSelect(w.id, e); }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSel}
+                  aria-label={`Waveset ${w.id}`}
                   style={{ width: `${boxWidth}px` }}
                   className={`h-full border-t border-b shrink-0 relative flex flex-col justify-between p-1 transition-all cursor-pointer rounded-sm group overflow-hidden ${
                     isSel 

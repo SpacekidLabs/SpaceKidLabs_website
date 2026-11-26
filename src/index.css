@@ -13,6 +13,17 @@
      on the near-black and zinc-900 backgrounds. 400 > 500 > 600 still go from bright to dim. */
   --color-zinc-500: #8b8b94;
   --color-zinc-600: #80808a;
+
+  /* In-between greys the archive posts and labs use (Tailwind only ships 50, 100, 200 … 950).
+     Without these, classes like bg-zinc-850 did nothing, which left slider tracks invisible.
+     Text shades (350 to 650) stay at or above the AA-passing 600. */
+  --color-zinc-150: #ececee;
+  --color-zinc-350: #bbbbc1;
+  --color-zinc-450: #96969f;
+  --color-zinc-550: #85858f;
+  --color-zinc-650: #80808a;
+  --color-zinc-750: #333338;
+  --color-zinc-850: #1f1f22;
 }
 
 @layer base {

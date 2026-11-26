@@ -1,6 +1,9 @@
+import { lazyLab } from '../lib/lazyNamed';
 import { RatioItem } from '../components/archive/ToneTables';
 import { useToneEngine } from '../components/archive/useToneEngine';
 import type { PostMeta } from './types';
+
+const TuningComparator = lazyLab(() => import('../components/TuningComparator'), 'TuningComparator');
 
 export const meta: PostMeta = {
   title: "Tuning Systems in Relation to Just Intervals",
@@ -312,8 +315,8 @@ export default function Post() {
             <RatioItem
               id="bp-minor3rd"
               name="BP Minor 3rd"
-              ratio="27/25"
-              cents={332.6}
+              ratio="9/7"
+              cents={438.9}
               details="3 steps"
               activeRatioId={activeRatioId}
               onToggle={handleToggleRatio}
@@ -322,18 +325,18 @@ export default function Post() {
             <RatioItem
               id="bp-major3rd"
               name="BP Major 3rd"
-              ratio="9/7"
-              cents={435.1}
+              ratio="7/5"
+              cents={585.2}
               details="4 steps"
               activeRatioId={activeRatioId}
               onToggle={handleToggleRatio}
               accentColor="#ff0055"
             />
             <RatioItem
-              id="bp-perfect5th"
-              name="BP Perfect 5th"
-              ratio="7/5"
-              cents={582.5}
+              id="bp-fifth"
+              name="BP Fifth"
+              ratio="5/3"
+              cents={877.8}
               details="6 steps"
               activeRatioId={activeRatioId}
               onToggle={handleToggleRatio}
@@ -502,6 +505,10 @@ export default function Post() {
         </p>
         <p className="text-[#aaff00] font-mono text-xs mt-3">// Because sometimes changing the tuning doesn't just change the notes.</p>
         <p className="text-[#aaff00] font-mono text-xs">// It changes the questions you ask when you write music.</p>
+      </div>
+      {/* Interactive Lab Segment */}
+      <div className="mt-8 border-t border-zinc-900 pt-8">
+        <TuningComparator />
       </div>
     </>
   );

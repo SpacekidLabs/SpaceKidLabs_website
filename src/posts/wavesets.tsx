@@ -1,4 +1,7 @@
+import { lazyLab } from '../lib/lazyNamed';
 import type { PostMeta } from './types';
+
+const WavesetsVisualizer = lazyLab(() => import('../components/WavesetsVisualizer'), 'WavesetsVisualizer');
 
 export const meta: PostMeta = {
   title: "Wavesets: Distortion Beyond Distortion",
@@ -74,7 +77,7 @@ export default function Post() {
 
       <div className="border border-zinc-900/65 bg-black/45 p-5 rounded-sm space-y-4 mb-8">
         <h3 className="font-mono text-xs font-bold text-[#00ffaa]">// ANATOMY OF ALIEN TEXTURES</h3>
-        <div className="space-y-4 text-sm text-zinc-305 font-sans font-light leading-relaxed">
+        <div className="space-y-4 text-sm text-zinc-300 font-sans font-light leading-relaxed">
           <p>
             The results don't really sound like distortion. Not in the way we usually mean it.
           </p>
@@ -109,6 +112,10 @@ export default function Post() {
         <p className="text-zinc-550 font-mono text-xs mb-1">vs.</p>
         <strong className="text-[#00ffaa] block font-sans text-base">"What happens if I reorganize the smallest pieces that still feel like waves?"</strong>
         <p className="text-[#00ffaa] font-mono text-xs mt-3">// You might discover that even a single cycle has a personality of its own.</p>
+      </div>
+      {/* Interactive Lab Segment */}
+      <div className="mt-8 border-t border-zinc-900 pt-8">
+        <WavesetsVisualizer />
       </div>
     </>
   );

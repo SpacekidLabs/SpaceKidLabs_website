@@ -95,7 +95,7 @@ export default function Post() {
         They're aesthetics disguised as utility.
       </blockquote>
 
-      <div className="space-y-4 text-zinc-405 font-sans font-light leading-relaxed mb-8 border-l border-zinc-900 pl-4">
+      <div className="space-y-4 text-zinc-400 font-sans font-light leading-relaxed mb-8 border-l border-zinc-900 pl-4">
         <p>
           A drum loop through <strong className="text-white font-medium">Texture</strong> can become a cloud.
         </p>

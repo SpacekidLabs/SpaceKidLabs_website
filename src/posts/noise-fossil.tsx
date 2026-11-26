@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { lazyLab } from '../lib/lazyNamed';
 import type { PostMeta } from './types';
 
@@ -31,18 +32,12 @@ export default function Post() {
         The result is less like an effect and more like an artifact—a fossil made from noise, shaped by the absence of the original sound.
       </p>
 
-      <div className="border border-zinc-905 bg-zinc-950/40 p-5 rounded-sm mb-8">
+      <div className="border border-zinc-900 bg-zinc-950/40 p-5 rounded-sm mb-8">
         <span className="block font-mono text-xs font-bold text-[#f97316] uppercase tracking-wider mb-2">
           ✦ CONNECTIONS: THE SHAPE OF ABSENCE
         </span>
         <p className="text-sm font-sans font-light text-zinc-300 leading-relaxed mb-3">
-          This experiment builds directly on the phenomenon of the <span className="text-[#14b8a6] hover:underline cursor-pointer" onClick={() => {
-            const el = document.getElementById("post-23");
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}>Zwicker Tone</span> (explored in our previous entry, <strong className="text-[#14b8a6] font-normal hover:underline cursor-pointer" onClick={() => {
-            const el = document.getElementById("post-23");
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}>"The Sound Left Behind by Silence"</strong>).
+          This experiment builds directly on the phenomenon of the <Link to="/archive/sound-left-by-silence" className="text-[#14b8a6] hover:underline">Zwicker Tone</Link> (explored in our previous entry, <Link to="/archive/sound-left-by-silence" className="text-[#14b8a6] font-normal hover:underline">"The Sound Left Behind by Silence"</Link>).
         </p>
         <p className="text-sm font-sans font-light text-zinc-400 leading-relaxed">
           While a single static notch tricks the auditory cortex into projecting a lonely phantom tone inside a static void, the <strong>Noise Fossil</strong> carves a complex, shifting matrix of parallel frequency gaps. It is a dynamic, highly-sculpted negative space: instead of one ghost frequency, you hear a whole choir of spectral shadows.

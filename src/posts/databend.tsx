@@ -47,7 +47,7 @@ export default function Post() {
         <p>
           A place to drag a photo in and ask:
         </p>
-        <ul className="space-y-2 pl-4 text-zinc-100 font-mono text-sm leading-relaxed border-l border-zinc-855">
+        <ul className="space-y-2 pl-4 text-zinc-100 font-mono text-sm leading-relaxed border-l border-zinc-850">
           <li className="text-[#d200ff]">What happens if the signal slips?</li>
           <li className="text-[#d200ff]/90 font-mono">What if the colors stop agreeing with each other?</li>
           <li className="text-[#d200ff]/80 font-mono">What if the picture forgets how it's supposed to hold itself together?</li>

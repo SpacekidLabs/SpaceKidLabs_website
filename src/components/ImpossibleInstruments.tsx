@@ -205,7 +205,7 @@ export function ImpossibleInstruments() {
                 {/* Visual block 3: THE DELAY LINE (WHAT IS IN BETWEEN) */}
                 <div className={`relative flex flex-col items-center w-36 px-3 py-2.5 rounded-sm border transition-all duration-300 ${
                   animationStep === 2
-                    ? 'bg-cyan-500/10 border-cyan-550 text-white' 
+                    ? 'bg-cyan-500/10 border-cyan-500 text-white' 
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
                   <Activity className="w-4 h-4 mb-1.5 text-cyan-500" />
@@ -225,7 +225,7 @@ export function ImpossibleInstruments() {
                 </div>
 
                 {/* Connecting arrow with moving signal bubble */}
-                <div className="relative w-12 md:w-20 h-0.5 bg-zinc-905">
+                <div className="relative w-12 md:w-20 h-0.5 bg-zinc-900">
                   <div className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r border-zinc-650 transform rotate-45 -translate-y-0.5" />
                   {animationStep === 2 && (
                     <div className="absolute top-1/2 left-0 w-2.5 h-2.5 bg-cyan-400 rounded-full -translate-y-1/2 animate-pulse" />
@@ -450,7 +450,7 @@ export function ImpossibleInstruments() {
                 {/* Node B: Harmonics 2 */}
                 <div className={`relative flex flex-col items-center px-2 py-3 rounded-sm border transition-all duration-300 ${
                   animationStep === 2 
-                    ? 'bg-cyan-500/10 border-cyan-550 text-white' 
+                    ? 'bg-cyan-500/10 border-cyan-500 text-white' 
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
                   <span className="font-mono text-[9px] font-bold text-cyan-400">Node B (f2)</span>

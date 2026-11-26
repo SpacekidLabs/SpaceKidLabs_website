@@ -201,6 +201,8 @@ export function TuningComparator() {
     return () => {
       stopSynth();
       if (intervalRef.current) clearInterval(intervalRef.current);
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
     };
   }, []);
 
@@ -318,8 +320,12 @@ export function TuningComparator() {
               {CHORDS.map((chord, idx) => {
                 const isCurrent = currentChordIdx === idx;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={idx}
+                    disabled={!isPlaying}
+                    aria-pressed={isCurrent && isPlaying}
+                    aria-label={`Play chord ${idx + 1}: ${chord.name}`}
                     onClick={() => {
                       if (isPlaying) {
                         setCurrentChordIdx(idx);
@@ -342,7 +348,7 @@ export function TuningComparator() {
                     }`}>
                       {chord.name.split(' ')[0]}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>

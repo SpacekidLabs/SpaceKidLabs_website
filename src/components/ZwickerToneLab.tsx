@@ -5,11 +5,14 @@ export function ZwickerToneLab() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.15); // safe low level for noise
   const [notchFreq, setNotchFreq] = useState<number>(1500); // Between 1000 and 2000 Hz
-  const [notchQ, setNotchQ] = useState<number>(12); // High Q = narrow notch
+  // Width of the silent gap in octaves. The Zwicker tone needs a wide, deep gap (about half an octave or more);
+  // a single notch filter is only deep at its very centre, so the gap is built from a low-pass and a high-pass.
+  const [gapOctaves, setGapOctaves] = useState<number>(0.75);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const noiseSourceRef = useRef<AudioBufferSourceNode | null>(null);
-  const notchFilterRef = useRef<BiquadFilterNode | null>(null);
+  const lowEdgeRef = useRef<BiquadFilterNode[]>([]);
+  const highEdgeRef = useRef<BiquadFilterNode[]>([]);
   const masterGainRef = useRef<GainNode | null>(null);
 
   // Stop function - extremely rapid cut to trigger the psychoacoustic illusion
@@ -19,10 +22,9 @@ export function ZwickerToneLab() {
       try { noiseSourceRef.current.disconnect(); } catch (e) {}
       noiseSourceRef.current = null;
     }
-    if (notchFilterRef.current) {
-      try { notchFilterRef.current.disconnect(); } catch (e) {}
-      notchFilterRef.current = null;
-    }
+    [...lowEdgeRef.current, ...highEdgeRef.current].forEach(f => { try { f.disconnect(); } catch (e) {} });
+    lowEdgeRef.current = [];
+    highEdgeRef.current = [];
     if (masterGainRef.current) {
       try { masterGainRef.current.disconnect(); } catch (e) {}
       masterGainRef.current = null;
@@ -50,13 +52,17 @@ export function ZwickerToneLab() {
     }
   }, [volume]);
 
-  // Update filter frequency & Q in real-time
+  // Gap edges: half the width below and above the centre frequency.
+  const gapEdges = (center: number, octaves: number) => [center / 2 ** (octaves / 2), center * 2 ** (octaves / 2)];
+
+  // Move the gap in real time
   useEffect(() => {
-    if (notchFilterRef.current && audioCtxRef.current) {
-      notchFilterRef.current.frequency.setTargetAtTime(notchFreq, audioCtxRef.current.currentTime, 0.05);
-      notchFilterRef.current.Q.setTargetAtTime(notchQ, audioCtxRef.current.currentTime, 0.05);
-    }
-  }, [notchFreq, notchQ]);
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    const [low, high] = gapEdges(notchFreq, gapOctaves);
+    lowEdgeRef.current.forEach(f => f.frequency.setTargetAtTime(low, ctx.currentTime, 0.05));
+    highEdgeRef.current.forEach(f => f.frequency.setTargetAtTime(high, ctx.currentTime, 0.05));
+  }, [notchFreq, gapOctaves]);
 
   // Generate White Noise Buffer
   const createNoiseBuffer = (ctx: AudioContext) => {
@@ -80,6 +86,8 @@ export function ZwickerToneLab() {
       }
 
       const ctx = new AudioCtxClass();
+      // iOS Safari can create the context suspended; resuming inside the tap unlocks audio.
+      if (ctx.state === 'suspended') ctx.resume();
       audioCtxRef.current = ctx;
 
       // Master Gain Node
@@ -88,20 +96,31 @@ export function ZwickerToneLab() {
       masterNode.connect(ctx.destination);
       masterGainRef.current = masterNode;
 
-      // Notch Filter Node
-      const filterNode = ctx.createBiquadFilter();
-      filterNode.type = 'notch';
-      filterNode.frequency.setValueAtTime(notchFreq, ctx.currentTime);
-      filterNode.Q.setValueAtTime(notchQ, ctx.currentTime);
-      filterNode.connect(masterNode);
-      notchFilterRef.current = filterNode;
+      // Band gap: noise below the gap (two low-pass stages) plus noise above it (two high-pass stages),
+      // 24 dB/octave on each edge, so the gap is silent across its whole width.
+      const [low, high] = gapEdges(notchFreq, gapOctaves);
+      const makeEdge = (type: BiquadFilterType, freq: number) => {
+        const stages = [0, 1].map(() => {
+          const f = ctx.createBiquadFilter();
+          f.type = type;
+          f.frequency.setValueAtTime(freq, ctx.currentTime);
+          f.Q.setValueAtTime(Math.SQRT1_2, ctx.currentTime);
+          return f;
+        });
+        stages[0].connect(stages[1]);
+        stages[1].connect(masterNode);
+        return stages;
+      };
+      lowEdgeRef.current = makeEdge('lowpass', low);
+      highEdgeRef.current = makeEdge('highpass', high);
 
       // White Noise Source
       const noiseBuffer = createNoiseBuffer(ctx);
       const sourceNode = ctx.createBufferSource();
       sourceNode.buffer = noiseBuffer;
       sourceNode.loop = true;
-      sourceNode.connect(filterNode);
+      sourceNode.connect(lowEdgeRef.current[0]);
+      sourceNode.connect(highEdgeRef.current[0]);
       sourceNode.start();
       noiseSourceRef.current = sourceNode;
 
@@ -126,17 +145,17 @@ export function ZwickerToneLab() {
     const notchLogPosition = (Math.log(notchFreq) - logMin) / (logMax - logMin);
     const notchPixelX = padding + notchLogPosition * drawWidth;
 
-    // Define notch width from Q (inverse relationship)
-    const notchWidthPixels = (1 / notchQ) * 110;
+    // Half the gap width in pixels (the axis spans log2(2500 / 800) octaves)
+    const halfGapPixels = (gapOctaves / 2 / Math.log2(2500 / 800)) * drawWidth;
 
     for (let x = 0; x <= drawWidth; x++) {
       const currentX = padding + x;
       
       // Calculate notch filter depth (simulated magnitude)
       const distance = Math.abs(currentX - notchPixelX);
-      // Bell-shaped curve subtraction
-      const logGap = Math.pow(distance / (notchWidthPixels + 0.5), 2);
-      const attenuation = 1 / (1 + logGap); // 1 at peak, tapering off
+      // Flat-bottomed gap with steep edges
+      const outside = Math.max(0, distance - halfGapPixels);
+      const attenuation = 1 / (1 + Math.pow(outside / 6, 2)); // 1 inside the gap, falling off outside
       
       // We add random grass noise jitter to make it look like "live noise"
       const jitter = isPlaying ? (Math.random() * 4 - 2) : 0;
@@ -152,7 +171,7 @@ export function ZwickerToneLab() {
       }
     }
     return points.join(' ');
-  }, [notchFreq, notchQ, isPlaying]);
+  }, [notchFreq, gapOctaves, isPlaying]);
 
   return (
     <div className="border border-zinc-800 bg-black/60 p-6 rounded-sm space-y-6 relative" id="zwicker-tone-lab">
@@ -175,7 +194,7 @@ export function ZwickerToneLab() {
 
       {/* Overview Instruction */}
       <p className="text-zinc-400 font-sans font-light text-sm leading-relaxed max-w-xl">
-        Generate synthetic broadband white noise. The spectral mixer carves an extremely narrow gap (<strong className="text-[#14b8a6] font-normal">Notch</strong>) into the noise. Listen intently to the noise for 5–10 seconds, then hit <strong className="text-red-400 font-normal">ABRUPT SILENCE</strong>. In the dead quiet, your brain will briefly sing the ghost frequency!
+        Generate synthetic broadband white noise. The spectral mixer carves a silent gap (<strong className="text-[#14b8a6] font-normal">Notch</strong>) about an octave wide into the noise. Listen intently to the noise for 5–10 seconds, then hit <strong className="text-red-400 font-normal">ABRUPT SILENCE</strong>. In the dead quiet, your brain will briefly sing the ghost frequency!
       </p>
 
       {/* Layout Grid */}
@@ -239,21 +258,21 @@ export function ZwickerToneLab() {
             {/* Slider: Q-factor (Narrowness) */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">NOTCH NARROWNESS (Q)</span>
-                <span className="text-zinc-350">{notchQ} px</span>
+                <span className="text-zinc-400">NOTCH WIDTH</span>
+                <span className="text-zinc-350">{gapOctaves.toFixed(2)} oct</span>
               </div>
               <input
-                aria-label="Notch Narrowness (Q)"
+                aria-label="Notch width in octaves"
                 type="range"
-                min="4"
-                max="25"
-                step="1"
-                value={notchQ}
-                onChange={(e) => setNotchQ(Number(e.target.value))}
+                min="0.25"
+                max="1.5"
+                step="0.05"
+                value={gapOctaves}
+                onChange={(e) => setGapOctaves(Number(e.target.value))}
                 className="w-full accent-[#14b8a6]/80 bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-600 block leading-tight font-mono">
-                Higher Q makes the void narrower, focusing your auditory imprint.
+                The ghost tone needs a wide gap: try 0.5 to 1 octave. Too narrow and nothing appears.
               </span>
             </div>
 

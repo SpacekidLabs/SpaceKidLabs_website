@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, Play, Square } from 'lucide-react';
+import { fadeOutAndClose } from '../lib/audio';
 
 export function BeatRateCalculator() {
   const [freq1, setFreq1] = useState<number>(440);
@@ -69,6 +70,8 @@ export function BeatRateCalculator() {
       }
 
       const ctx = new AudioCtxClass();
+      // iOS Safari can create the context suspended; resuming inside the tap unlocks audio.
+      if (ctx.state === 'suspended') ctx.resume();
       audioCtxRef.current = ctx;
 
       // 2. Setup Master Gain
@@ -100,27 +103,13 @@ export function BeatRateCalculator() {
   };
 
   const stopAudio = () => {
-    // Stop and disconnect nodes
-    if (osc1Ref.current) {
-      try { osc1Ref.current.stop(); } catch(e){}
-      osc1Ref.current.disconnect();
-      osc1Ref.current = null;
-    }
-    if (osc2Ref.current) {
-      try { osc2Ref.current.stop(); } catch(e){}
-      osc2Ref.current.disconnect();
-      osc2Ref.current = null;
-    }
-    if (gainRef.current) {
-      gainRef.current.disconnect();
-      gainRef.current = null;
-    }
-    if (audioCtxRef.current) {
-      if (audioCtxRef.current.state !== 'closed') {
-        audioCtxRef.current.close();
-      }
-      audioCtxRef.current = null;
-    }
+    // Fade out, then close the context: closing stops and frees every node, with no click.
+    fadeOutAndClose(audioCtxRef.current, gainRef.current);
+    audioCtxRef.current = null;
+    gainRef.current = null;
+    osc1Ref.current = null;
+    osc2Ref.current = null;
+
     setIsPlaying(false);
   };
 

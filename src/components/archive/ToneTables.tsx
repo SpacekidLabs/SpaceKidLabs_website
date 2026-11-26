@@ -42,11 +42,13 @@ export function VowelRow({
         isActiveVowel ? 'bg-[#aa00ff]/10 hover:bg-[#aa00ff]/15' : 'hover:bg-white/[0.01]'
       }`}
     >
-      <td 
-        onClick={() => onToggleVowel(name, f1, f2, f3)}
-        className="p-4 font-medium text-zinc-300 transition-all cursor-pointer select-none group"
-      >
-        <div className="flex items-center justify-between">
+      <td className="p-0 font-medium text-zinc-300 transition-all select-none group">
+        <button
+          type="button"
+          onClick={() => onToggleVowel(name, f1, f2, f3)}
+          aria-pressed={isActiveVowel}
+          aria-label={`${isActiveVowel ? 'Stop' : 'Play'} vowel ${name}`}
+          className="w-full p-4 flex items-center justify-between text-left cursor-pointer">
           <span className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${isActiveVowel ? 'bg-[#aa00ff] animate-pulse' : 'bg-zinc-700'} transition-all`} />
             <span className={isActiveVowel ? 'text-[#aa00ff] font-bold' : 'group-hover:text-[#aa00ff] transition-colors'}>{name}</span>
@@ -54,52 +56,67 @@ export function VowelRow({
           <span className="text-[9px] font-mono text-[#aa00ff]/70 border border-[#aa00ff]/30 px-1.5 py-0.5 rounded bg-[#aa00ff]/5 uppercase tracking-wider font-light">
             {isActiveVowel ? 'Playing Vowel' : 'Audition'}
           </span>
-        </div>
+        </button>
       </td>
       <td className="p-4 text-center font-mono text-white/50 select-none">
         {ipa}
       </td>
       
-      <td 
-        onClick={() => onToggleFreq(f1)}
-        className={`p-4 font-mono text-right select-none transition-all cursor-pointer relative group ${
+      <td
+        className={`p-0 font-mono text-right select-none transition-all relative group ${
           activeFreq === f1 
             ? 'text-[#00e5ff] font-bold bg-[#00e5ff]/10 border-b border-[#00e5ff]/50' 
             : 'text-zinc-500 hover:text-[#00e5ff] hover:bg-white/[0.03]'
         }`}
       >
-        <div className="flex items-center justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={() => onToggleFreq(f1)}
+          aria-pressed={activeFreq === f1}
+          aria-label={`${activeFreq === f1 ? 'Stop' : 'Play'} F1 ${f1} hertz for ${name}`}
+          className="w-full p-4 flex items-center justify-end gap-1.5 cursor-pointer"
+        >
           {activeFreq === f1 && <span className="w-1.5 h-1.5 rounded-full bg-[#00e5ff] animate-ping" />}
           <span>{f1}</span>
-        </div>
+        </button>
       </td>
 
-      <td 
-        onClick={() => onToggleFreq(f2)}
-        className={`p-4 font-mono text-right select-none transition-all cursor-pointer relative group ${
+      <td
+        className={`p-0 font-mono text-right select-none transition-all relative group ${
           activeFreq === f2 
             ? 'text-brand-orange font-bold bg-brand-orange/10 border-b border-brand-orange/50' 
             : 'text-zinc-500 hover:text-brand-orange hover:bg-white/[0.03]'
         }`}
       >
-        <div className="flex items-center justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={() => onToggleFreq(f2)}
+          aria-pressed={activeFreq === f2}
+          aria-label={`${activeFreq === f2 ? 'Stop' : 'Play'} F2 ${f2} hertz for ${name}`}
+          className="w-full p-4 flex items-center justify-end gap-1.5 cursor-pointer"
+        >
           {activeFreq === f2 && <span className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-ping" />}
           <span>{f2}</span>
-        </div>
+        </button>
       </td>
 
-      <td 
-        onClick={() => onToggleFreq(f3)}
-        className={`p-4 font-mono text-right select-none transition-all cursor-pointer relative group ${
+      <td
+        className={`p-0 font-mono text-right select-none transition-all relative group ${
           activeFreq === f3 
             ? 'text-[#ffaa00] font-bold bg-[#ffaa00]/10 border-b border-[#ffaa00]/50' 
             : 'text-zinc-500 hover:text-[#ffaa00] hover:bg-white/[0.03]'
         }`}
       >
-        <div className="flex items-center justify-end gap-1.5">
+        <button
+          type="button"
+          onClick={() => onToggleFreq(f3)}
+          aria-pressed={activeFreq === f3}
+          aria-label={`${activeFreq === f3 ? 'Stop' : 'Play'} F3 ${f3} hertz for ${name}`}
+          className="w-full p-4 flex items-center justify-end gap-1.5 cursor-pointer"
+        >
           {activeFreq === f3 && <span className="w-1.5 h-1.5 rounded-full bg-[#ffaa00] animate-ping" />}
           <span>{f3}</span>
-        </div>
+        </button>
       </td>
     </tr>
   );
@@ -128,14 +145,18 @@ export function RatioItem({
 }: RatioItemProps) {
   const isActive = activeRatioId === id;
   return (
-    <li
+    <li className="list-none flex">
+    <button
+      type="button"
       onClick={() => onToggle(id, cents)}
+      aria-pressed={isActive}
+      aria-label={`${isActive ? 'Stop' : 'Play'} ${name}, ${ratio}, ${cents} cents`}
       style={{
         borderColor: isActive ? accentColor : 'rgba(255, 255, 255, 0.05)',
         backgroundColor: isActive ? `${accentColor}10` : 'rgba(255, 255, 255, 0.03)',
         boxShadow: isActive ? `0 0 12px ${accentColor}15` : 'none'
       }}
-      className="p-3.5 border rounded-sm transition-all duration-200 cursor-pointer select-none flex flex-col justify-between group relative overflow-hidden"
+      className="w-full text-left p-3.5 border rounded-sm transition-all duration-200 cursor-pointer select-none flex flex-col justify-between group relative overflow-hidden"
     >
       {isActive && (
         <div 
@@ -168,6 +189,7 @@ export function RatioItem({
           {details ? `${details} / ` : ''}{cents}¢
         </span>
       </div>
+    </button>
     </li>
   );
 }

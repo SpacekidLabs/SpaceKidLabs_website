@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Upload, Play, Square, Volume2, VolumeX, Info, Sliders, Sparkles, Activity } from 'lucide-react';
 import { motion } from 'motion/react';
+import { fadeOutAndClose } from '../lib/audio';
 
 interface ResonatorFreq {
   freq: number;
@@ -83,29 +84,12 @@ export function GranularResonatorLab() {
       clearInterval(timerIdRef.current);
       timerIdRef.current = null;
     }
-
-    // Disconnect internal filter network
-    biquadFiltersRef.current.forEach(f => {
-      try { f.disconnect(); } catch (e) {}
-    });
+    // Fade out, then close the context: closing stops and frees every node, with no click.
+    fadeOutAndClose(audioCtxRef.current, mainGainNodeRef.current);
+    audioCtxRef.current = null;
+    mainGainNodeRef.current = null;
     biquadFiltersRef.current = [];
-
-    feedbackGainNodesRef.current.forEach(g => {
-      try { g.disconnect(); } catch (e) {}
-    });
     feedbackGainNodesRef.current = [];
-
-    if (mainGainNodeRef.current) {
-      try { mainGainNodeRef.current.disconnect(); } catch (e) {}
-      mainGainNodeRef.current = null;
-    }
-
-    if (audioCtxRef.current) {
-      if (audioCtxRef.current.state !== 'closed') {
-        audioCtxRef.current.close().catch(() => {});
-      }
-      audioCtxRef.current = null;
-    }
 
     setIsPlaying(false);
     setParticles([]);
@@ -311,6 +295,8 @@ export function GranularResonatorLab() {
       }
 
       const ctx = new AudioCtxClass();
+      // iOS Safari can create the context suspended; resuming inside the tap unlocks audio.
+      if (ctx.state === 'suspended') ctx.resume();
       audioCtxRef.current = ctx;
 
       // Master output gain
@@ -825,7 +811,7 @@ export function GranularResonatorLab() {
           </div>
 
           {/* Tuning Adapting Resonators list */}
-          <div className="p-4 bg-zinc-950/50 border border-zinc-905 rounded-sm space-y-4">
+          <div className="p-4 bg-zinc-950/50 border border-zinc-900 rounded-sm space-y-4">
             <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">
               // Resonator Adaptable Harmonic Network
             </span>

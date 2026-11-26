@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Volume2, VolumeX, Play, Square, RefreshCw, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
+import { fadeOutAndClose } from '../lib/audio';
 
 export function MissingFundamental() {
   const [fundamentalFreq, setFundamentalFreq] = useState<number>(100);
@@ -29,34 +30,12 @@ export function MissingFundamental() {
 
   // Stop function
   const stopAudio = () => {
-    // Stop all oscillators
-    oscsRef.current.forEach((osc, idx) => {
-      if (osc) {
-        try { osc.stop(); } catch (e) {}
-        try { osc.disconnect(); } catch (e) {}
-        oscsRef.current[idx] = null;
-      }
-    });
-
-    // Disconnect gains
-    gainsRef.current.forEach((gn, idx) => {
-      if (gn) {
-        try { gn.disconnect(); } catch (e) {}
-        gainsRef.current[idx] = null;
-      }
-    });
-
-    if (masterGainRef.current) {
-      try { masterGainRef.current.disconnect(); } catch (e) {}
-      masterGainRef.current = null;
-    }
-
-    if (audioCtxRef.current) {
-      if (audioCtxRef.current.state !== 'closed') {
-        audioCtxRef.current.close().catch(() => {});
-      }
-      audioCtxRef.current = null;
-    }
+    // Fade out, then close the context: closing stops and frees every node, with no click.
+    fadeOutAndClose(audioCtxRef.current, masterGainRef.current);
+    audioCtxRef.current = null;
+    masterGainRef.current = null;
+    oscsRef.current = new Array(9).fill(null);
+    gainsRef.current = new Array(9).fill(null);
 
     setIsPlaying(false);
   };
@@ -106,6 +85,8 @@ export function MissingFundamental() {
       }
 
       const ctx = new AudioCtxClass();
+      // iOS Safari can create the context suspended; resuming inside the tap unlocks audio.
+      if (ctx.state === 'suspended') ctx.resume();
       audioCtxRef.current = ctx;
 
       // Master Gain
@@ -409,7 +390,8 @@ export function MissingFundamental() {
                       }`}
                       style={{ height: `${percentHeight}%` }}
                       title={`Harmonic ${harmonicIndex}: ${freq}Hz (${Math.round(amplitude * 100)}% amp). Click to toggle.`}
-                      aria-label={`Toggle Harmonic ${harmonicIndex}`}
+                      aria-label={`Harmonic ${harmonicIndex}, ${freq} hertz`}
+                      aria-pressed={!!active}
                     >
                       {/* Active Indicator light dot inside */}
                       {active && (

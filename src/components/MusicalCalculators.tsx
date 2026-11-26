@@ -159,6 +159,8 @@ export function MusicalCalculators() {
   useEffect(() => {
     return () => {
       stopSound();
+      audioCtxRef.current?.close().catch(() => {});
+      audioCtxRef.current = null;
     };
   }, []);
 
@@ -212,10 +214,10 @@ export function MusicalCalculators() {
               <Clock className="w-3 h-3 text-cyan-400" /> TAP LATENCY
             </div>
 
-            <h5 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
               Tempo-to-Delay Alignment (BPM)
-            </h5>
+            </h4>
 
             <div className="space-y-4 mb-5">
               <div className="flex items-center gap-4">
@@ -253,7 +255,7 @@ export function MusicalCalculators() {
                 <span className="text-right">Delay Time</span>
                 <span className="text-right">LFO Rate</span>
               </div>
-              <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+              <div tabIndex={0} role="region" aria-label="Note frequency table" className="max-h-[220px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                 {delayTypes.map((tap, idx) => {
                   const ms = calcDelayTime(tap.mult);
                   // Frequency of LFO in Hz is 1 / (ms / 1000)
@@ -294,10 +296,10 @@ export function MusicalCalculators() {
               <Music className="w-3 h-3 text-emerald-400" /> ACOUSTIC BRIDGE
             </div>
 
-            <h5 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
               Pitch & Frequency Solver
-            </h5>
+            </h4>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
@@ -368,10 +370,10 @@ export function MusicalCalculators() {
               <RotateCw className="w-3 h-3 text-[#ffaa00]" /> RATE SPEED
             </div>
 
-            <h5 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-[#ffaa00] rounded-full" />
               Old-School Resample & Pitch Bender
-            </h5>
+            </h4>
 
             <p className="text-[10px] text-zinc-500 leading-normal mb-4 font-sans font-light">
               Want to pitch/stretch a sample inside a retro Akai, MPC, or E-MU sampler? Input the original sample BPM and your target track BPM to get the exact pitch shift required for a raw resampled fit.
@@ -428,10 +430,10 @@ export function MusicalCalculators() {
               <Database className="w-3 h-3 text-blue-400" /> PCM BITRATE
             </div>
 
-            <h5 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
               Raw PCM Audio Data Size Calculator
-            </h5>
+            </h4>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
@@ -461,7 +463,7 @@ export function MusicalCalculators() {
 
               <div>
                 <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Sample Rate / Format</label>
-                <select
+                <select aria-label="Sample rate"
                   value={sampleRate}
                   onChange={(e) => setSampleRate(parseInt(e.target.value))}
                   className="w-full bg-black border border-[#1d1d23] text-white p-2 font-mono text-xs focus:ring-0 focus:outline-none cursor-pointer"
@@ -477,7 +479,7 @@ export function MusicalCalculators() {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Bit Depth</label>
-                <select
+                <select aria-label="Bit depth"
                   value={bitDepth}
                   onChange={(e) => setBitDepth(parseInt(e.target.value))}
                   className="w-full bg-black border border-[#1d1d23] text-white p-2 font-mono text-xs focus:ring-0 focus:outline-none cursor-pointer"
@@ -490,7 +492,7 @@ export function MusicalCalculators() {
 
               <div>
                 <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Channels</label>
-                <select
+                <select aria-label="Channels"
                   value={channels}
                   onChange={(e) => setChannels(parseInt(e.target.value))}
                   className="w-full bg-black border border-[#1d1d23] text-white p-2 font-mono text-xs focus:ring-0 focus:outline-none cursor-pointer"

@@ -29,15 +29,15 @@ export default function Post() {
           <span className="block text-[#00ffcc] font-bold mb-1">LOOP & REPEAT</span>
           Cycle repeating
         </div>
-        <div className="p-3 bg-zinc-950/40 border border-zinc-905 rounded-sm">
+        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
           <span className="block text-[#00ffcc] font-bold mb-1">REVERSAL</span>
           Phase inversion
         </div>
-        <div className="p-3 bg-zinc-950/40 border border-zinc-905 rounded-sm">
+        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
           <span className="block text-[#00ffcc] font-bold mb-1">SKIP / DECIMATE</span>
           Zero-amplitude gate
         </div>
-        <div className="p-3 bg-zinc-950/40 border border-zinc-905 rounded-sm">
+        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
           <span className="block text-[#00ffcc] font-bold mb-1">MEM_REPLACE</span>
           Recall centroid
         </div>
