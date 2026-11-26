@@ -7,48 +7,51 @@ export const meta: PostMeta = {
   tags: ["GRANULAR", "SYNTHESIS", "PERCUSSION", "SOUND DESIGN", "CREATIVE PROCESS"],
   index: 20,
   accentColor: "#f97316",
+  description: "Using a granular synthesizer as a drum voice by giving the grain cloud a percussive envelope.",
 };
 
 export default function Post() {
   return (
-    <>
-      <p className="text-xl text-zinc-200 leading-relaxed mb-6 font-sans font-light">
-        I've been thinking about granular synthesis as a percussion engine. Not by slicing loops, but by shaping clouds of grains with drum-like envelopes.
+    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+      <p>
+        I've been thinking about granular synthesis as a way to make individual drum hits. The usual way to get
+        percussion out of a granular tool is to slice an existing loop. The idea here is different: start a dense
+        burst of grains on each trigger and shape that cloud with a drum-like envelope, so the hit is built from
+        grains rather than played back from a sample.
       </p>
 
-      <p className="text-zinc-400 font-sans font-light leading-relaxed mb-6">
-        A long, static recording becomes rich raw material. Grain size controls the transient body of the hit, while density becomes an organic component of the decay curve. Tiny shifts in pitch, filtering, and grain position can push the exact same source toward a kick, a hat, a snare, or something entirely new that doesn't have a name yet.
+      <p>
+        Granular synthesis plays many short, windowed snippets ("grains") of a source sound, usually a few ms to
+        about 100 ms long, at a rate set by the density. Curtis Roads' <em>Microsound</em> (2001) is the standard
+        reference if you want the background.
       </p>
 
-      <blockquote className="border-l-4 border-[#f97316]/60 bg-[#f97316]/5 p-5 text-zinc-350 font-sans text-sm leading-relaxed mb-8 font-light italic">
-        The interesting part is how much rhythm can emerge from the envelope itself. A dense burst of microscopic grains collapsing into silence can feel surprisingly physical—less like triggering a static sample and more like striking a tactile object.
-      </blockquote>
+      <h3 className="text-white font-display font-medium text-lg pt-2">The parameters, as drum controls</h3>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-xs text-zinc-500 mb-8 max-w-xl">
-        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#f97316] font-bold mb-1">GRAIN SIZE</span>
-          Transient Body Shape
-        </div>
-        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#f97316] font-bold mb-1">DENSITY</span>
-          Decay Tail Character
-        </div>
-        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm font-light">
-          <span className="block text-[#f97316] font-bold mb-1">POSITION SHIFT</span>
-          Spectral Texture Variator
-        </div>
-      </div>
+      <ul className="list-disc pl-6 space-y-1.5 text-zinc-400 marker:text-[#f97316]/60">
+        <li><span className="text-zinc-200">Grain size</span> shapes the body of the transient. Very short grains (a few ms) sound like clicks whatever the source is; longer grains let more of the source's pitch and tone through.</li>
+        <li><span className="text-zinc-200">Density over time</span> becomes the decay. Start with a dense burst and let the grain rate fall off over the length of the hit, alongside an ordinary amplitude envelope with a fast attack.</li>
+        <li><span className="text-zinc-200">Grain position</span> chooses which part of the source the grains come from, and so the texture of the hit.</li>
+        <li><span className="text-zinc-200">Pitch and filtering</span> push the result toward a particular drum: pitched down and low-passed toward a kick, pitched up with short grains and high-passed toward a hat, a noisy region of the source with a mid-range band-pass toward a snare.</li>
+      </ul>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          Try it with a simple field recording, a vocal phrase, or a sustained synthesizer pad. Keep the source material exactly the same and only alter the cloud generator's windowing bounds. 
-        </p>
+      <p>
+        What interests me is how much of the result comes from the envelope rather than the source. A dense burst
+        of very short grains that thins out to nothing can sound more like striking something than like triggering
+        a sample, and the same source can give hits that don't fit any of the usual drum categories.
+      </p>
 
-        <p className="text-white font-medium text-lg leading-snug">
-          You might be surprised by how many different instruments are hiding inside a single second of noise. <br />
-          <span className="text-[#f97316] font-mono font-medium">// Striking soundscapes at the microscopic level.</span>
-        </p>
-      </div>
-    </>
+      <p>
+        To try it, take one source, such as a field recording, a vocal phrase or a sustained synth pad, and leave it
+        alone. Only change the grain size, the density envelope, the position, the pitch and the filter, and see how
+        many distinct hits you can get from a second or so of material.
+      </p>
+
+      <p>
+        One thing to watch: if grain positions or timings are randomised, every trigger sounds slightly different.
+        That's useful for avoiding the machine-gun effect of repeated samples, but if you want a consistent kick you'll
+        need to turn the randomness down or fix it per hit.
+      </p>
+    </div>
   );
 }

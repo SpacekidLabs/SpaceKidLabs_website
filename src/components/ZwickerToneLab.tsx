@@ -188,13 +188,13 @@ export function ZwickerToneLab() {
           </h3>
         </div>
         <span className="font-mono text-[9px] px-2 py-0.5 rounded-sm bg-zinc-900 text-[#14b8a6]/80 border border-zinc-850 self-start">
-          GHOST COGNITION MECHANICS
+          ZWICKER 1964
         </span>
       </div>
 
       {/* Overview Instruction */}
       <p className="text-zinc-400 font-sans font-light text-sm leading-relaxed max-w-xl">
-        Generate synthetic broadband white noise. The spectral mixer carves a silent gap (<strong className="text-[#14b8a6] font-normal">Notch</strong>) about an octave wide into the noise. Listen intently to the noise for 5–10 seconds, then hit <strong className="text-red-400 font-normal">ABRUPT SILENCE</strong>. In the dead quiet, your brain will briefly sing the ghost frequency!
+        Plays white noise with a silent gap (<strong className="text-[#14b8a6] font-normal">notch</strong>) cut out of it. Listen for 5–10 seconds, then press <strong className="text-red-400 font-normal">ABRUPT SILENCE</strong>. Many people hear a faint tone for a few seconds afterwards, pitched inside the gap.
       </p>
 
       {/* Layout Grid */}
@@ -272,7 +272,7 @@ export function ZwickerToneLab() {
                 className="w-full accent-[#14b8a6]/80 bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-600 block leading-tight font-mono">
-                The ghost tone needs a wide gap: try 0.5 to 1 octave. Too narrow and nothing appears.
+                The effect needs a wide gap: try 0.5 to 1 octave. Too narrow and nothing appears.
               </span>
             </div>
 

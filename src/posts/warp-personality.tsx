@@ -7,134 +7,92 @@ export const meta: PostMeta = {
   tags: ["WARPING", "STRETCHING", "ABLETON", "ALGORITHMS", "SOUND DESIGN"],
   index: 16,
   accentColor: "#a855f7",
+  description: "Ableton Live's six warp modes each leave their own artefacts, and I treat the choice between them as a sound design decision rather than a technical one.",
 };
+
+const link = "text-[#a855f7] hover:underline";
 
 export default function Post() {
   return (
-    <>
-      <p className="text-xl text-zinc-350 leading-relaxed mb-8 font-sans font-light">
-        People talk about Ableton's warp modes like they're job titles.
+    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+      <p>
+        Ableton Live has six warp modes, the algorithms it uses to change the tempo or pitch of an audio clip:
+        Beats, Tones, Texture, Re-Pitch, Complex and Complex Pro. The usual advice, and roughly what the{' '}
+        <a href="https://www.ableton.com/en/manual/audio-clips-tempo-and-warping/" target="_blank" rel="noreferrer" className={link}>
+          Live manual
+        </a>{' '}
+        recommends, is to match the mode to the material: Beats for drums, Tones for monophonic pitched parts like
+        vocals and bass, Texture for pads and noise, Complex for full mixes.
       </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs text-zinc-500 mb-8 max-w-xl">
-        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#a855f7] font-bold mb-1">BEATS</span>
-          for drums
-        </div>
-        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#a855f7] font-bold mb-1">TONES</span>
-          for bass
-        </div>
-        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#a855f7] font-bold mb-1">TEXTURE</span>
-          for textures
-        </div>
-        <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#a855f7] font-bold mb-1">COMPLEX</span>
-          for songs
-        </div>
-      </div>
+      <p>
+        That advice is right if you want the stretch to be inaudible. I don't think it's the only reason to pick a
+        mode. Once you stretch or transpose far enough, every algorithm leaves its own artefacts, and those
+        artefacts are different enough that the choice becomes an aesthetic one.
+      </p>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          As if the algorithm knows what your sound is supposed to become.
-        </p>
-        <p className="text-white font-medium text-lg">
-          I don't really buy that.
-        </p>
-        <p>
-          Warp modes aren't corrections. <span className="text-[#a855f7] font-mono font-medium">They're interpretations.</span>
-        </p>
-        <p>
-          The same vocal pushed through each mode becomes six different performances:
-        </p>
-      </div>
+      <h3 className="text-white font-display font-medium text-lg pt-2">What each mode does to a vocal</h3>
 
-      {/* Six Modes Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// BEATS</h3>
-          <p className="text-zinc-300 text-sm font-sans font-light">
-            Chops it into nervous little pieces.
-          </p>
-        </div>
-        <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// TONES</h3>
-          <p className="text-zinc-300 text-sm font-sans font-light">
-            Smears it into something synthetic.
-          </p>
-        </div>
-        <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// TEXTURE</h3>
-          <p className="text-zinc-300 text-sm font-sans font-light">
-            Turns it into dust and weather.
-          </p>
-        </div>
-        <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// RE-PITCH</h3>
-          <p className="text-zinc-300 text-sm font-sans font-light">
-            Lets gravity take over.
-          </p>
-        </div>
-        <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// COMPLEX</h3>
-          <p className="text-zinc-300 text-sm font-sans font-light">
-            Blurs the edges together.
-          </p>
-        </div>
-        <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// COMPLEX PRO</h3>
-          <p className="text-zinc-300 text-sm font-sans font-light">
-            Tries its best to keep the mask from slipping.
-          </p>
-        </div>
-      </div>
+      <p>
+        Here is how I'd describe the same vocal stretched through each mode, along with the controls that change
+        the result most:
+      </p>
 
-      <blockquote className="border-l-4 border-[#a855f7]/50 bg-[#a855f7]/5 p-5 text-zinc-300 font-mono text-sm leading-relaxed mb-8 italic">
-        None of them are the "right" answer. <br />
-        They're aesthetics disguised as utility.
-      </blockquote>
+      <ul className="list-disc pl-6 space-y-1.5 text-zinc-400 marker:text-[#a855f7]/60">
+        <li>
+          <span className="text-zinc-200">Beats</span> cuts the audio into segments at transients (or at a grid
+          division set by Preserve) and loops or fades each one to fill the gap. On a vocal this sounds choppy and
+          stuttering. The Transient Loop Mode and Transient Envelope controls decide whether the gaps are filled or
+          gated.
+        </li>
+        <li>
+          <span className="text-zinc-200">Tones</span> is granular, with a grain size that follows the pitch of the
+          material. Pushed hard it smears the voice into something that sounds synthetic.
+        </li>
+        <li>
+          <span className="text-zinc-200">Texture</span> is also granular but ignores pitch, and its Fluctuation
+          control adds randomness. A vocal turns grainy and diffuse, more like weather than a performance.
+        </li>
+        <li>
+          <span className="text-zinc-200">Re-Pitch</span> doesn't stretch at all. It changes playback speed, so
+          pitch follows tempo the way it does on a varispeed tape machine or a turntable.
+        </li>
+        <li>
+          <span className="text-zinc-200">Complex</span> is meant for full mixes. Its artefacts are softer: edges
+          and transients blur together.
+        </li>
+        <li>
+          <span className="text-zinc-200">Complex Pro</span> is a variation on Complex with Formants and Envelope
+          controls. With Formants at 100% it keeps the vocal's formants in place when you transpose, so it tries
+          hardest to keep the voice sounding like the same person.
+        </li>
+      </ul>
 
-      <div className="space-y-4 text-zinc-400 font-sans font-light leading-relaxed mb-8 border-l border-zinc-900 pl-4">
-        <p>
-          A drum loop through <strong className="text-white font-medium">Texture</strong> can become a cloud.
-        </p>
-        <p>
-          A pad through <strong className="text-white font-medium">Beats</strong> can start dancing.
-        </p>
-        <p>
-          A field recording through <strong className="text-white font-medium">Tones</strong> can suddenly sound like an old memory.
-        </p>
-      </div>
+      <p>
+        None of these is the correct one. Each is a trade-off between keeping timing, pitch, transients and timbre,
+        and each fails in a different direction.
+      </p>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          The labels Ableton gives you are useful. But they're just suggestions.
-        </p>
-        <p>
-          People don't listen to vinyl because it's technically superior. They listen because they like what the process does to the music. The friction. The instability. The fingerprints it leaves behind.
-        </p>
-        <p>
-          Warp modes are the same. They're not just ways to preserve a sound. They're ways to change your relationship with it.
-        </p>
-        <p className="text-zinc-300 font-medium">
-          So next time you're stretching something, don't stop at the recommended setting. <br />
-          Try all of them.
-        </p>
-      </div>
+      <h3 className="text-white font-display font-medium text-lg pt-2">Using the "wrong" mode</h3>
 
-      <div className="py-6 border-t border-b border-zinc-900 text-center max-w-lg mx-auto my-8 space-y-2">
-        <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">// THREE DIRECTIVES</p>
-        <p className="text-sm text-zinc-300 font-mono">
-          Listen for the mood. <br />
-          Listen for the accidents. <br />
-          Listen for the version of the sound that shouldn't work.
-        </p>
-      </div>
+      <p>
+        The interesting results often come from ignoring the labels. A drum loop in Texture mode loses its
+        transients and turns into a cloud. A pad in Beats mode gets chopped at whatever transients the detector
+        finds and starts to pulse rhythmically. A field recording in Tones mode, transposed or stretched, picks up a
+        warbly, worn quality.
+      </p>
 
-      <div className="p-4 bg-zinc-950/70 border border-zinc-900 rounded-sm font-mono text-xs text-zinc-400 leading-relaxed">
-        <span className="text-[#a855f7] font-bold">💡 BOTTOM LINE:</span> Because sometimes the identity of a track is hiding inside the algorithm everyone else skipped over.
-      </div>
-    </>
+      <p>
+        I think of this the way people think about vinyl or tape. Nobody uses them because they're technically
+        better than a clean digital signal. They use them because they like what the medium does to the music, and
+        warp modes are a medium in the same sense.
+      </p>
+
+      <p>
+        So when I'm stretching something, I don't stop at the recommended setting. I try all six, push the grain
+        size and envelope controls past where they sound clean, and listen for which version gives the part the
+        character I want. Sometimes it's the mode nobody would have picked for that material.
+      </p>
+    </div>
   );
 }

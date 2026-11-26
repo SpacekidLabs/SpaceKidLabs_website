@@ -4,64 +4,58 @@ import type { PostMeta } from './types';
 const ZwickerToneLab = lazyLab(() => import('../components/ZwickerToneLab'), 'ZwickerToneLab');
 
 export const meta: PostMeta = {
-  title: "The Sound Left Behind by Silence",
+  title: "The Zwicker Tone",
   slug: "sound-left-by-silence",
   date: "2026-06-21",
   tags: ["PSYCHOACOUSTICS", "NEUROSCIENCE", "SOUND DESIGN", "PREDICTION", "AUDITORY AFTERIMAGE"],
   index: 23,
   accentColor: "#14b8a6",
+  description: "A faint tone heard after broadband noise with a spectral gap is switched off.",
 };
+
+const link = "text-[#14b8a6] hover:underline";
 
 export default function Post() {
   return (
-    <>
-      <p className="text-xl text-zinc-200 leading-relaxed mb-6 font-sans font-light">
-        Most sounds disappear when they end. This one arrives afterward.
+    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+      <p>
+        The Zwicker tone is a faint tone some listeners hear for a few seconds after a burst of broadband noise stops,
+        provided the noise had a gap cut out of its spectrum. Eberhard Zwicker described it in 1964 and called it a
+        negative afterimage in hearing, by analogy with the coloured afterimage you see after looking at a bright light.
       </p>
 
-      <blockquote className="border-l-4 border-[#14b8a6]/60 bg-[#14b8a6]/5 p-5 text-zinc-350 font-sans text-sm leading-relaxed mb-8 font-light italic">
-        Imagine listening to a wall of noise. Not static exactly, but a dense cloud of frequencies stretching across the spectrum. Now remove a narrow band from the middle—a small spectral hole, a missing piece. Listen for a moment. Then stop the sound completely.
-      </blockquote>
-
-      <p className="text-zinc-400 font-sans font-light leading-relaxed mb-6">
-        For a brief instant, many listeners report hearing a faint tone floating in the silence. A frequency that was never played. A sound that only appears after the source disappears.
+      <p>
+        To produce it, play noise with a band removed, roughly half an octave wide or more and deep enough that the
+        band is effectively silent. Listen for several seconds, then stop the noise abruptly. The tone that follows has
+        a pitch inside the gap, near its lower edge, and fades over a few seconds. It doesn't appear for everyone, and a
+        narrow notch usually isn't enough.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 max-w-xl">
-        <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#14b8a6] font-mono font-bold text-xs mb-1 uppercase tracking-wider">// The Zwicker Tone</span>
-          <p className="text-zinc-400 font-sans text-sm font-light">
-            An auditory afterimage. The acoustic equivalent of staring at a bright light and seeing its ghost after you close your eyes.
-          </p>
-        </div>
-        <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#14b8a6] font-mono font-bold text-xs mb-1 uppercase tracking-wider">// Brain Imprinting</span>
-          <p className="text-zinc-400 font-sans text-sm font-light">
-            The brain fills the spectral gap with a phantom sound—a prediction echo, a lingering residue of neurological expectation.
-          </p>
-        </div>
-      </div>
+      <p>
+        Nothing is added to the signal. When the noise stops, the output is silence, so the tone is produced by the
+        auditory system. One common explanation is lateral inhibition: neurons tuned to frequencies near the gap's
+        edges are inhibited by their neighbours while the noise plays, and when it stops, the release of that
+        inhibition shows up as activity heard as a tone. See the{' '}
+        <a href="https://en.wikipedia.org/wiki/Zwicker_tone" target="_blank" rel="noreferrer" className={link}>Wikipedia article</a>{' '}
+        for references.
+      </p>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          The strange part is that nothing new physically enters the acoustic signal. The tone is entirely generated inside the auditory system of the listener.
-        </p>
+      <p>
+        What I find interesting about it is that it's an easy way to hear your own auditory system add something to
+        what arrives at the ear. It fits the idea that hearing involves some amount of prediction and not only passive
+        reception, though the effect alone doesn't show that.
+      </p>
 
-        <p className="text-zinc-300 font-normal leading-relaxed">
-          It suggests a profound and slightly uncomfortable possibility: <span className="text-white">hearing may not actually be the act of receiving external sound, but rather the act of continuously predicting it.</span> The Zwicker Tone is one of the rare moments where you can hear the cognitive prediction itself.
-        </p>
-
-        <p className="text-zinc-400">
-          Not the sound. The machinery behind the sound.
-        </p>
-
-
-      </div>
+      <p>
+        The lab builds the gap from two low-pass and two high-pass filters on white noise, which gives 24 dB per octave
+        on each edge. You can set the gap's centre between 800 and 2500 Hz, its width from 0.25 to 1.5 octaves (0.75 by
+        default) and the noise level, listen for 5 to 10 seconds, then stop the noise and listen for the tone.
+      </p>
 
       {/* Interactive Lab Segment */}
       <div className="mt-8 border-t border-zinc-900 pt-8">
         <ZwickerToneLab />
       </div>
-    </>
+    </div>
   );
 }

@@ -7,48 +7,46 @@ export const meta: PostMeta = {
   tags: ["SYNTHESIS", "POLYPHONY", "DSP", "CREATIVE PROCESS", "SYSTEMS"],
   index: 19,
   accentColor: "#a855f7",
+  description: "An idea for a polyphonic synth whose voices influence each other instead of being summed independently.",
 };
 
 export default function Post() {
   return (
-    <>
-      <p className="text-xl text-zinc-200 leading-relaxed mb-6 font-sans font-light">
-        Most polyphonic synths generate independent voices and simply add them together. The interaction between notes happens in the music, not inside the instrument itself.
+    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+      <p>
+        Most polyphonic synths run each voice independently and add the outputs together. Two notes played at once
+        don't know about each other; whatever relationship they have is in the music, not in the instrument. The idea
+        I've been working on is a polyphonic synth where the voices do affect each other, so that how notes relate
+        becomes part of the synthesis.
       </p>
 
-      <p className="text-zinc-400 font-sans font-light leading-relaxed mb-6">
-        This experiment explores a different approach. Voices can cooperate, compete, imitate one another, exchange traits, or influence each other's behavior over time. The way notes relate becomes part of the synthesis process.
+      <p>
+        In practice that means each voice exposes a few of its own values, such as amplitude, brightness, detune or
+        a modulation level, and other voices can read them. Some of the relationships I want to try:
       </p>
 
-      <blockquote className="border-l-4 border-[#a855f7]/60 bg-[#a855f7]/5 p-5 text-zinc-350 font-sans text-sm leading-relaxed mb-8 font-light italic">
-        The result is a form of polyphony where the same patch can respond differently depending on the intervals played, the order notes are introduced, and how long they coexist.
-      </blockquote>
+      <ul className="list-disc pl-6 space-y-1.5 text-zinc-400 marker:text-[#a855f7]/60">
+        <li><span className="text-zinc-200">Imitation:</span> a voice slowly drifts toward the parameter values of the voices around it, so a held chord gradually converges on one timbre.</li>
+        <li><span className="text-zinc-200">Competition:</span> voices share a fixed budget, for example of amplitude or brightness, so a new note takes something away from the ones already sounding.</li>
+        <li><span className="text-zinc-200">Cooperation:</span> voices reinforce each other, for example opening each other's filters when they're sounding together.</li>
+        <li><span className="text-zinc-200">Exchanging traits:</span> a voice copies a setting such as its envelope shape or modulation depth from another voice when they overlap.</li>
+      </ul>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 max-w-xl">
-        <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#a855f7] font-mono font-bold text-xs mb-1 uppercase tracking-wider">// Coexistence dynamics</span>
-          <p className="text-zinc-400 font-sans text-sm font-light">
-            The patch responds differently depending on the intervals played, the order notes are introduced, and how long they coexist in the soundscape.
-          </p>
-        </div>
-        <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#a855f7] font-mono font-bold text-xs mb-1 uppercase tracking-wider">// Inter-voice influence</span>
-          <p className="text-zinc-400 font-sans text-sm font-light">
-            Rather than isolating individual voices, active modulation values and synthesis characteristics can spill over and couple dynamically.
-          </p>
-        </div>
-      </div>
+      <p>
+        Because the interactions depend on which voices are sounding, the same patch would respond differently
+        depending on the intervals played, the order the notes come in, and how long they overlap. Interval
+        dependence could be as simple as scaling the coupling between two voices by how simple their frequency ratio
+        is, so that an octave or a fifth interacts more strongly than a tritone.
+      </p>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          Rather than focusing on new oscillator algorithms, this is an attempt to explore the largely untouched space between voices themselves.
-        </p>
-
-        <p className="text-white font-medium text-lg leading-snug">
-          What happens when polyphony stops being a mixer and starts becoming a system of relationships? <br />
-          <span className="text-[#a855f7] font-mono font-medium">// Reimagining collective note biology.</span>
-        </p>
-      </div>
-    </>
+      <p>
+        Voice interaction isn't new in itself (cross-modulation between oscillators in a single voice is old, and
+        paraphonic synths share a filter between notes), but it's usually limited to sharing a signal path. What I
+        want to explore is the space between voices as a set of behaviours rather than new oscillator algorithms.
+        The obvious risk is that it becomes unpredictable to play: if every note changes every other note, it may be
+        hard to get the same sound twice, so the coupling strength needs to be a control the player can turn down to
+        zero.
+      </p>
+    </div>
   );
 }

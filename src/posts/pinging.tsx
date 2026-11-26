@@ -1,156 +1,103 @@
+import { Link } from 'react-router-dom';
 import { lazyLab } from '../lib/lazyNamed';
 import type { PostMeta } from './types';
 
 const AudioPingPlayground = lazyLab(() => import('../components/AudioPingPlayground'), 'AudioPingPlayground');
 
 export const meta: PostMeta = {
-  title: "Pinging: It's Not Just for Filters",
+  title: "Pinging Delays, Flangers and Reverbs",
   slug: "pinging",
   date: "2026-06-12",
   tags: ["PINGING", "RESONANCE", "EFFECTS", "SYNTHESIS", "SOUND DESIGN"],
   index: 14,
   accentColor: "#38bdf8",
+  description: "Pinging means hitting a resonant process with a short impulse so it rings at its own pitch, and it works on delays, flangers and reverbs as well as filters.",
 };
+
+const link = "text-[#38bdf8] hover:underline";
 
 export default function Post() {
   return (
-    <>
-      <p className="text-xl text-zinc-350 leading-relaxed mb-8 font-sans font-light">
-        Most people discover pinging by accident.
+    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+      <p>
+        Pinging means sending a very short impulse, such as a click or a few milliseconds of noise, into something
+        resonant and listening to it ring. The classic case is a filter: turn the resonance up until it nearly
+        self-oscillates, hit it with a click, and you get a decaying tone at the cutoff frequency that can sound like
+        a woodblock or a small bell. Most people find this by accident, with a synth filter or an EQ band with a very
+        high Q.
       </p>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          You crank the resonance on a filter, throw a click through it, and suddenly there's a woodblock hiding inside an EQ. A bell trapped in a synth filter. A note where there wasn't supposed to be one.
-        </p>
-        <p className="text-white font-medium text-lg leading-relaxed">
-          After that, it's hard not to wonder: <br />
-          <span className="text-[#38bdf8] font-bold">What else is pretending not to be an instrument?</span>
-        </p>
-      </div>
+      <p>
+        Anything with a resonance can be pinged, and a lot of effects have one. A delay set to a few milliseconds
+        with feedback is a comb filter, and it rings at a pitch set by the delay time. A flanger is the same thing
+        with the delay time modulated, so if you stop the modulation you get a fixed resonator. A reverb fed back
+        into itself can turn a short transient into a sustained, organ-like drone.
+      </p>
 
-      {/* Three examples */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <span className="font-mono text-[9px] text-zinc-500 uppercase block mb-1">// COUPLING DELAY</span>
-          <p className="text-zinc-350 text-sm font-sans font-light">
-            A delay set absurdly short starts behaving like a string.
-          </p>
-        </div>
-        <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <span className="font-mono text-[9px] text-zinc-500 uppercase block mb-1">// STATIC MODULATION</span>
-          <p className="text-zinc-350 text-sm font-sans font-light">
-            A flanger with the modulation frozen becomes a resonating tube.
-          </p>
-        </div>
-        <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <span className="font-mono text-[9px] text-zinc-500 uppercase block mb-1">// FEEDBACK LOOPS</span>
-          <p className="text-zinc-350 text-sm font-sans font-light">
-            A reverb fed back into itself can turn a tiny transient into an organ drone.
-          </p>
-        </div>
-      </div>
+      <h3 className="text-white font-display font-medium text-lg pt-2">Damping</h3>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          The trick is that real instruments don't ring forever. <br />
-          They lose energy. <br />
-          They damp.
-        </p>
+      <p>
+        Real resonating objects lose energy as they ring, and the high frequencies usually die first. A feedback loop
+        without that loss doesn't behave like an instrument: a raw delay loop with high feedback gives you a
+        buzzy, clicky tone that either dies abruptly or runs away into oscillation. The fix is to put a low-pass
+        filter inside the feedback path so each pass comes back slightly darker than the last. That is the core of
+        the Karplus-Strong plucked-string algorithm (see{' '}
+        <Link to="/archive/impossible-instruments" className={link}>Physical Modeling With Ordinary Effects</Link>),
+        and with it a transient turns into a pluck and a burst of noise turns into a pitched tone.
+      </p>
 
-        <p className="text-zinc-300 font-medium">
-          Without that loss, feedback doesn't sing. It just screams.
-        </p>
+      <h3 className="text-white font-display font-medium text-lg pt-2">Three places to start</h3>
 
-        <p>
-          A raw delay loop gives you clicks and runaway oscillation. But soften it a little. Put a filter in the feedback path. Let each repeat come back slightly darker than the last.
-        </p>
-      </div>
+      <p>
+        A micro-delay string:
+      </p>
 
-      <blockquote className="border-l-4 border-[#38bdf8]/50 bg-[#38bdf8]/5 p-5 text-zinc-350 font-mono text-sm leading-relaxed mb-8 italic">
-        Suddenly electronics start behaving like wood, metal, air, and string. <br /><br />
-        A transient becomes a pluck. <br />
-        Noise becomes a tone. <br />
-        An effect becomes an instrument.
-      </blockquote>
+      <ul className="list-disc pl-6 space-y-1.5 text-zinc-400 marker:text-[#38bdf8]/60">
+        <li>Set a delay between 1 and 30 ms. The pitch is roughly 1 / delay time, so this covers about 1000 Hz down to 33 Hz.</li>
+        <li>Push the feedback as high as you can without it running away.</li>
+        <li>Put a low-pass filter inside the feedback loop. A lower cutoff gives a darker, shorter-ringing string.</li>
+        <li>Feed it a rimshot or a single click.</li>
+        <li>Change the delay time to tune it, the way you'd tune a string.</li>
+      </ul>
 
-      {/* A few places to start */}
-      <div className="border border-zinc-900 bg-zinc-950/45 p-6 rounded-sm space-y-6 mb-10">
-        <h3 className="font-mono text-xs text-zinc-400 font-bold uppercase tracking-widest pb-3 border-b border-zinc-900/60 flex items-center gap-2">
-          <span className="text-[#38bdf8] font-black">//</span> A FEW PLACES TO START:
-        </h3>
+      <p>
+        A resonating flanger:
+      </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-          {/* 01 */}
-          <div className="space-y-3">
-            <div className="font-mono text-xs font-bold text-[#38bdf8]">
-              01 — MICRO-DELAY STRING
-            </div>
-            <div className="text-xs text-zinc-400 font-mono space-y-1 bg-black/30 p-3 border border-zinc-900/40 rounded-sm">
-              <p>• Set a delay somewhere between 1–30ms.</p>
-              <p>• Push the feedback as high as you dare.</p>
-              <p>• Put a low-pass filter inside the loop.</p>
-              <p>• Feed it a rimshot.</p>
-            </div>
-            <p className="text-xs text-zinc-300 font-sans font-light italic leading-relaxed">
-              Play the delay time like you're tuning a string.
-            </p>
-          </div>
+      <ul className="list-disc pl-6 space-y-1.5 text-zinc-400 marker:text-[#38bdf8]/60">
+        <li>Set the flanger's modulation depth or rate to zero so the delay time stays fixed.</li>
+        <li>Turn the feedback up high.</li>
+        <li>Send a short burst of noise through it.</li>
+        <li>Sweep the manual delay time while it rings. The pitch glides with it, a bit like moving a trombone slide.</li>
+      </ul>
 
-          {/* 02 */}
-          <div className="space-y-3">
-            <div className="font-mono text-xs font-bold text-[#38bdf8]">
-              02 — RESONATING FLANGER
-            </div>
-            <div className="text-xs text-zinc-400 font-mono space-y-1 bg-black/30 p-3 border border-zinc-900/40 rounded-sm">
-              <p>• Freeze the flanger's modulation.</p>
-              <p>• Crank the feedback.</p>
-              <p>• Send a tiny burst of noise through it.</p>
-            </div>
-            <p className="text-xs text-zinc-300 font-sans font-light italic leading-relaxed">
-              Sweep the manual delay time. <br /><br />
-              It's less like mixing and more like moving the slide on a brass instrument.
-            </p>
-          </div>
+      <p>
+        A feedback plate:
+      </p>
 
-          {/* 03 */}
-          <div className="space-y-3">
-            <div className="font-mono text-xs font-bold text-[#38bdf8]">
-              03 — SINGING PLATE
-            </div>
-            <div className="text-xs text-zinc-400 font-mono space-y-1 bg-black/30 p-3 border border-zinc-900/40 rounded-sm">
-              <p>• Take a long plate reverb.</p>
-              <p>• Create a filtered feedback path.</p>
-              <p>• Hit it with a short click.</p>
-            </div>
-            <p className="text-xs text-zinc-300 font-sans font-light italic leading-relaxed">
-              Listen as a room slowly forgets it's a room and decides it's a reed organ instead.
-            </p>
-          </div>
-        </div>
-      </div>
+      <ul className="list-disc pl-6 space-y-1.5 text-zinc-400 marker:text-[#38bdf8]/60">
+        <li>Start with a plate reverb with a long decay.</li>
+        <li>Route its output back into its input through a filter, for example a band-pass or low-pass on a return that feeds its own send.</li>
+        <li>Hit it with a short click.</li>
+        <li>Adjust the filter and the feedback level until the room character fades and a sustained, reed-organ-like tone takes over.</li>
+      </ul>
 
-      {/* Ending reflection */}
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          Maybe that's the fun of audio in the first place.
-        </p>
-        <p>
-          We spend years learning what tools are designed to do.
-        </p>
-        <p className="text-zinc-350 font-medium">
-          Then one day we ignore the manual and ask: <br />
-          <span className="text-white font-bold">"What happens if I play the effect instead?"</span>
-        </p>
-      </div>
+      <p>
+        All three recipes can run away at high feedback, so keep a limiter after them and the monitoring level low
+        while you set them up.
+      </p>
 
-      <div className="p-4 bg-zinc-950/70 border border-zinc-900 rounded-sm font-mono text-xs text-zinc-400 leading-relaxed">
-        <span className="text-[#38bdf8] font-bold">💡 SUMMARY:</span> And sometimes that's how you find your favorite synth hiding in the effects folder.
-      </div>
+      <p>
+        The lab below has eight buttons, one per process: resonant filter, delay, reverb, flanger, phaser, ring
+        modulator, frequency shifter and a bank of resonators. Most of them fire a 2 ms impulse into a small Web
+        Audio version of that effect (the frequency shifter button plays a short FM tone instead), and the output is
+        drawn as a waveform so you can see and hear how each one rings.
+      </p>
+
       {/* Interactive Lab Segment */}
       <div className="mt-8 border-t border-zinc-900 pt-8">
         <AudioPingPlayground />
       </div>
-    </>
+    </div>
   );
 }

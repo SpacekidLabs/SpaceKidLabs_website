@@ -33,7 +33,7 @@ function SiteIcon({ url, title }: { url: string; title: string }) {
 }
 
 export const meta: PostMeta = {
-  title: "Curated Resources & Bookmarks",
+  title: "Curated Resources and Bookmarks",
   slug: "resources",
   date: "2026-06-10",
   tags: ["RESOURCES", "BOOKMARKS"],
@@ -46,7 +46,7 @@ export default function Post() {
   return (
     <>
       <p className="mb-8 text-zinc-400 font-sans font-light leading-relaxed">
-        A collection of web synthesizers, DSP articles, specialized tuning tools, and esoteric archives that I study, use, or admire. Transferred from the main landing page to the archive.
+        Web synths, tuning tools, DSP articles and sample archives I keep coming back to, either to use or to learn from.
       </p>
 
       <div className="flex flex-col border-t border-zinc-900 border-l border-zinc-900">

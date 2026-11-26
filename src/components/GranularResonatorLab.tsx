@@ -50,6 +50,7 @@ export function GranularResonatorLab() {
   // Resonator Node structures
   const biquadFiltersRef = useRef<BiquadFilterNode[]>([]);
   const feedbackGainNodesRef = useRef<GainNode[]>([]);
+  const feedbackDelaysRef = useRef<DelayNode[]>([]);
   
   // Keep live slider parameters accessible to fast audio loop
   const paramsRef = useRef({
@@ -90,6 +91,7 @@ export function GranularResonatorLab() {
     mainGainNodeRef.current = null;
     biquadFiltersRef.current = [];
     feedbackGainNodesRef.current = [];
+    feedbackDelaysRef.current = [];
 
     setIsPlaying(false);
     setParticles([]);
@@ -162,6 +164,7 @@ export function GranularResonatorLab() {
           // Slide smoothly towards the target frequencies
           filterNode.frequency.setTargetAtTime(harmonic.freq, activeCtx.currentTime, 0.08);
           filterNode.Q.setTargetAtTime(resonanceQ, activeCtx.currentTime, 0.06);
+          feedbackDelaysRef.current[idx]?.delayTime.setTargetAtTime(1 / harmonic.freq, activeCtx.currentTime, 0.08);
         }
       });
     }
@@ -329,6 +332,7 @@ export function GranularResonatorLab() {
       // Each harmonic maps to a bandpass filtered path with positive feedback loops
       biquadFiltersRef.current = [];
       feedbackGainNodesRef.current = [];
+      feedbackDelaysRef.current = [];
 
       currentHarmonics.forEach((harmonic) => {
         // High-Q bandpass
@@ -340,8 +344,13 @@ export function GranularResonatorLab() {
         const feedbackGain = ctx.createGain();
         feedbackGain.gain.setValueAtTime(feedbackLevel * 0.9, ctx.currentTime);
 
-        // Positive feedback loop: Filter -> FeedbackGain -> Filter
-        filter.connect(feedbackGain);
+        // Feedback loop: Filter -> Delay (one period) -> FeedbackGain -> Filter.
+        // Web Audio mutes any feedback cycle that has no DelayNode in it, so without the delay the
+        // resonators were silent. A delay of one period also tunes the loop to the filter's own pitch.
+        const feedbackDelay = ctx.createDelay(0.1);
+        feedbackDelay.delayTime.setValueAtTime(1 / harmonic.freq, ctx.currentTime);
+        filter.connect(feedbackDelay);
+        feedbackDelay.connect(feedbackGain);
         feedbackGain.connect(filter);
 
         // Blend with master output
@@ -349,6 +358,7 @@ export function GranularResonatorLab() {
 
         biquadFiltersRef.current.push(filter);
         feedbackGainNodesRef.current.push(feedbackGain);
+        feedbackDelaysRef.current.push(feedbackDelay);
       });
 
       setIsPlaying(true);

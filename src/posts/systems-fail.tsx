@@ -7,51 +7,37 @@ export const meta: PostMeta = {
   tags: ["DEGRADATION", "GLITCH", "DSP", "ARTIFACTS", "AESTHETICS"],
   index: 15,
   accentColor: "#ef4444",
+  description: "A short note on why the sounds equipment makes when it breaks are often more interesting than the sounds it was designed to make.",
 };
 
 export default function Post() {
   return (
-    <>
-      <p className="text-xl text-zinc-350 leading-relaxed mb-6 font-sans font-light">
-        We spend a lot of time teaching machines how to behave.
+    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+      <p>
+        A lot of audio work is about making equipment behave: updating drivers, removing hum, raising the buffer
+        size to stop dropouts, replacing a noisy cable, editing out clicks, smoothing edges. That work is
+        necessary, but the thing being removed is sometimes the most interesting sound in the room.
       </p>
 
-      <p className="text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        Update the drivers. Remove the hum. Increase the buffer. Replace the cable. Get rid of the clicks. Smooth the edges.
+      <p>
+        Some examples of what I mean: a plugin that crashes and outputs a burst of garbage before it dies, a
+        speaker cone driven past its limits so it starts to distort, tape that has stretched and wavers in pitch,
+        a digital process fed input it wasn't designed for. In each case the system stops doing its job cleanly,
+        and the way it fails says something about how it works. A tape machine and a buffer underrun both fail,
+        but they sound nothing alike.
       </p>
 
-      <blockquote className="border-l-4 border-[#ef4444]/60 bg-[#ef4444]/5 p-5 text-zinc-300 font-mono text-sm leading-relaxed mb-8 italic">
-        But sometimes the interesting part is the thing you're trying to remove.
-      </blockquote>
+      <p>
+        A system that works perfectly is close to inaudible, which is the point of it. You mostly learn what it
+        sounds like when it's pushed until it breaks. This idea isn't new. Kim Cascone wrote about it in "The
+        Aesthetics of Failure" (<em>Computer Music Journal</em>, 2000), looking at musicians who built work out of
+        glitches, clicks and other digital errors.
+      </p>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          A plugin crashes and spits out something impossible. A speaker cone starts choking on itself. A tape stretches. A digital process falls apart under conditions it wasn't built to survive.
-        </p>
-        <p className="text-white font-medium text-lg tracking-tight">
-          That's not the machine failing to speak. <br />
-          <span className="text-[#ef4444] font-bold">That's the machine forgetting its manners.</span>
-        </p>
-        <p>
-          Perfect systems don't really tell you much. They just do their job. <br />
-          You only hear their accent when they break.
-        </p>
-      </div>
-
-      <div className="py-6 border-t border-b border-zinc-900 text-center max-w-lg mx-auto my-8">
-        <p className="text-sm text-zinc-300 italic font-mono">
-          "Perfect machinery is mute. It only starts talking when the gears begin to strip."
-        </p>
-      </div>
-
-      <div className="space-y-4 text-zinc-400 font-sans font-light leading-relaxed mb-4">
-        <p>
-          Build for perfection if you want to.
-        </p>
-        <p className="text-zinc-300 font-medium">
-          Just don't ignore the seams when they start showing.
-        </p>
-      </div>
-    </>
+      <p>
+        I'm not arguing against building things that work. I just think it's worth recording the failures when they
+        happen, and listening to them before deciding they're only problems to fix.
+      </p>
+    </div>
   );
 }

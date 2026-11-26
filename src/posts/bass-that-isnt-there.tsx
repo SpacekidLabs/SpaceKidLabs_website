@@ -4,67 +4,57 @@ import type { PostMeta } from './types';
 const MissingFundamental = lazyLab(() => import('../components/MissingFundamental'), 'MissingFundamental');
 
 export const meta: PostMeta = {
-  title: "The Bass That Isn't There",
+  title: "The Missing Fundamental",
   slug: "bass-that-isnt-there",
   date: "2026-06-20",
   tags: ["PSYCHOACOUSTICS", "BASS", "AESTHETICS", "SOUND DESIGN", "CREATIVE PROCESS"],
   index: 22,
   accentColor: "#3b82f6",
+  description: "Harmonics without their fundamental still sound like a note at the fundamental's pitch.",
 };
+
+const link = "text-[#3b82f6] hover:underline";
 
 export default function Post() {
   return (
-    <>
-      <p className="text-xl text-zinc-200 leading-relaxed mb-6 font-sans font-light">
-        Sometimes the strongest note in a piece of music isn't actually there.
+    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+      <p>
+        If you play the harmonics of a note but leave out the fundamental, you still hear a pitch at the fundamental.
+        Sine waves at 200, 300, 400 and 500 Hz together sound like a note at 100 Hz, even though there is no energy at
+        100 Hz in the signal. This is called the missing fundamental, or residue pitch, a term from Jan Schouten's work
+        around 1940. The{' '}
+        <a href="https://en.wikipedia.org/wiki/Missing_fundamental" target="_blank" rel="noreferrer" className={link}>Wikipedia article</a>{' '}
+        covers the history and the competing explanations.
       </p>
 
-      <blockquote className="border-l-4 border-[#3b82f6]/60 bg-[#3b82f6]/5 p-5 text-zinc-350 font-sans text-sm leading-relaxed mb-8 font-light italic">
-        Play a series of harmonics above a low fundamental and your brain will often reconstruct the missing pitch. You hear the weight of a bass note that never physically exists in the signal. The ear fills in the blank.
-      </blockquote>
+      <p>
+        What you get back is the pitch, not the physical low end. The note sounds like it's at 100 Hz, but there is
+        nothing at 100 Hz to move air or shake a room, and the timbre is thinner than with the fundamental present.
+      </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 max-w-xl">
-        <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-          <span className="block text-[#3b82f6] font-mono font-bold text-xs mb-1 uppercase tracking-wider">// Missing Fundamental</span>
-          <p className="text-zinc-400 font-sans text-sm font-light">
-            The acoustic phenomenon where the brain perceives a fundamental pitch even when only its overtones/harmonics are present.
-          </p>
-        </div>
-        <div className="p-4 bg-zinc-950/40 border border-[#3b82f6]/10 rounded-sm">
-          <span className="block text-[#3b82f6] font-mono font-bold text-xs mb-1 uppercase tracking-wider">// Active Perception</span>
-          <p className="text-zinc-400 font-sans text-sm font-light">
-            The auditory system is constantly patching gaps, predicting pathways, and inventing continuity from incomplete source material.
-          </p>
-        </div>
-      </div>
+      <p>
+        This is why basslines still read on small speakers. A phone speaker can't reproduce 40 Hz, but if the bass
+        sound has strong upper harmonics, you can still follow the bass notes. Psychoacoustic bass plugins work on the
+        same principle: they generate harmonics of the low end so that the bass pitch survives on playback systems that
+        can't reproduce the fundamental.
+      </p>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          It's a reminder that listening isn't passive. We don't perceive sound exactly as it physically arrives; we perceive a useful interpretation of it.
-        </p>
+      <p>
+        For production and instrument design, I find it a useful question to ask how little of a sound needs to be
+        there for the listener to hear the rest. The missing fundamental is the clearest example, but the same thinking
+        applies whenever you thin out a sound and check whether it still reads.
+      </p>
 
-        <p>
-          A cheap phone speaker can't reproduce 40 Hz, yet certain basslines still feel incredibly deep. A tiny radio can imply a physical mass it has absolutely no hardware right to possess. Somewhere between physical air compression waves and mental representation, the listener becomes an active collaborator.
-        </p>
-
-        <p className="text-zinc-300 font-normal leading-relaxed">
-          As producers and instrument designers, this shifts our focus. Instead of asking, <em className="text-white">"How do I generate this sound?"</em>, we can ask:
-        </p>
-
-        <p className="text-[#3b82f6] font-mono text-base md:text-lg tracking-tight bg-[#3b82f6]/5 px-4 py-3 border border-[#3b82f6]/20 rounded-sm italic">
-          "How little information do I need before the listener creates the rest?"
-        </p>
-
-        <p className="text-white font-medium text-lg leading-snug pt-2">
-          Sometimes the most powerful frequencies are the ones you never play. <br />
-          <span className="text-[#3b82f6] font-mono font-medium">// Spaces defined by their edges.</span>
-        </p>
-      </div>
+      <p>
+        The lab builds a sawtooth-like tone from eight sine harmonics with amplitudes of 1/n. You can set the
+        fundamental between 70 and 220 Hz and switch each harmonic on or off; try turning off the first one and
+        listening for whether the pitch changes.
+      </p>
 
       {/* Interactive Lab Segment */}
       <div className="mt-8 border-t border-zinc-900 pt-8">
         <MissingFundamental />
       </div>
-    </>
+    </div>
   );
 }

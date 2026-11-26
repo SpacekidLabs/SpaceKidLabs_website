@@ -713,7 +713,7 @@ export function DatabendJpg() {
           <button 
             onClick={triggerScreenshotDownload}
             className="px-3 py-1.5 bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-850 hover:border-cyan-500 text-zinc-300 hover:text-white font-mono text-[9px] uppercase font-bold tracking-wider rounded-sm transition-all flex items-center gap-1.5 cursor-pointer outline-none shadow-md"
-            title="Download glitch JPG"
+            title="Download as PNG"
           >
             <Download className="w-3.5 h-3.5 text-cyan-400" />
             <span className="hidden sm:inline">Export PNG</span>

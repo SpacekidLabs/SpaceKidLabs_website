@@ -10,123 +10,74 @@ export const meta: PostMeta = {
   tags: ["PHYSICS", "DSP", "CHAOS"],
   index: 5,
   accentColor: "#ff5500",
+  description: "An audio effect that drives a simulated double pendulum with an input signal and listens to the lower weight.",
 };
+
+const link = "text-[#ff5500] hover:underline";
 
 export default function Post() {
   return (
-    <>
-      <div className="space-y-6 text-zinc-300 font-sans font-light leading-relaxed mb-8">
-        <p className="text-xl text-zinc-150 font-mono italic">
-          At some point I had a ridiculous thought:
-        </p>
-        <p className="text-lg text-white font-medium pl-4 border-l-2 border-[#ff5500]">
-          What if you could play a double pendulum?
-        </p>
-        <p>
-          You know the one. The classic physics demonstration that's always used to explain chaos theory.
-        </p>
-        <ul className="space-y-1 font-mono text-xs text-zinc-400 pl-4 border-l border-zinc-900/60">
-          <li>• Two rods.</li>
-          <li>• Two weights.</li>
-          <li>• A system so sensitive that tiny differences in starting conditions send it down completely different paths.</li>
-        </ul>
-        <p className="italic text-zinc-400">
-          The butterfly effect hanging from a hook.
-        </p>
-        <p>
-          It wasn't designed to make music. <br />
-          <span className="text-white font-medium">Which is exactly why I wanted to try.</span>
-        </p>
-      </div>
+    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+      <p>
+        This effect feeds audio into a simulated{' '}
+        <a href="https://en.wikipedia.org/wiki/Double_pendulum" target="_blank" rel="noreferrer" className={link}>double pendulum</a>{' '}
+        and outputs the motion of the bottom weight. A double pendulum is two rods and two weights, one hanging from the
+        other. At small swings it behaves almost linearly and settles into a mix of two regular modes, but with enough
+        energy it becomes chaotic: tiny differences in the starting conditions grow until the two runs have nothing in
+        common. It's the standard demonstration of chaos, and it was never meant to make sound, which is why I wanted to
+        try it.
+      </p>
 
-      <div className="border border-zinc-900/65 bg-black/45 p-5 rounded-sm space-y-4 mb-8">
-        <h3 className="font-mono text-xs font-bold text-[#ff5500]">// STRANGELY SIMPLE SETUP</h3>
-        <div className="space-y-4 text-sm text-zinc-300 font-sans font-light leading-relaxed">
-          <p>
-            Feed sound into the top anchor point:
-          </p>
-          <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono text-zinc-400">
-            <div className="p-2.5 bg-zinc-950 border border-zinc-900 rounded-sm">🎸 Guitar</div>
-            <div className="p-2.5 bg-zinc-950 border border-zinc-900 rounded-sm">🎙️ Mic Tap</div>
-            <div className="p-2.5 bg-zinc-950 border border-zinc-900 rounded-sm">🥄 Wooden Spoon</div>
-          </div>
-          <p>
-            Let that audio yank the pendulum around, then listen to the motion of the bottom weight.
-          </p>
-          <div className="p-3 bg-zinc-950/80 border border-zinc-900 rounded-sm font-mono text-xs text-zinc-400">
-            <span className="text-[#ff5500] block font-bold mb-1">// THE PENDULUM BECOMES THE CIRCUIT</span>
-            Input sound goes in. Chaos comes out.
-          </div>
-        </div>
-      </div>
+      <p>
+        The setup is simple. The input signal (a guitar, a tapped microphone, a wooden spoon) moves the top anchor point
+        back and forth, that motion drags the pendulum around, and the position of the lower weight is the output.
+      </p>
 
-      <div className="space-y-6 text-zinc-300 font-sans font-light leading-relaxed mb-8">
-        <p>
-          Of course, reality immediately objects. Real pendulums are slow. Audio isn't.
-        </p>
-        <p>
-          A note vibrating at hundreds or thousands of cycles per second would barely register.
-        </p>
-        <p className="text-zinc-100 font-medium">
-          So the laws of physics had to become suggestions:
-        </p>
+      <h3 className="text-white font-display font-medium text-lg pt-2">Making a pendulum fast enough</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-zinc-400 font-sans font-light leading-relaxed my-6">
-          <div className="p-4 bg-zinc-950/45 border border-zinc-900/60 rounded-sm">
-            <span className="font-mono text-[10px] text-[#ff5500] font-bold block mb-2">// "BLACK HOLE" GRAVITY</span>
-            <p className="text-xs leading-relaxed">
-              Gravity got turned up to absurd levels. Like a black hole pretending to be Earth to let the rods drop fast enough.
-            </p>
-          </div>
-          <div className="p-4 bg-zinc-950/45 border border-zinc-900/60 rounded-sm">
-            <span className="font-mono text-[10px] text-[#ff5500] font-bold block mb-2">// ENVELOPE FRICTION</span>
-            <p className="text-xs leading-relaxed">
-              Friction stopped being an engineering nuisance and became the sound's decay envelope. Too little and it rings forever; too much and it loses its voice.
-            </p>
-          </div>
-          <div className="p-4 bg-zinc-950/45 border border-zinc-900/60 rounded-sm">
-            <span className="font-mono text-[10px] text-[#ff5500] font-bold block mb-2">// INTENTIONAL GLITCHING</span>
-            <p className="text-xs leading-relaxed">
-              When the energy builds up faster than the simulation can handle, the whole thing glitches out. Sometimes the pendulum has to be rescued from itself. Those moments have a sound, too.
-            </p>
-          </div>
-        </div>
-      </div>
+      <p>
+        Real pendulums are slow. A simple pendulum's natural frequency is √(g/L)/2π, which for a 1 m rod under Earth's
+        gravity is about 0.5 Hz. Audio in the hundreds or thousands of Hz would barely move it. To get a 1 m pendulum to
+        swing at 220 Hz you would need gravity about 195,000 times stronger than Earth's, so the simulation stops being
+        realistic:
+      </p>
 
-      <blockquote className="border-l-4 border-[#ff5500]/50 bg-[#ff5500]/5 p-5 text-zinc-300 font-mono text-sm leading-relaxed mb-8 italic">
-        By changing the parameters, the instrument changes its personality: <br /><br />
-        • Shorter rods shift the pitch. <br />
-        • More damping softens the chaos. <br />
-        • Push the gravity high enough and it starts behaving less like a pendulum and more like a strange resonant oscillator. <br /><br />
-        Tap a microphone and it answers back like a marimba. Feed it a continuous guitar signal and it dances around the notes, never responding the same way twice. <br /><br />
-        The same input. Different futures.
-      </blockquote>
+      <ul className="list-disc pl-6 space-y-1.5 text-zinc-400 marker:text-[#ff5500]/60">
+        <li><span className="text-zinc-200">Gravity</span> is turned up by orders of magnitude so the rods move at audio rate.</li>
+        <li><span className="text-zinc-200">Rod length</span> sets the pitch alongside gravity: shorter rods swing faster.</li>
+        <li><span className="text-zinc-200">Friction</span> becomes the decay envelope. Too little and the pendulum rings forever; too much and it barely responds.</li>
+      </ul>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          I think that's what fascinates me about chaotic systems.
-        </p>
-        <p className="text-white text-lg font-medium">
-          People often describe them as unpredictable. But they aren't random.
-        </p>
-        <p className="text-[#ff5500] font-mono text-sm">
-          They're just sensitive. Tiny differences matter.
-        </p>
-        <p>
-          A slightly harder tap. A different starting angle. A fraction of a second. And suddenly the outcome becomes something else entirely.
-        </p>
-        <p>
-          Maybe instruments have always worked this way. Tiny gestures becoming sound. Cause becoming character. Physics becoming expression.
-        </p>
-        <p className="italic text-zinc-300">
-          I just happen to be using a pendulum that thinks it's a synthesizer.
-        </p>
-      </div>
+      <p>
+        When energy builds up faster than the simulation can handle, the numbers blow up and the pendulum has to be reset.
+        Those failures have a sound of their own too.
+      </p>
 
-      {/* Visual representation of double pendulum */}
-      <div className="pt-8 border-t border-zinc-900">
+      <h3 className="text-white font-display font-medium text-lg pt-2">How it responds</h3>
+
+      <p>
+        Shorter rods raise the pitch. More damping pulls energy out of the system and keeps it in the more regular regime,
+        so it sounds less chaotic. With very high gravity it behaves less like a pendulum and more like a resonant
+        oscillator. Tapping a microphone gives a short, pitched response a bit like a marimba, while a continuous guitar
+        signal makes it wander around the notes without responding the same way twice.
+      </p>
+
+      <p>
+        That last point is what interests me about chaotic systems. They're often described as unpredictable, but they
+        aren't random: the pendulum is completely deterministic, it's just very sensitive. A slightly harder tap or a
+        slightly different starting angle leads somewhere else. Acoustic instruments also turn small differences in a
+        gesture into different sounds, and this is a more extreme version of that.
+      </p>
+
+      <p>
+        The animation below shows the pendulum's geometry. Hover over it to set it moving. It's a visual sketch rather than
+        the simulation itself: the angles are driven by sums of sine waves, not by the equations of motion, and it makes
+        no sound.
+      </p>
+
+      <div className="mt-8 border-t border-zinc-900 pt-8">
         <DoublePendulum />
       </div>
-    </>
+    </div>
   );
 }

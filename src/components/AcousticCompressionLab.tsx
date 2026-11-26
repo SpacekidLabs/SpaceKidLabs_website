@@ -676,7 +676,7 @@ export function AcousticCompressionLab() {
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
                 <span className="text-zinc-400">Acoustic Temporal Update Speed</span>
-                <span className="text-[#6366f1] font-bold">{temporalResolution} Hz</span>
+                <span className="text-[#6366f1] font-bold">{(temporalResolution / 1.5).toFixed(1)} Hz</span>
               </div>
               <input
                 aria-label="Acoustic Temporal Update Speed"

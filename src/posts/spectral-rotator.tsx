@@ -8,101 +8,75 @@ export const meta: PostMeta = {
   tags: ["SPECTRAL", "DSP", "THEORY"],
   index: 3,
   accentColor: "#00e5ff",
+  description: "Shift a sound's spectrum around in a circle, process it, then shift it back, and keep the traces the processing leaves.",
 };
+
+const link = "text-[#00e5ff] hover:underline";
 
 export default function Post() {
   return (
-    <>
-      <div className="space-y-6 text-zinc-300 font-sans font-light leading-relaxed mb-8">
-        <p className="text-xl text-zinc-150 font-mono italic">
-          I had a weird idea.
-        </p>
-        <p className="text-lg text-white font-medium pl-4 border-l-2 border-[#00e5ff]">
-          What if you took a sound apart into its frequency bins, slid the entire spectrum sideways so that anything falling off the top wrapped back around to the bottom...
-        </p>
-        <p className="font-mono text-xs text-[#00e5ff]">
-          ...did some processing...
-        </p>
-        <p className="text-white text-lg font-medium">
-          ...and then put everything back where it belonged?
-        </p>
-        <p>
-          Not as an effect. Just as an experiment.
-        </p>
-      </div>
+    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+      <p>
+        Spectral rotation is an experiment rather than a finished effect. Take a short-time Fourier transform (STFT) of a
+        sound, shift every frame's spectrum up by n bins so that anything pushed past the Nyquist frequency wraps around to
+        the bottom, resynthesise, run the result through an ordinary effect, and then do the same shift in reverse to put
+        the spectrum back where it was.
+      </p>
 
-      <div className="border border-zinc-900/65 bg-black/45 p-5 rounded-sm space-y-4 mb-8">
-        <h3 className="font-mono text-xs font-bold text-[#00e5ff]">// THE IMMEDIATE OBJECTION</h3>
-        <div className="space-y-3 text-sm text-zinc-300 font-sans font-light leading-relaxed">
-          <p>
-            If you stop after the first step, it mostly sounds terrible.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
-            <div className="p-3 bg-zinc-950/45 border border-zinc-900/60 rounded-sm">
-              🗣️ A voice turns metallic.
-            </div>
-            <div className="p-3 bg-zinc-950/45 border border-zinc-900/60 rounded-sm">
-              🎻 A violin loses the wood and string.
-            </div>
-            <div className="p-3 bg-zinc-950/45 border border-zinc-900/60 rounded-sm">
-              🎹 Pianos become awkward overtones.
-            </div>
-          </div>
-          <p>
-            Interesting for a few seconds. Then you move on.
-          </p>
-          <div className="p-3.5 bg-zinc-950/80 border border-zinc-900 rounded-sm font-mono text-xs text-zinc-400">
-            But I don't think the rotated sound is the point. <br />
-            The rotated sound is just the place where the work happens.
-          </div>
-        </div>
-      </div>
+      <p>
+        Shifting by n bins moves every partial by the same number of hertz, n times the bin spacing. With a 2048-point FFT
+        at 48 kHz the bin spacing is about 23.4 Hz, so a shift of 40 bins moves everything up by about 940 Hz. This is
+        frequency shifting, not pitch shifting: the ratios between harmonics are broken, and whatever wraps around comes
+        back as inharmonic low partials. For a real signal you rotate only the bins from 0 to N/2 and rebuild the mirrored
+        negative-frequency half, otherwise the inverse FFT doesn't give a real signal.
+      </p>
 
-      <div className="space-y-6 text-zinc-300 font-sans font-light leading-relaxed mb-8">
-        <p>
-          Take a sound. Scramble its harmonic geography. Move all of its frequencies into places they were never supposed to exist.
-        </p>
-        <p className="text-zinc-100 font-medium font-mono text-sm">// THEN PROCESS IT:</p>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center text-xs font-mono text-zinc-400">
-          <div className="p-2 bg-white/[0.02] border border-white/5 rounded-sm">Distort</div>
-          <div className="p-2 bg-white/[0.02] border border-white/5 rounded-sm">Compress</div>
-          <div className="p-2 bg-white/[0.02] border border-white/5 rounded-sm">Filter</div>
-          <div className="p-2 bg-white/[0.02] border border-white/5 rounded-sm">Saturate</div>
-          <div className="p-2 bg-white/[0.02] border border-white/5 rounded-sm">Any Other</div>
-        </div>
-        <p>
-          And when you're done... undo the whole thing. Put the spectrum back.
-        </p>
-      </div>
+      <h3 className="text-white font-display font-medium text-lg pt-2">The rotated sound on its own</h3>
 
-      <blockquote className="border-l-4 border-[#00e5ff]/50 bg-[#00e5ff]/5 p-5 text-zinc-300 font-mono text-sm leading-relaxed mb-8 italic">
-        The original sound returns. Mostly. <br /><br />
-        But the processing doesn't undo itself. It leaves traces. <br /><br />
-        The effects have acted on relationships that don't normally exist. They've carved into the sound from an angle you couldn't reach otherwise. <br /><br />
-        It's like taking an object apart, twisting it ninety degrees, cutting into it, and rebuilding it. <br /><br />
-        You don't keep the twist. You keep the scars.
-      </blockquote>
+      <p>
+        Heard by itself, the rotated sound is mostly unpleasant. A voice turns metallic, a violin loses the sound of wood
+        and string, and a piano becomes a set of awkward overtones. It's interesting for a few seconds. I don't think it's
+        the point, though; it's just the place where the processing happens.
+      </p>
 
-      <div className="space-y-6 text-zinc-400 font-sans font-light leading-relaxed mb-8">
-        <p>
-          I love ideas like this because they're hard to justify. There's no historical reason to do it. No "correct" application. It's probably inefficient. It might sound awful nine times out of ten.
-        </p>
-        <p className="text-white text-lg font-medium">
-          But every now and then you stumble into transformations that don't feel like filtering, distortion, or compression anymore.
-        </p>
-        <p className="text-[#00e5ff] font-mono text-sm">
-          They feel like impossible versions of those things.
-        </p>
-        <p>
-          Not because you invented a new effect. But because you temporarily changed the rules of the world the effect lived in.
-        </p>
-        <p className="italic text-zinc-300">
-          Sometimes that's enough. Sometimes changing the perspective is all it takes to find a sound nobody was looking for.
-        </p>
-      </div>
+      <h3 className="text-white font-display font-medium text-lg pt-2">Process, then rotate back</h3>
 
-      {/* Visual Representation of 90 Degree Rotation */}
-      <div className="pt-8 border-t border-zinc-900 space-y-6">
+      <p>
+        Between the two rotations you can put any effect: distortion, compression, filtering, saturation. When you rotate
+        back, the original sound mostly returns, but the processing doesn't undo itself. What it leaves depends on the
+        kind of effect:
+      </p>
+
+      <ul className="list-disc pl-6 space-y-1.5 text-zinc-400 marker:text-[#00e5ff]/60">
+        <li><span className="text-zinc-200">Filters and EQ</span> are linear, so after rotating back you get the same filter with its response moved, and possibly wrapped, along the frequency axis. Useful, but predictable.</li>
+        <li><span className="text-zinc-200">Distortion and saturation</span> add harmonics and intermodulation products of the rotated partials. Rotating back shifts these by the same amount as everything else, so they no longer sit on the harmonics of the original.</li>
+        <li><span className="text-zinc-200">Compression</span> reacts to the envelope of the rotated signal, which isn't the envelope of the original, so the gain changes land in unexpected places.</li>
+      </ul>
+
+      <p>
+        The nonlinear effects are the interesting ones, because they act on relationships between partials that don't
+        exist in the original sound. A practical problem is phase: shifting by n bins in each frame independently doesn't
+        line up from one frame to the next unless you also advance the phase by 2πnH/N per hop, where H is the hop size.
+        Without that correction you get roughness at the frame rate on top of whatever the effect does.
+      </p>
+
+      <p>
+        I like ideas like this partly because they're hard to justify. There's no historical reason to do it, no correct
+        application, it's computationally wasteful, and most of the time the result sounds bad. Occasionally, though, it
+        produces something that doesn't quite sound like filtering, distortion or compression any more, because the effect
+        was applied to a rearranged version of the sound.
+      </p>
+
+      <p>
+        The figure below shows a stronger form of the idea: rotating the whole time-frequency plane by 90°, which is what
+        the Fourier transform does. Under that rotation a click, which is one instant at all frequencies, becomes a steady
+        tone, which is one frequency at all times. The{' '}
+        <a href="https://en.wikipedia.org/wiki/Fractional_Fourier_transform" target="_blank" rel="noreferrer" className={link}>fractional Fourier transform</a>{' '}
+        generalises this to any angle. The bin shift described above is much milder: it only slides the spectrum along the
+        frequency axis.
+      </p>
+
+      <div className="mt-8 border-t border-zinc-900 pt-8 space-y-6">
         <div className="w-full bg-[#111] border border-zinc-800 p-8 rounded relative overflow-hidden flex flex-col items-center justify-center min-h-[350px]">
           <div className="text-xs font-mono text-zinc-500 absolute top-6 left-6 tracking-widest uppercase">Visual: 90° Axis Rotation</div>
 
@@ -136,12 +110,16 @@ export default function Post() {
           </svg>
         </div>
 
+        <p>
+          There's an experimental browser version of the effect here:
+        </p>
+
         <div className="flex justify-center">
           <a href="https://spectralrotatorfx.netlify.app" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[#00e5ff] hover:text-[#00e5ff]/80 transition-colors font-mono text-sm border border-[#00e5ff]/20 px-4 py-2 rounded-sm bg-[#00e5ff]/5">
-             LAUNCH EXPERIMENTAL SPECTRAL ROTATOR FX <ExternalLink className="w-4 h-4" />
+            Open Spectral Rotator FX <ExternalLink className="w-4 h-4" />
           </a>
         </div>
       </div>
-    </>
+    </div>
   );
 }
