@@ -58,6 +58,10 @@ Copy `.env.example` to `.env.local` if you need them. The site itself doesn't cu
 
 ## Deploying
 
+**Netlify (live site).** The site deploys to Netlify from this GitHub repo on every push to `main`. `netlify.toml` builds the frontend into `dist/` and sends every route to the React app. On Netlify the audio proxy runs as a Netlify Function (`netlify/functions/proxy-audio.mts`) instead of `server.ts`.
+
+**Your own Node server.**
+
 ```bash
 npm run build
 NODE_ENV=production npm start
