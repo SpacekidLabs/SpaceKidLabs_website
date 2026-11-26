@@ -11,9 +11,10 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Send every page route to the React app (client-side routing).
+# Pages are pre-rendered to dist/<path>.html (scripts/prerender.ts) and served directly.
+# Any other URL gets the empty app shell, which shows the 404 page.
 # /api/proxy-audio is handled by netlify/functions/proxy-audio.mts first.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/shell.html"
   status = 200

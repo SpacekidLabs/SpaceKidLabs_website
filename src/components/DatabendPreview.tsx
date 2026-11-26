@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
+import { seededRandom } from '../lib/seededRandom';
 import { Play, Square, Scissors, Move, Folder, Ban, Copy, Trash2, Undo, Redo } from 'lucide-react';
 
 export function DatabendPreview() {
   const mainWaveform = useMemo(() => {
+    const random = seededRandom(1);
     let path = "M 0 100 ";
     for (let i = 0; i <= 1000; i += 2) {
       let range = 2;
@@ -31,14 +33,15 @@ export function DatabendPreview() {
       if (i > 900 && i < 950) range = 50 * Math.max(0, 1 - (i - 900) / 50);
 
       // Random spikes
-      const spike = Math.random() * range;
+      const spike = random() * range;
       const y = 100 + (i % 4 === 0 ? spike : -spike);
-      path += `L ${i} ${y} `;
+      path += `L ${i} ${y.toFixed(1)} `;
     }
     return path;
   }, []);
 
   const secondaryWaveform = useMemo(() => {
+    const random = seededRandom(2);
     let path = "M 0 100 ";
     for (let i = 0; i <= 1000; i += 1) {
       let range = 1;
@@ -50,14 +53,15 @@ export function DatabendPreview() {
       if (i > 650 && i < 680) range = 25;
       if (i > 900 && i < 950) range = 35 * Math.max(0, 1 - (i - 900) / 50);
 
-      const spike = (Math.random() * 0.8 + 0.2) * range;
+      const spike = (random() * 0.8 + 0.2) * range;
       const y = 100 + (i % 2 === 0 ? spike : -spike);
-      path += `L ${i} ${y} `;
+      path += `L ${i} ${y.toFixed(1)} `;
     }
     return path;
   }, []);
 
   const miniWaveform = useMemo(() => {
+    const random = seededRandom(3);
     let path = "M 0 20 ";
     for (let i = 0; i <= 1000; i += 4) {
       let range = 2;
@@ -66,9 +70,9 @@ export function DatabendPreview() {
       if (i > 450 && i < 600) range = 14 * Math.max(0, 1 - (i - 450) / 150);
       if (i > 700 && i < 850) range = 12 * Math.max(0, 1 - (i - 700) / 150);
       
-      const spike = Math.random() * range;
+      const spike = random() * range;
       const y = 20 + (i % 8 === 0 ? spike : -spike);
-      path += `L ${i} ${y} `;
+      path += `L ${i} ${y.toFixed(1)} `;
     }
     return path;
   }, []);

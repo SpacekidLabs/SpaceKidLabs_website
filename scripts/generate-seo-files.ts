@@ -2,8 +2,7 @@
  * Runs after `vite build`: writes dist/robots.txt and dist/sitemap.xml.
  *
  * The archive post list is read from src/posts (through Vite, so it's the exact same data the site uses).
- * The site address comes from Netlify's URL variable (the site's main address, including a custom domain),
- * with a fallback for local builds.
+ * The site address comes from scripts/site.ts.
  *
  * Usage: npx tsx scripts/generate-seo-files.ts
  */
@@ -11,12 +10,10 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createServer } from 'vite';
 import type { Post } from '../src/posts';
+import { SITE_URL, STATIC_PAGES as PAGES } from './site';
 
-const SITE_URL = (process.env.URL || 'https://spacekidlabs.netlify.app').replace(/\/$/, '');
 const DIST = resolve(import.meta.dirname, '..', 'dist');
-
-/** Pages that aren't archive posts. Keep in sync with the routes in src/App.tsx. */
-const STATIC_PAGES = ['/', '/archive', '/samples', '/services', '/download', '/waveset-quantizer'];
+const STATIC_PAGES = PAGES.map(p => p.path);
 
 async function loadPosts(): Promise<Post[]> {
   const vite = await createServer({

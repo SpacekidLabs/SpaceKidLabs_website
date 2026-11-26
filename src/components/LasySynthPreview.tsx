@@ -1,5 +1,9 @@
 import React from 'react';
 import { Play, Download } from 'lucide-react';
+import { seededRandom } from '../lib/seededRandom';
+
+// Fixed pattern for the decorative rules grid (same on every render and in the pre-rendered HTML).
+const RULE_LEVELS = (() => { const r = seededRandom(7); return Array.from({ length: 24 }, () => Math.floor(r() * 6)); })();
 
 export function LasySynthPreview() {
   return (
@@ -110,7 +114,7 @@ export function LasySynthPreview() {
           <div className="grid grid-cols-4 gap-1.5 flex-1">
             {Array.from({ length: 24 }).map((_, i) => {
               const heights = ['100%', '30%', '50%', '80%', '10%', '0%'];
-              const height = heights[Math.floor(Math.random() * heights.length)];
+              const height = heights[RULE_LEVELS[i]];
               return (
                 <div key={i} className="bg-zinc-900 rounded-[2px] relative overflow-hidden border border-zinc-800/50">
                   {height !== '0%' && (

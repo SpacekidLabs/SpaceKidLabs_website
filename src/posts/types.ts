@@ -11,4 +11,6 @@ export interface PostMeta {
   accentColor?: string;
   /** Highlighted card style. */
   isSpecial?: boolean;
+  /** One-line summary for link previews and search results. Defaults to the post's first paragraph. */
+  description?: string;
 }

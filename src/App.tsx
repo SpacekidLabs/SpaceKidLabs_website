@@ -11,6 +11,16 @@ const ServicesPage = lazyNamed(() => import('./pages/Services'), 'ServicesPage')
 const SamplesPage = lazyNamed(() => import('./pages/Samples'), 'SamplesPage');
 const NotFoundPage = lazyNamed(() => import('./pages/NotFound'), 'NotFoundPage');
 
+/** Page loaders by route, so the browser can fetch the current page's code before hydrating pre-rendered HTML. */
+export const ROUTE_PRELOADERS: Array<[RegExp, () => Promise<unknown>]> = [
+  [/^\/$/, () => import('./pages/Landing')],
+  [/^\/archive(\/.*)?$/, () => import('./pages/Archive')],
+  [/^\/waveset-quantizer$/, () => import('./pages/WavesetQuantizer')],
+  [/^\/download$/, () => import('./pages/Download')],
+  [/^\/services$/, () => import('./pages/Services')],
+  [/^\/samples$/, () => import('./pages/Samples')],
+];
+
 function ScrollToTop() {
   const { pathname } = useLocation();
 
@@ -21,9 +31,10 @@ function ScrollToTop() {
   return null;
 }
 
-export default function App() {
+/** The site's pages, without a router. Rendered by BrowserRouter in the browser and StaticRouter at build time. */
+export function AppRoutes() {
   return (
-    <BrowserRouter>
+    <>
       <ScrollToTop />
       {/* Shown only on the very first page load; later navigations keep the current page up while the next one loads. */}
       <Suspense fallback={<div className="min-h-screen bg-brand-dark" />}>
@@ -38,6 +49,14 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

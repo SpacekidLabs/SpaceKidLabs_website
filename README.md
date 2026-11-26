@@ -33,7 +33,7 @@ The site runs at http://localhost:3000.
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Starts the Express server with Vite middleware (hot reload) |
-| `npm run build:site` | Builds the site into `dist/` and generates `sitemap.xml` and `robots.txt` (this is what Netlify runs) |
+| `npm run build:site` | Builds the site into `dist/`, pre-renders every page, and generates `sitemap.xml` and `robots.txt` (this is what Netlify runs) |
 | `npm run build` | Same as `build:site`, plus bundles the Node server into `dist/server.cjs` |
 | `npm start` | Runs the production build (set `NODE_ENV=production`) |
 | `npm run lint` | Type-checks the project with `tsc` (also runs on GitHub for every push and pull request) |
@@ -54,6 +54,8 @@ server.ts       Express server: serves the app and proxies audio
 ```
 
 **Audio proxy.** Sample previews are stored on Google Drive. `server.ts` exposes `GET /api/proxy-audio?id=<driveId>`, which streams the file from Drive with range support so the browser can play and seek it.
+
+**Pre-rendering.** After the normal build, `scripts/prerender.ts` renders every page and archive post to static HTML (`dist/<path>.html`) with its own title, description and link-preview tags, so shared links and search engines see real content. In the browser, React takes over that HTML instead of redrawing it (`src/main.tsx`). Page descriptions live in `scripts/site.ts`; a post's description defaults to its first paragraph, or set `description` in its `meta`. Anything shown during the first render must look the same every time: use `seededRandom` (`src/lib/seededRandom.ts`) instead of `Math.random` for decorative randomness.
 
 **Helper scripts.** `scripts/fetch-names.ts` rebuilds the sample list from Drive file IDs, and `scripts/download-cover-art.ts` downloads the sample-pack cover art into `public/`. Run either with `npx tsx scripts/<file>`.
 
