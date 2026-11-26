@@ -19,6 +19,11 @@
     Cache-Control = "public, max-age=604800"
 
 [[headers]]
+  for = "/favicons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
   for = "/rss.xml"
   [headers.values]
     Content-Type = "application/rss+xml; charset=utf-8"

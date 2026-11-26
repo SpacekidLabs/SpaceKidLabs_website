@@ -38,6 +38,7 @@ The site runs at http://localhost:3000.
 | `npm start` | Runs the production build (set `NODE_ENV=production`) |
 | `npm run lint` | Type-checks the project with `tsc` (also runs on GitHub for every push and pull request) |
 | `npm run clean` | Deletes build output |
+| `npm run favicons` | Downloads icons for new links in the Resources post into `public/favicons/` (add `-- --force` to refetch all) |
 
 ## How it's put together
 
@@ -90,6 +91,10 @@ To embed an interactive lab so it only downloads when the post is opened:
 import { lazyLab } from '../lib/lazyNamed';
 const GranularResonatorLab = lazyLab(() => import('../components/GranularResonatorLab'), 'GranularResonatorLab');
 ```
+
+### Resources post links
+
+The links in **Curated Resources & Bookmarks** live in `src/data/resources.ts`. After adding one, run `npm run favicons` and commit the new file in `public/favicons/` plus `src/data/favicons.json`. Icons are served from this site, so visitors' browsers never contact the linked sites until they click. A site with no usable icon gets its first letter instead.
 
 ## Deploying
 
