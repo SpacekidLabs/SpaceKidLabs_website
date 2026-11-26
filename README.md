@@ -44,6 +44,7 @@ The site runs at http://localhost:3000.
 src/
   pages/        One file per route
   components/   Layout, navigation and the interactive audio labs
+  posts/        One file per archive post (see "Adding an archive post")
   data/         Sample pack metadata
   lib/          Shared helpers (including per-page tab titles)
 public/         Favicon, touch icon and link-preview image
@@ -54,6 +55,38 @@ server.ts       Express server: serves the app and proxies audio
 **Audio proxy.** Sample previews are stored on Google Drive. `server.ts` exposes `GET /api/proxy-audio?id=<driveId>`, which streams the file from Drive with range support so the browser can play and seek it.
 
 **Helper scripts.** `scripts/fetch-names.ts` rebuilds the sample list from Drive file IDs, and `scripts/download-cover-art.ts` downloads the sample-pack cover art into `public/`. Run either with `npx tsx scripts/<file>`.
+
+## Adding an archive post
+
+Each post is one file in `src/posts/`, named after its URL: `src/posts/my-post.tsx` appears at `/archive/my-post`. New files are picked up automatically.
+
+```tsx
+import type { PostMeta } from './types';
+
+export const meta: PostMeta = {
+  title: "My Post",
+  slug: "my-post",          // must match the file name
+  date: "2026-12-01",
+  tags: ["DSP", "TOOLS"],
+  index: 27,                // higher numbers are listed first
+  accentColor: "#ff8c00",   // optional
+};
+
+export default function Post() {
+  return (
+    <>
+      <p>Post content…</p>
+    </>
+  );
+}
+```
+
+To embed an interactive lab so it only downloads when the post is opened:
+
+```tsx
+import { lazyLab } from '../lib/lazyNamed';
+const GranularResonatorLab = lazyLab(() => import('../components/GranularResonatorLab'), 'GranularResonatorLab');
+```
 
 ## Deploying
 

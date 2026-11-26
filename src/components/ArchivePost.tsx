@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { ScrollReveal } from './ScrollReveal';
 
 interface ArchivePostProps {
+  key?: string;
   date: string;
   tags: string[];
   title: string;
