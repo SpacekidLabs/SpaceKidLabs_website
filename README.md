@@ -48,16 +48,16 @@ src/
   posts/        One file per archive post (see "Adding an archive post")
   data/         Sample pack metadata
   lib/          Shared helpers (including per-page tab titles)
-public/         Favicon, touch icon and link-preview image
+public/         Favicon, touch icon, link-preview image and sample previews (audio/)
 scripts/        One-off helper scripts
-server.ts       Express server: serves the app and proxies audio
+server.ts       Express server for local development and self-hosting
 ```
 
-**Audio proxy.** Sample previews are stored on Google Drive. `server.ts` exposes `GET /api/proxy-audio?id=<driveId>`, which streams the file from Drive with range support so the browser can play and seek it.
+**Sample previews.** The samples page plays compressed MP3 previews served by the site itself from `public/audio/`. The original WAVs stay on Google Drive, and the per-sample and full-pack download buttons link there. After adding or replacing samples in `src/data/samples.ts`, run `npx tsx scripts/make-sample-previews.ts` (needs `ffmpeg`): it downloads the originals, encodes the previews and fills in each sample's duration.
 
 **Pre-rendering.** After the normal build, `scripts/prerender.ts` renders every page and archive post to static HTML (`dist/<path>.html`) with its own title, description and link-preview tags, so shared links and search engines see real content. In the browser, React takes over that HTML instead of redrawing it (`src/main.tsx`). Page descriptions live in `scripts/site.ts`; a post's description defaults to its first paragraph, or set `description` in its `meta`. Anything shown during the first render must look the same every time: use `seededRandom` (`src/lib/seededRandom.ts`) instead of `Math.random` for decorative randomness.
 
-**Helper scripts.** `scripts/fetch-names.ts` rebuilds the sample list from Drive file IDs, and `scripts/download-cover-art.ts` downloads the sample-pack cover art into `public/`. Run either with `npx tsx scripts/<file>`.
+**Helper scripts.** `scripts/fetch-names.ts` rebuilds the sample list from Drive file IDs (then run `make-sample-previews.ts`), and `scripts/download-cover-art.ts` downloads the sample-pack cover art into `public/`. Run either with `npx tsx scripts/<file>`.
 
 ## Adding an archive post
 
@@ -93,7 +93,7 @@ const GranularResonatorLab = lazyLab(() => import('../components/GranularResonat
 
 ## Deploying
 
-**Netlify (live site).** The site deploys to Netlify from this GitHub repo on every push to `main`. `netlify.toml` builds the frontend into `dist/` and sends every route to the React app. On Netlify the audio proxy runs as a Netlify Function (`netlify/functions/proxy-audio.mts`) instead of `server.ts`.
+**Netlify (live site).** The site deploys to Netlify from this GitHub repo on every push to `main`. `netlify.toml` builds the frontend into `dist/` and sends every route to the React app.
 
 **Your own Node server.**
 

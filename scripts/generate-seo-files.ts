@@ -53,7 +53,7 @@ const sitemap = [
   '',
 ].join('\n');
 
-const robots = ['User-agent: *', 'Allow: /', 'Disallow: /api/', '', `Sitemap: ${SITE_URL}/sitemap.xml`, ''].join('\n');
+const robots = ['User-agent: *', 'Allow: /', '', `Sitemap: ${SITE_URL}/sitemap.xml`, ''].join('\n');
 
 writeFileSync(resolve(DIST, 'sitemap.xml'), sitemap);
 writeFileSync(resolve(DIST, 'robots.txt'), robots);

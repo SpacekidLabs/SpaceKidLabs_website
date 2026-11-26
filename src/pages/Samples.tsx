@@ -29,82 +29,44 @@ const SampleItem: React.FC<{
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animationRef = useRef<number | null>(null);
   
-  const [durationStr, setDurationStr] = useState(sample.duration);
-  const [useProxy, setUseProxy] = useState(true);
-
-  const proxyUrl = `/api/proxy-audio?id=${sample.driveId}`;
-  const directDriveUrl = `https://drive.google.com/uc?export=download&confirm=no_antivirus&id=${sample.driveId}`;
-  const currentSrc = useProxy ? proxyUrl : directDriveUrl;
-  
   const isPlaying = currentlyPlaying === sample.id;
 
   useEffect(() => {
-    if (!audioRef.current) return;
-    
+    const audio = audioRef.current;
+    if (!audio) return;
+
     if (isPlaying) {
-      if (useProxy) {
-        if (!audioCtxRef.current) {
-          const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-          const ctx = new AudioContext();
-          audioCtxRef.current = ctx;
+      // Previews are served by this site, so the waveform analyser can read them directly.
+      if (!audioCtxRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        const ctx = new AudioContextClass();
+        audioCtxRef.current = ctx;
 
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
-          analyzerRef.current = analyser;
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        analyzerRef.current = analyser;
 
-          try {
-            const source = ctx.createMediaElementSource(audioRef.current);
-            sourceRef.current = source;
-            source.connect(analyser);
-            analyser.connect(ctx.destination);
-          } catch (err) {
-            console.error("Web Audio API connection failed", err);
-          }
+        try {
+          const source = ctx.createMediaElementSource(audio);
+          sourceRef.current = source;
+          source.connect(analyser);
+          analyser.connect(ctx.destination);
+        } catch (err) {
+          console.error("Web Audio API connection failed", err);
         }
-
-        if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-          audioCtxRef.current.resume();
-        }
-      } else {
-        // Fallback clean-up if we switched to direct Drive URLs
-        if (sourceRef.current) {
-          try { sourceRef.current.disconnect(); } catch (e) {}
-          sourceRef.current = null;
-        }
-        if (audioCtxRef.current) {
-          try { audioCtxRef.current.close().catch(() => {}); } catch (e) {}
-          audioCtxRef.current = null;
-        }
-        analyzerRef.current = null;
       }
-
-      audioRef.current.play().catch(e => {
-        console.error("Playback failed, trying direct link fallback:", e);
-        if (useProxy) {
-          setUseProxy(false);
-        }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume();
+      }
+      audio.play().catch(e => {
+        console.error(`Playback failed for ${sample.name}:`, e);
+        setCurrentlyPlaying(null);
       });
     } else {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audio.pause();
+      audio.currentTime = 0;
     }
-  }, [isPlaying, useProxy]);
-
-  const handleAudioError = () => {
-    if (useProxy) {
-      console.warn(`Audio proxy failed for ${sample.name}. Falling back directly to Google Drive stream.`);
-      if (sourceRef.current) {
-        try { sourceRef.current.disconnect(); } catch (err) {}
-        sourceRef.current = null;
-      }
-      if (audioCtxRef.current) {
-        try { audioCtxRef.current.close().catch(() => {}); } catch (err) {}
-        audioCtxRef.current = null;
-      }
-      analyzerRef.current = null;
-      setUseProxy(false);
-    }
-  };
+  }, [isPlaying]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -170,25 +132,18 @@ const SampleItem: React.FC<{
     }
   };
 
-  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLAudioElement>) => {
-    const dur = e.currentTarget.duration;
-    if (!isNaN(dur) && isFinite(dur)) {
-      const mins = Math.floor(dur / 60);
-      const secs = Math.floor(dur % 60).toString().padStart(2, '0');
-      setDurationStr(`${mins}:${secs}`);
-    }
-  };
 
   return (
     <div className="flex items-center justify-between p-4 border-b border-zinc-900 hover:bg-zinc-900/50 transition-colors group">
-      <audio 
-        ref={audioRef} 
-        src={currentSrc} 
-        onEnded={() => setCurrentlyPlaying(null)} 
-        onLoadedMetadata={handleLoadedMetadata}
-        onError={handleAudioError}
+      <audio
+        ref={audioRef}
+        src={sample.preview}
+        onEnded={() => setCurrentlyPlaying(null)}
+        onError={() => {
+          console.error(`Could not load preview for ${sample.name}`);
+          setCurrentlyPlaying(null);
+        }}
         preload="none"
-        crossOrigin={useProxy ? "anonymous" : undefined}
       />
       <div className="flex items-center gap-4 flex-1">
         <button 
@@ -213,7 +168,7 @@ const SampleItem: React.FC<{
       </div>
       
       <div className="flex items-center gap-6 shrink-0 ml-4">
-        <span className="font-mono text-xs text-zinc-600 hidden md:inline-block w-10 text-right">{durationStr}</span>
+        <span className="font-mono text-xs text-zinc-600 hidden md:inline-block w-10 text-right">{sample.duration}</span>
         {sample.driveId ? (
           <a 
             href={`https://drive.google.com/uc?export=download&id=${sample.driveId}`}
