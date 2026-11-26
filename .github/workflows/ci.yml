@@ -42,6 +42,6 @@ jobs:
       - name: Check pre-rendered pages
         run: |
           test -s dist/shell.html
-          grep -q '<title>Wavesets: Distortion Beyond Distortion' dist/archive/wavesets.html
+          grep -qE '<title>[^<]+ — SPACEKID LABS</title>' dist/archive/wavesets.html  # the post's own title, not the default
           grep -q 'property="og:type" content="article"' dist/archive/wavesets.html
           test "$(ls dist/archive/*.html | wc -l)" -ge 20
