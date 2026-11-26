@@ -8,8 +8,24 @@ import { DataPaintPreview } from './DataPaintPreview';
 import { LasySynthPreview } from './LasySynthPreview';
 import { PeopleVstPreview } from './PeopleVstPreview';
 import { DataMosPreview } from './DataMosPreview';
+import { GendyPreview } from './GendyPreview';
 
 const PROJECTS_DATA = [
+  {
+    id: 'gendy',
+    title: 'GENDY',
+    subterm: 'DYNAMIC STOCHASTIC SYNTHESIS INSTRUMENT',
+    color: '#7fd6f6',
+    type: 'GENDY',
+    previewId: 'gendy',
+    tags: ['VST3', 'CLAP', 'STOCHASTIC'],
+    status: 'ACTIVE BUILD v0.5.1',
+    hook: 'A waveform you can watch becoming something else.',
+    description: 'A VST3 / CLAP synthesizer after Iannis Xenakis\'s dynamic stochastic synthesis. The waveform is a chain of breakpoints on a random walk: drag the mutation field to let amplitude and time drift, freeze a shape you like, or couple two oscillators through FM, PM and phase distortion.',
+    features: ['Random-walk breakpoint oscillator', 'Dual oscillators with FM / PM / PD', 'MTS-ESP microtuning, mono & glide', 'Optional acoustic body layer'],
+    primaryLink: 'https://github.com/SpacekidLabs/gendy',
+    primaryLinkText: 'VIEW SOURCE ON GITHUB'
+  },
   {
     id: 'spectral',
     title: 'SPECTRAL ROTATOR FX',
@@ -122,6 +138,7 @@ const PROJECTS_DATA = [
 export function ProjectList() {
   const renderPreview = (id: string) => {
     switch (id) {
+      case 'gendy': return <GendyPreview />;
       case 'spectral': return <SpectralRotatorPreview />;
       case 'noiseforge': return <NoiseForgePreview />;
       case 'waveset': return <WavesetPreview />;
