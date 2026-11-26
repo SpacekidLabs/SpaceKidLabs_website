@@ -200,19 +200,19 @@ export function MissingFundamental() {
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-900 pb-4 gap-2">
         <div>
-          <span className="font-mono text-[9px] text-[#3b82f6] font-bold tracking-widest uppercase">// PSYCHOACOUSTIC EXPERIMENT // SYSTEM W-22</span>
+          <span className="font-mono text-[9px] text-[#3b82f6] font-bold tracking-widest uppercase">// RESIDUE PITCH</span>
           <h3 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
-            The Missing Fundamental Audition Lab
+            Missing Fundamental
           </h3>
         </div>
         <span className="font-mono text-[9px] px-2 py-0.5 rounded-sm bg-zinc-900 text-[#3b82f6]/80 border border-zinc-850 self-start">
-          HEARING IS HOSTED PREDICTION
+          8 SINE HARMONICS, 1/n
         </span>
       </div>
 
       {/* Overview Instruction */}
       <p className="text-zinc-400 font-sans font-light text-sm leading-relaxed max-w-xl">
-        Generate a synthesized sawtooth wave by summing individual sine-wave harmonics. When you mute the <strong className="text-[#3b82f6] font-normal">1st Harmonic (Fundamental)</strong>, the physical low sub resonance completely disappears from the screen's visual wave path. Yet, magically, your brain continues to synthesize and hear that identical low pitch.
+        Builds a sawtooth-like tone from eight sine harmonics with amplitudes of 1/n. When you mute the <strong className="text-[#3b82f6] font-normal">1st harmonic (the fundamental)</strong>, there is no energy left at f₀, but the note is still heard at the same pitch (residue pitch). What you lose is the physical low end at f₀, and the timbre gets thinner.
       </p>
 
       {/* Two column control layout */}
@@ -221,7 +221,7 @@ export function MissingFundamental() {
         {/* Left column: Parameters & Master Controls */}
         <div className="lg:col-span-4 space-y-5">
           <div className="p-4 bg-zinc-950/60 border border-zinc-900/80 rounded-sm space-y-4">
-            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Master controls</span>
+            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Controls</span>
             
             {/* Play Button */}
             <button
@@ -235,12 +235,12 @@ export function MissingFundamental() {
               {isPlaying ? (
                 <>
                   <Square className="w-3.5 h-3.5 fill-current" />
-                  HALT AUDITION SIGNALS
+                  STOP
                 </>
               ) : (
                 <>
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  INITIALIZE HARMONIC STREAM
+                  PLAY
                 </>
               )}
             </button>
@@ -248,11 +248,11 @@ export function MissingFundamental() {
             {/* Slider: Fundamental Frequency */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">FUNDAMENTAL FREQ (f₀)</span>
+                <span className="text-zinc-400">FUNDAMENTAL (f₀)</span>
                 <span className="text-[#3b82f6] font-bold">{fundamentalFreq} Hz</span>
               </div>
               <input
-                aria-label="FUNDAMENTAL FREQ (f₀)"
+                aria-label="Fundamental frequency in hertz"
                 type="range"
                 min="70"
                 max="220"
@@ -262,20 +262,20 @@ export function MissingFundamental() {
                 className="w-full accent-[#3b82f6] bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-600 block leading-tight font-mono">
-                Lower ranges (e.g. 100 Hz) highlight phone speaker limits.
+                Sets f₀ from 70 to 220 Hz in 5 Hz steps; the harmonics are its multiples.
               </span>
             </div>
 
             {/* Slider: Volume */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">MASTER VOLUME</span>
+                <span className="text-zinc-400">VOLUME</span>
                 <span className="text-zinc-500">{Math.round(volume * 100)}%</span>
               </div>
               <div className="flex items-center gap-2">
                 {volume === 0 ? <VolumeX className="w-4 h-4 text-zinc-600" /> : <Volume2 className="w-4 h-4 text-zinc-400" />}
                 <input
-                  aria-label="Master Volume"
+                  aria-label="Volume"
                   type="range"
                   min="0"
                   max="0.4"
@@ -290,14 +290,14 @@ export function MissingFundamental() {
 
           {/* Quick preset triggers */}
           <div className="p-4 bg-zinc-950/60 border border-zinc-900/80 rounded-sm space-y-3">
-            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Preset transformations</span>
+            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Presets</span>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={resetToFullSaw}
                 className="py-1.5 px-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-300 font-mono text-[10px] uppercase border border-zinc-800 hover:border-zinc-700 transition-colors flex items-center justify-center gap-1.5"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
-                Pure Sawtooth
+                All on
               </button>
               <button
                 onClick={muteFundamental}
@@ -305,11 +305,11 @@ export function MissingFundamental() {
                 disabled={!activeHarmonics[1]}
               >
                 <Sparkles className="w-2.5 h-2.5" />
-                Kill f₀
+                Mute f₀
               </button>
             </div>
             <p className="text-[10px] font-sans text-zinc-500 leading-normal">
-              Compare <strong className="text-zinc-400 font-normal">Pure Sawtooth</strong> with <strong className="text-red-400/80 font-normal">Kill f₀</strong> to experience the missing fundamental.
+              Switch between <strong className="text-zinc-400 font-normal">All on</strong> and <strong className="text-red-400/80 font-normal">Mute f₀</strong> and listen for whether the pitch changes.
             </p>
           </div>
         </div>
@@ -321,10 +321,10 @@ export function MissingFundamental() {
           <div className="p-4 bg-zinc-950/50 border border-zinc-900 rounded-sm space-y-2">
             <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
               <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase">
-                // Simulated Oscilloscope Preview (Summed Phase Wave)
+                // Waveform (calculated, not measured)
               </span>
               <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-sm ${!activeHarmonics[1] ? 'bg-red-900/20 text-red-400 border border-red-900/40' : 'bg-zinc-900 text-zinc-500 border border-zinc-800'}`}>
-                {!activeHarmonics[1] ? "MISSING FUNDAMENTAL ACTIVE" : "FULL SPECTRUM RECONSTRUCTED"}
+                {!activeHarmonics[1] ? "f₀ MUTED" : "f₀ ON"}
               </span>
             </div>
 
@@ -357,15 +357,15 @@ export function MissingFundamental() {
               </svg>
             </div>
             <div className="flex justify-between text-[9px] font-mono text-zinc-600">
-              <span>ZERO PHASE BOUNDARY</span>
-              <span>2.0 CYCLES (SYNTHETIC MODEL)</span>
+              <span>SUM OF ACTIVE HARMONICS</span>
+              <span>2 PERIODS OF f₀</span>
             </div>
           </div>
 
           {/* Spectrum Bar Chart Controller */}
           <div className="p-4 bg-zinc-950/50 border border-zinc-900 rounded-sm space-y-4">
             <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">
-              // Custom Harmonic Spectrum Mixer (Click individual bars to mute/unmute)
+              // Harmonics (click a bar to mute or unmute it)
             </span>
 
             <div className="grid grid-cols-8 gap-2 items-end h-[140px] pt-4">
@@ -389,7 +389,7 @@ export function MissingFundamental() {
                           : 'bg-transparent border-red-950/40 text-zinc-750 border-dashed hover:bg-red-500/5'
                       }`}
                       style={{ height: `${percentHeight}%` }}
-                      title={`Harmonic ${harmonicIndex}: ${freq}Hz (${Math.round(amplitude * 100)}% amp). Click to toggle.`}
+                      title={`Harmonic ${harmonicIndex}: ${freq} Hz, amplitude 1/${harmonicIndex}. Click to mute or unmute.`}
                       aria-label={`Harmonic ${harmonicIndex}, ${freq} hertz`}
                       aria-pressed={!!active}
                     >
@@ -411,7 +411,7 @@ export function MissingFundamental() {
                         f{harmonicIndex}
                       </span>
                       <span className="block font-sans text-[8px] text-zinc-600">
-                        {freq}Hz
+                        {freq} Hz
                       </span>
                     </div>
                   </div>
@@ -422,15 +422,15 @@ export function MissingFundamental() {
             <div className="flex flex-wrap gap-4 text-[10px] font-mono text-zinc-500 pt-1 border-t border-zinc-900/50 justify-between">
               <div className="flex items-center gap-2">
                 <span className="inline-block w-2.5 h-2.5 bg-[#3b82f6]/40 border border-[#3b82f6]" />
-                Fundamental Frequency (f₀)
+                Fundamental (f₀, bar f1)
               </div>
               <div className="flex items-center gap-2">
                 <span className="inline-block w-2.5 h-2.5 bg-zinc-700/50 border border-zinc-500" />
-                Overtones (Integer Multiple Harmonics)
+                Harmonics 2–8 (integer multiples)
               </div>
               <div className="flex items-center gap-2">
                 <span className="inline-block w-2.5 h-2.5 border border-dashed border-red-950/40" />
-                Muted components
+                Muted
               </div>
             </div>
           </div>

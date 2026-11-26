@@ -412,14 +412,14 @@ export function AudioPingPlayground() {
   };
 
   const modes = [
-    { name: 'Filter', desc: 'Resonant bandpass plucks', color: '#0ea5e9' },
-    { name: 'Delay', desc: 'Combed metallic comb strings', color: '#10b981' },
-    { name: 'Reverb', desc: 'Feedback room reflections', color: '#8b5cf6' },
-    { name: 'Flanger', desc: 'Sweeping whistle comb filters', color: '#f59e0b' },
-    { name: 'Phaser', desc: 'Formant notch vocal wahs', color: '#ec4899' },
-    { name: 'Ring Mod', desc: 'Retro sci-fi ring sidebands', color: '#ef4444' },
-    { name: 'Frequency Shifter', desc: 'Inharmonic FM glockenspiel', color: '#06b6d4' },
-    { name: 'Resonator', desc: 'Excited metallic tubular rods', color: '#eab308' },
+    { name: 'Filter', desc: 'Band-pass at 330 Hz, Q 95', color: '#0ea5e9' },
+    { name: 'Delay', desc: '20 ms feedback delay (50 Hz)', color: '#10b981' },
+    { name: 'Reverb', desc: '4 feedback delays, 33–83 ms', color: '#8b5cf6' },
+    { name: 'Flanger', desc: 'Delay swept from 8 to 0.6 ms', color: '#f59e0b' },
+    { name: 'Phaser', desc: '4 all-pass, 2.5 kHz to 150 Hz', color: '#ec4899' },
+    { name: 'Ring Mod', desc: 'Click times a 390 Hz sine', color: '#ef4444' },
+    { name: 'Frequency Shifter', desc: 'Plays an FM tone, no shifter', color: '#06b6d4' },
+    { name: 'Resonator', desc: '4 band-pass, 196–608 Hz', color: '#eab308' },
   ];
 
   return (
@@ -428,10 +428,10 @@ export function AudioPingPlayground() {
         <div>
           <h3 className="font-display font-medium text-white text-sm uppercase tracking-wider flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[#38bdf8]" />
-            Real-time Acoustic Exciter Engine
+            Pinging Lab
           </h3>
           <p className="text-zinc-400 text-xs font-sans font-light mt-1">
-            Toggle the nodes. Press any button to fire a 2ms energy impulse and hear the algorithm ring.
+            Each button sends a 2 ms noise click into a small Web Audio version of that effect so you hear it ring. The Frequency Shifter button plays a short FM tone instead.
           </p>
         </div>
 
@@ -474,20 +474,20 @@ export function AudioPingPlayground() {
         {!audioEnabled && (
           <div className="relative z-10 text-center px-4 py-3 bg-black/80 rounded border border-zinc-900/60 max-w-sm">
             <p className="text-xs text-zinc-400 font-sans font-light leading-relaxed mb-2">
-              The Web Audio context is waiting for your interaction.
+              The browser starts audio only after a click. This button starts it and pings the filter.
             </p>
             <button 
               onClick={() => { initAudio(); handlePing('Filter'); }}
               className="inline-flex items-center gap-1.5 px-3 py-1 font-mono text-[10px] text-[#38bdf8] bg-[#38bdf8]/10 hover:bg-[#38bdf8]/20 border border-[#38bdf8]/35 rounded-[2px] transition-all uppercase"
             >
-              <Play className="h-3 w-3 fill-current" /> Activate Signal Path
+              <Play className="h-3 w-3 fill-current" /> Start Audio
             </button>
           </div>
         )}
 
         {audioEnabled && (
           <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 bg-[#38bdf8]/10 border border-[#38bdf8]/20 rounded-[1px] font-mono text-[8px] text-[#38bdf8]">
-            <Activity className="h-2.5 w-2.5 animate-pulse" /> LIVE SPECTRUM
+            <Activity className="h-2.5 w-2.5 animate-pulse" /> WAVEFORM
           </div>
         )}
       </div>
@@ -514,7 +514,7 @@ export function AudioPingPlayground() {
 
               <div>
                 <span className="font-mono text-[9px] text-zinc-500 uppercase block tracking-wider group-hover:text-zinc-400 transition-colors">
-                  // PING TYPE
+                  {m.name === 'Frequency Shifter' ? '// FM TONE' : '// PING'}
                 </span>
                 <span className="font-sans font-medium text-xs text-white block mt-0.5 group-hover:text-[#38bdf8] transition-colors">
                   {m.name}
@@ -529,9 +529,6 @@ export function AudioPingPlayground() {
         })}
       </div>
 
-      <div className="text-center font-mono text-[9px] text-zinc-500 uppercase tracking-widest pt-2 border-t border-zinc-900/40">
-        ⚡ INSTANTLY HEAR INTEGRATED ALGORITHMS RING
-      </div>
     </div>
   );
 }

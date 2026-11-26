@@ -11,39 +11,39 @@ interface SystemData {
 
 const SYSTEMS: Record<string, SystemData> = {
   '12tet': {
-    name: '12-TET',
-    fullName: 'Standard Western Temperament',
+    name: '12 EDO',
+    fullName: '12 equal divisions of the octave',
     color: '#f43f5e',
     cents: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200],
-    desc: 'The industry standard. Compromised thirds cause audible "beating" (vibrational roughness).'
+    desc: 'Fifth 2 cents narrower than 3/2, major third 13.7 cents wider than 5/4, minor third 15.6 cents narrower than 6/5.'
   },
   '31edo': {
-    name: '31-EDO',
-    fullName: '31 Equal Divisions of Octave',
+    name: '31 EDO',
+    fullName: '31 equal divisions of the octave',
     color: '#84cc16',
     cents: [0, 116.1, 193.5, 309.7, 387.1, 503.2, 580.6, 696.8, 812.9, 890.3, 1006.5, 1122.6, 1200.0],
-    desc: 'Purest major thirds (387¢). Harmonies achieve sweet, near zero-beating consolidation.'
+    desc: 'Major third (387.1 cents) within 1 cent of 5/4; fifth about 5 cents flat, minor third about 6 cents flat.'
   },
   '22edo': {
-    name: '22-EDO',
-    fullName: '22 Equal Divisions of Octave',
+    name: '22 EDO',
+    fullName: '22 equal divisions of the octave',
     color: '#06b6d4',
     cents: [0, 109.1, 218.2, 327.3, 381.8, 490.9, 600.0, 709.1, 818.2, 872.7, 981.8, 1090.9, 1200.0],
-    desc: 'Tense, metallic, and exciting harmonic structures with flat major thirds and sharp fifths.'
+    desc: 'Fifth 7 cents sharp, major third 4.5 cents flat, minor third about 12 cents sharp.'
   },
   '41edo': {
-    name: '41-EDO',
-    fullName: '41 Equal Divisions of Octave',
+    name: '41 EDO',
+    fullName: '41 equal divisions of the octave',
     color: '#f59e0b',
     cents: [0, 117.1, 204.9, 322.0, 380.5, 497.6, 585.4, 702.4, 819.5, 907.3, 995.1, 1112.2, 1200.0],
-    desc: 'Tremendous physical accuracy. Perfect for multi-limit and pure acoustic harmony.'
+    desc: 'Fifth within 0.5 cents of 3/2; major third about 6 cents flat, minor third about 6 cents sharp.'
   },
   'ji': {
     name: 'Just Intonation',
-    fullName: 'Pure Physical Ratios (7-Limit)',
+    fullName: 'Whole-number ratios (7-limit)',
     color: '#a855f7',
     cents: [0, 111.7, 203.9, 315.6, 386.3, 498.0, 582.5, 702.0, 813.7, 884.4, 968.8, 1088.3, 1200.0],
-    desc: 'Absolute mathematical perfection. Zero acoustic interference or raw wave beating.'
+    desc: 'Minor third, major third and fifth are exactly 6/5, 5/4 and 3/2 above each chord root.'
   }
 };
 
@@ -231,13 +231,13 @@ export function TuningComparator() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-900 pb-5 mb-6">
         <div>
           <span className="font-mono text-[9px] text-[#aaff00] uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1">
-            <Sparkles className="w-3 h-3 text-[#aaff00] animate-pulse" /> Progression Audition
+            <Sparkles className="w-3 h-3 text-[#aaff00] animate-pulse" /> Chord loop
           </span>
           <h3 className="text-lg font-display font-medium text-white tracking-tight">
-            Tuning Comparison Playground
+            Tuning Comparison
           </h3>
           <p className="text-xs text-zinc-500 font-sans font-light mt-0.5">
-            Compare the exact same minor-major chord progression (Am - F - C - G) across different tuning systems.
+            Plays Am, F, C and G as sine-wave triads, one chord every 3 seconds. Each root stays at its 12 EDO pitch; the third and fifth follow the selected tuning, and you can switch while it plays.
           </p>
         </div>
 
@@ -254,12 +254,12 @@ export function TuningComparator() {
           {isPlaying ? (
             <>
               <Square className="w-4 h-4 fill-current" style={{ color: activeSystem.color }} />
-              Stop Progression
+              Stop
             </>
           ) : (
             <>
               <Play className="w-4 h-4 fill-current text-[#aaff00]" />
-              Play Progression
+              Play
             </>
           )}
         </button>
@@ -269,7 +269,7 @@ export function TuningComparator() {
         {/* Tuning selection (Left column) */}
         <div className="md:col-span-6 space-y-4">
           <label className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest block">
-            Select Tuning System
+            Tuning
           </label>
           <div className="space-y-2">
             {Object.keys(SYSTEMS).map((key) => {
@@ -312,7 +312,7 @@ export function TuningComparator() {
         <div className="md:col-span-6 flex flex-col justify-between bg-black/40 border border-zinc-900 p-5 rounded-sm">
           <div>
             <span className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest block mb-3">
-              Currently Sounding
+              Chord (click to jump while playing)
             </span>
             
             {/* Chord Progression steps */}
@@ -356,7 +356,7 @@ export function TuningComparator() {
             {/* Quick status box */}
             <div className="mt-4 p-4 border border-zinc-850 bg-black/60 rounded-sm">
               <p className="font-mono text-xs text-zinc-300">
-                Active System: <strong style={{ color: activeSystem.color }}>{activeSystem.name}</strong>
+                Tuning: <strong style={{ color: activeSystem.color }}>{activeSystem.name}</strong>
               </p>
               <p className="text-xs font-sans text-zinc-400 mt-1.5 leading-relaxed font-light">
                 {activeSystem.desc}
@@ -366,10 +366,10 @@ export function TuningComparator() {
 
           <div className="border-t border-zinc-950 pt-3 mt-4 flex items-center justify-between">
             <span className="font-mono text-[9px] text-zinc-650">
-              {isPlaying ? "🎛️ Audio stream active" : "💤 Idle"}
+              {isPlaying ? "Playing" : "Stopped"}
             </span>
             <span className="font-mono text-[8px] text-zinc-600">
-              Pure sine wave harmonics
+              3 sine waves, no overtones
             </span>
           </div>
         </div>

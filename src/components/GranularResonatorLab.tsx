@@ -23,7 +23,7 @@ export function GranularResonatorLab() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.20);
   const [exciterSource, setExciterSource] = useState<'vocal' | 'guitar' | 'field' | 'upload'>('vocal');
-  const [sourceName, setSourceName] = useState<string>('Vowel Speech Syllables');
+  const [sourceName, setSourceName] = useState<string>('Synthetic vowel');
   
   // Granular Engine State
   const [grainPosition, setGrainPosition] = useState<number>(0.4); // 0.0 to 1.0 in the buffer
@@ -112,11 +112,11 @@ export function GranularResonatorLab() {
   const currentHarmonics = useMemo<ResonatorFreq[]>(() => {
     if (exciterSource === 'vocal') {
       return [
-        { freq: 480, weight: 1.0, label: 'Formant F1 (Vowel Body)' },
-        { freq: 1150, weight: 0.8, label: 'Formant F2 (Pharynx)' },
-        { freq: 2250, weight: 0.55, label: 'Formant F3 (Oral Cavity)' },
-        { freq: 3100, weight: 0.35, label: 'Formant F4 (Nasal Ring)' },
-        { freq: 4200, weight: 0.2, label: 'High Sibilance' }
+        { freq: 480, weight: 1.0, label: 'Formant F1' },
+        { freq: 1150, weight: 0.8, label: 'Formant F2' },
+        { freq: 2250, weight: 0.55, label: 'Formant F3' },
+        { freq: 3100, weight: 0.35, label: 'Formant F4' },
+        { freq: 4200, weight: 0.2, label: 'High band (sibilance)' }
       ];
     } else if (exciterSource === 'guitar') {
       // Harmonic series of A2 (110 Hz) (Rich metallic string structure)
@@ -131,21 +131,21 @@ export function GranularResonatorLab() {
     } else if (exciterSource === 'field') {
       // Ethereal rain-induced microtonal crystal chimes (sparse non-harmonic peaks)
       return [
-        { freq: 830, weight: 0.8, label: 'Micro-Chime α (Sage)' },
-        { freq: 1450, weight: 0.95, label: 'Micro-Chime β (Silver)' },
-        { freq: 2150, weight: 0.7, label: 'Micro-Chime γ (Copper)' },
-        { freq: 3880, weight: 0.5, label: 'Glass Resonator D' },
-        { freq: 6100, weight: 0.3, label: 'Air Resonance (Rain Mist)' }
+        { freq: 830, weight: 0.8, label: 'Peak 1' },
+        { freq: 1450, weight: 0.95, label: 'Peak 2' },
+        { freq: 2150, weight: 0.7, label: 'Peak 3' },
+        { freq: 3880, weight: 0.5, label: 'Peak 4' },
+        { freq: 6100, weight: 0.3, label: 'Peak 5' }
       ];
     } else {
       // For Custom Uploaded source, let's create dynamic synthetic peaks based on grain pitch adjustments
       const baseVal = Math.round(350 * grainPitch);
       return [
-        { freq: baseVal, weight: 1.0, label: 'Sensed Dominant Root' },
-        { freq: baseVal * 1.5, weight: 0.8, label: 'Perfect Fifth Ring' },
-        { freq: baseVal * 2.0, weight: 0.6, label: 'Octave Mirror' },
-        { freq: baseVal * 2.5, weight: 0.4, label: 'Harmonic Tier D' },
-        { freq: baseVal * 3.0, weight: 0.25, label: 'Spectral Ghost' }
+        { freq: baseVal, weight: 1.0, label: 'Base (350 Hz × pitch)' },
+        { freq: baseVal * 1.5, weight: 0.8, label: 'Base × 1.5' },
+        { freq: baseVal * 2.0, weight: 0.6, label: 'Base × 2' },
+        { freq: baseVal * 2.5, weight: 0.4, label: 'Base × 2.5' },
+        { freq: baseVal * 3.0, weight: 0.25, label: 'Base × 3' }
       ];
     }
   }, [exciterSource, grainPitch]);
@@ -276,7 +276,7 @@ export function GranularResonatorLab() {
             setTimeout(() => startAudio(), 100);
           }
         } catch (err) {
-          alert('Failed to parse this audio file. Please check file integrity.');
+          alert('Could not decode this audio file.');
           setUploadProgress(null);
         } finally {
           decodeCtx.close();
@@ -312,7 +312,7 @@ export function GranularResonatorLab() {
       let expBuffer: AudioBuffer;
       if (exciterSource === 'upload') {
         if (!uploadedAudioBufferRef.current) {
-          alert('Upload an audio recording first, or pick a default exciter signal.');
+          alert('Upload an audio file first, or pick one of the built-in sources.');
           ctx.close();
           audioCtxRef.current = null;
           return;
@@ -472,10 +472,10 @@ export function GranularResonatorLab() {
   const handleSourceToggle = (src: 'vocal' | 'guitar' | 'field' | 'upload') => {
     setExciterSource(src);
     let title = '';
-    if (src === 'vocal') title = 'Vowel Speech Syllables';
-    else if (src === 'guitar') title = 'Acoustic Guitar Drone';
-    else if (src === 'field') title = 'Forest Raindrops & Wind';
-    else title = uploadedAudioBufferRef.current ? fileInputRef.current?.files?.[0]?.name || 'Uploaded Drone' : 'Empty Upload Buffer';
+    if (src === 'vocal') title = 'Synthetic vowel';
+    else if (src === 'guitar') title = 'Synthetic guitar-like drone';
+    else if (src === 'field') title = 'Synthetic rain and wind';
+    else title = uploadedAudioBufferRef.current ? fileInputRef.current?.files?.[0]?.name || 'Uploaded file' : 'No file loaded';
 
     setSourceName(title);
 
@@ -496,9 +496,9 @@ export function GranularResonatorLab() {
       {/* Header element */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-zinc-900 pb-5 gap-3">
         <div>
-          <span className="font-mono text-[9px] text-[#d946ef] font-bold tracking-widest uppercase">// PHYSICAL COUPLING LAB // SYNTHESIS W-26</span>
+          <span className="font-mono text-[9px] text-[#d946ef] font-bold tracking-widest uppercase">// GRANULAR RESONATOR LAB</span>
           <h3 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
-            Granular Excitation & Adapting Resonators
+            Grains Into a Resonator Bank
           </h3>
         </div>
 
@@ -512,7 +512,7 @@ export function GranularResonatorLab() {
           }`}
         >
           {isPlaying ? <Square className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-          {isPlaying ? 'SILENCE INSTRUMENT' : 'EXCITE HARMONIC RESONANCE'}
+          {isPlaying ? 'STOP' : 'PLAY'}
         </button>
       </div>
 
@@ -523,7 +523,7 @@ export function GranularResonatorLab() {
           
           {/* Signal Selection */}
           <div className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-sm space-y-4">
-            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Exciter Signal (Excite)</span>
+            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Source</span>
             
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -535,7 +535,7 @@ export function GranularResonatorLab() {
                 }`}
               >
                 <Activity className="w-3 h-3 text-[#d946ef]" />
-                Vocal Syllables
+                Synth Vowel
               </button>
               
               <button
@@ -547,7 +547,7 @@ export function GranularResonatorLab() {
                 }`}
               >
                 <Sliders className="w-3 h-3 text-[#d946ef]" />
-                Guitar Drone
+                Guitar-like Drone
               </button>
 
               <button
@@ -559,7 +559,7 @@ export function GranularResonatorLab() {
                 }`}
               >
                 <Sparkles className="w-3 h-3 text-[#d946ef]" />
-                Rain Field
+                Rain
               </button>
 
               <button
@@ -571,7 +571,7 @@ export function GranularResonatorLab() {
                 }`}
               >
                 <Upload className="w-3 h-3" />
-                {uploadedAudioBufferRef.current ? 'Re-Upload' : 'Upload File'}
+                {uploadedAudioBufferRef.current ? 'Upload Another' : 'Upload File'}
               </button>
             </div>
 
@@ -586,7 +586,7 @@ export function GranularResonatorLab() {
             {uploadProgress !== null && (
               <div className="space-y-1 pt-1">
                 <div className="flex justify-between text-[9px] font-mono text-zinc-400">
-                  <span>IMPORTING SOURCE...</span>
+                  <span>LOADING FILE...</span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
@@ -596,7 +596,7 @@ export function GranularResonatorLab() {
             )}
 
             <div className="text-[10px] font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded-sm border border-zinc-900 flex justify-between">
-              <span className="text-zinc-500">EXCITER:</span>
+              <span className="text-zinc-500">SOURCE:</span>
               <span className="text-white truncate max-w-[200px]">{sourceName}</span>
             </div>
           </div>
@@ -608,11 +608,11 @@ export function GranularResonatorLab() {
             {/* Slider 1: Position */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">GRAIN START POSITION</span>
+                <span className="text-zinc-400">GRAIN POSITION</span>
                 <span className="text-[#d946ef] font-bold">{Math.round(grainPosition * 100)}%</span>
               </div>
               <input
-                aria-label="Grain Start Position"
+                aria-label="Grain position"
                 type="range"
                 min="0.0"
                 max="0.95"
@@ -622,18 +622,18 @@ export function GranularResonatorLab() {
                 className="w-full accent-[#d946ef] bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Scan through the temporal timeline of the excitation signal.
+                Where in the source each grain starts, as a percentage of its length (0–95%).
               </span>
             </div>
 
             {/* Slider 2: Size */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">GRAIN DURATION</span>
+                <span className="text-zinc-400">GRAIN SIZE</span>
                 <span className="text-zinc-350">{grainSize} ms</span>
               </div>
               <input
-                aria-label="Grain Duration"
+                aria-label="Grain size"
                 type="range"
                 min="40"
                 max="350"
@@ -643,7 +643,7 @@ export function GranularResonatorLab() {
                 className="w-full accent-purple-500 bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Length of each micro-slice. Short grains create airy rustles; long grains create overlaps.
+                Length of each grain, 40–350 ms, with a short fade in and out.
               </span>
             </div>
 
@@ -651,10 +651,10 @@ export function GranularResonatorLab() {
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
                 <span className="text-zinc-400">GRAIN DENSITY</span>
-                <span className="text-zinc-350">{grainDensity} grains/sec</span>
+                <span className="text-zinc-350">{grainDensity} grains/s</span>
               </div>
               <input
-                aria-label="Grain Density"
+                aria-label="Grain density"
                 type="range"
                 min="8"
                 max="45"
@@ -664,18 +664,18 @@ export function GranularResonatorLab() {
                 className="w-full accent-fuchsia-600 bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Frequency rate of grain generation. Creates denser clouds when pushed high.
+                Grains started per second, 8–45. Takes effect the next time you press play.
               </span>
             </div>
 
             {/* Slider 4: Pitch rate */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">GRAIN PITCH / PLAYBACK SPEED</span>
+                <span className="text-zinc-400">GRAIN PITCH (PLAYBACK RATE)</span>
                 <span className="text-[#d946ef] font-semibold">{grainPitch.toFixed(2)}x</span>
               </div>
               <input
-                aria-label="Grain Pitch / Playback Speed"
+                aria-label="Grain pitch (playback rate)"
                 type="range"
                 min="0.5"
                 max="2.0"
@@ -685,7 +685,7 @@ export function GranularResonatorLab() {
                 className="w-full accent-[#d946ef] bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Repitching the excitation grains shifts the energy points triggering the resonators.
+                Playback rate of each grain, 0.5–2× (an octave down to an octave up). For an uploaded file it also moves the resonator frequencies.
               </span>
             </div>
 
@@ -693,16 +693,16 @@ export function GranularResonatorLab() {
 
           {/* Resonator feedback parameters */}
           <div className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-sm space-y-4">
-            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Physical Resonator Modeling</span>
+            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Resonators</span>
             
             {/* Resonance Q slider */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">BANDPASS SHARPNESS (RESONANCE Q)</span>
+                <span className="text-zinc-400">RESONATOR Q</span>
                 <span className="text-pink-500 font-bold">{resonanceQ}</span>
               </div>
               <input
-                aria-label="Bandpass Sharpness (Resonance Q)"
+                aria-label="Resonator Q"
                 type="range"
                 min="10"
                 max="120"
@@ -712,18 +712,18 @@ export function GranularResonatorLab() {
                 className="w-full accent-[#d946ef] bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Purity of resonance. Extremely high Q rings like singing wine glasses or thin metal rods.
+                Q of the bandpass resonators, 10–120. Higher Q gives a narrower band and a longer ring.
               </span>
             </div>
 
             {/* Feedback level slider */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">COMB FEEDBACK COEFFICIENT</span>
+                <span className="text-zinc-400">FEEDBACK</span>
                 <span className="text-zinc-350">{Math.round(feedbackLevel * 100)}%</span>
               </div>
               <input
-                aria-label="Comb Feedback Coefficient"
+                aria-label="Feedback"
                 type="range"
                 min="0.0"
                 max="0.95"
@@ -733,20 +733,20 @@ export function GranularResonatorLab() {
                 className="w-full accent-[#d946ef] bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Reroutes filter outputs back into their inputs, prolonging delay sheets and rings.
+                Share of each resonator's output fed back into it through a one-period delay, 0–95%; more feedback rings longer. Changing it stops playback.
               </span>
             </div>
 
             {/* Volume controls */}
             <div className="space-y-1.5 pt-1">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">RESONATOR MODEL ENVELOPE (MASTER)</span>
+                <span className="text-zinc-400">OUTPUT LEVEL</span>
                 <span className="text-zinc-500">{Math.round(volume * 100)}%</span>
               </div>
               <div className="flex items-center gap-2">
                 {volume === 0 ? <VolumeX className="w-4 h-4 text-zinc-650" /> : <Volume2 className="w-4 h-4 text-zinc-400" />}
                 <input
-                  aria-label="Resonator Model Envelope (Master)"
+                  aria-label="Output level"
                   type="range"
                   min="0"
                   max="0.4"
@@ -767,7 +767,7 @@ export function GranularResonatorLab() {
           {/* Timeline and Bubbles cloud */}
           <div className="p-4 bg-zinc-950/50 border border-zinc-900 rounded-sm space-y-3">
             <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">
-              // Granular Exciter Cloud Scanner
+              // Grains (by position in source)
             </span>
 
             {/* Interactive Timeline scanner display */}
@@ -809,21 +809,21 @@ export function GranularResonatorLab() {
               {/* Guide prompt when empty list */}
               {!isPlaying && (
                 <div className="text-zinc-650 font-mono text-[9px] uppercase tracking-wider text-center pointer-events-none z-10 px-4">
-                  [ STANDBY // ENGAGE AN EXCITER SIGNAL TO OBSERVE CLOUD ACTIVITY ]
+                  [ STOPPED // PRESS PLAY TO SEE GRAINS ]
                 </div>
               )}
             </div>
 
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-650">
-              <span>EXCITER START (OFFSET 0.0s)</span>
-              <span>EXCITER OUTLET LIMIT</span>
+              <span>START OF SOURCE</span>
+              <span>END OF SOURCE</span>
             </div>
           </div>
 
           {/* Tuning Adapting Resonators list */}
           <div className="p-4 bg-zinc-950/50 border border-zinc-900 rounded-sm space-y-4">
             <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">
-              // Resonator Adaptable Harmonic Network
+              // Resonator Frequencies
             </span>
 
             {/* Active vibrating strings representation */}
@@ -878,8 +878,8 @@ export function GranularResonatorLab() {
             </div>
 
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 pt-2 border-t border-zinc-900">
-              <span className="uppercase tracking-wider">// Adaptation status: Connected to exciter pitch sweeps</span>
-              <span className="uppercase tracking-wider">feedback loops aligned //</span>
+              <span className="uppercase tracking-wider">// Built-in sources: fixed presets</span>
+              <span className="uppercase tracking-wider">Upload: follows grain pitch //</span>
             </div>
           </div>
 
@@ -888,12 +888,12 @@ export function GranularResonatorLab() {
             <div className="flex items-start gap-2.5">
               <Info className="w-4 h-4 text-[#d946ef] shrink-0 mt-0.5" />
               <div className="space-y-1.5">
-                <span className="font-mono text-[10px] font-bold text-zinc-300 uppercase tracking-widest block">✦ Understanding physical coupling</span>
+                <span className="font-mono text-[10px] font-bold text-zinc-300 uppercase tracking-widest block">How it works</span>
                 <p>
-                  Instead of playing the source recordings directly, they are sliced into high-density micro-grains. These raw signals carry purely the acoustic transient energy (the "excitation"). 
+                  The source isn't played directly. It is cut into grains, and each grain is sent in parallel into five or six bandpass resonators with feedback, so what you hear is the resonators ringing, not the grains themselves.
                 </p>
                 <p>
-                  This exciting stream is then immediately injected inside a network of parallel tuned Resonators. The frequencies of these resonators morph adaptively based on the exciter's characteristics. When vocal formants sweep, the resonators morph alongside them, resulting in a continuously evolving physical acoustic body that behaves like a custom instrument.
+                  The resonator frequencies are presets for each built-in source. For an uploaded file they are 350 Hz times the grain pitch and 1.5, 2, 2.5 and 3 times that. They don't follow the spectrum of the audio.
                 </p>
               </div>
             </div>

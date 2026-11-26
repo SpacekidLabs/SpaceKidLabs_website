@@ -8,9 +8,9 @@ interface Preset {
 }
 
 const PRESETS: Preset[] = [
-  { name: '🌃 Synthwave Skyscrapers', type: 'city', desc: 'A glowing sunset grid behind silhouetted neon towers.' },
-  { name: '👤 LΛMPLIGHT Silhouette', type: 'portrait', desc: 'A stylized cybernetic wireframe human portrait.' },
-  { name: '🌀 Neural Vortex', type: 'sculpture', desc: 'Abstract generative concentric mathematical vector curves.' }
+  { name: 'City at Sunset', type: 'city', desc: 'Striped sun, perspective grid and block buildings.' },
+  { name: 'Wireframe Face', type: 'portrait', desc: 'A face drawn as outlines with a visor band.' },
+  { name: 'Radial Lines', type: 'sculpture', desc: 'A ring of gradient lines and three overlapping circles.' }
 ];
 
 export function DatabendJpg() {
@@ -459,7 +459,7 @@ export function DatabendJpg() {
 
         ctx.fillStyle = 'rgba(0, 255, 170, 0.7)';
         ctx.font = '7px monospace';
-        ctx.fillText(`SLICE_INDEX [0x${idx.toString(16).toUpperCase()}] : SHIFT ${sliceOffsets[idx].toFixed(1)}px`, 12, idx * sliceHeight + 11);
+        ctx.fillText(`SLICE ${idx}: ${sliceOffsets[idx].toFixed(1)}px`, 12, idx * sliceHeight + 11);
       }
     }
   };
@@ -534,7 +534,7 @@ export function DatabendJpg() {
       link.href = dataUrl;
       link.click();
     } catch (e) {
-      alert("Uh oh! Browser security rules blocked canvas export. Open this app in a new tab to download!");
+      alert("The browser blocked the canvas export. Try opening this page in its own tab.");
     }
   };
 
@@ -549,12 +549,11 @@ export function DatabendJpg() {
       />
 
       {/* Primary Top Bar matching databend.jpg layout */}
-      <div className="h-14 border-b border-zinc-900 flex items-center justify-between px-4 sm:px-6 shrink-0 bg-[#0c0c10]">
+      <div className="min-h-14 border-b border-zinc-900 flex flex-wrap items-center justify-between gap-2 py-2 px-4 sm:px-6 shrink-0 bg-[#0c0c10]">
         <div className="flex items-center gap-3">
           <span className="font-display font-black text-violet-500 text-sm tracking-widest relative top-0.5">DATABEND.jpg</span>
-          <span className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 font-mono text-[8px] font-black uppercase">v1.2 // IMAGE_BENDER</span>
           <span className="hidden lg:inline-block px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/25 text-amber-500 font-mono text-[8px] font-bold uppercase tracking-wider animate-pulse">
-            ⚠️ Web Demo ONLY - Desktop App in Development
+            Browser sketch; a larger version is in progress
           </span>
         </div>
 
@@ -595,7 +594,7 @@ export function DatabendJpg() {
             
             {/* Hover floating dropdown list */}
             <div className="absolute right-0 top-full mt-1.5 w-64 bg-[#0d0d12] border border-zinc-800 rounded-sm shadow-xl p-1 z-50 opacity-0 pointer-events-none group-focus-within/presets:opacity-100 group-hover/presets:opacity-100 group-hover/presets:pointer-events-auto transition-opacity duration-150">
-              <div className="p-2 border-b border-zinc-900 text-[8px] font-mono text-zinc-550 uppercase">Vector Templates</div>
+              <div className="p-2 border-b border-zinc-900 text-[8px] font-mono text-zinc-550 uppercase">Generated Images</div>
               {PRESETS.map((p, pIdx) => (
                 <button
                   key={pIdx}
@@ -622,7 +621,7 @@ export function DatabendJpg() {
               onClick={triggerUndo} 
               disabled={historyIndex <= 0}
               className="p-1 px-2.5 text-zinc-500 hover:text-white disabled:opacity-30 transition-colors cursor-pointer"
-              title="Undo state"
+              title="Undo (history only records the starting values and resets)"
             >
               <Undo className="w-3.5 h-3.5" />
             </button>
@@ -630,7 +629,7 @@ export function DatabendJpg() {
               onClick={triggerRedo} 
               disabled={historyIndex >= history.length - 1} 
               className="p-1 px-2.5 text-zinc-500 hover:text-white border-l border-zinc-900 disabled:opacity-30 transition-colors cursor-pointer"
-              title="Redo state"
+              title="Redo"
             >
               <Redo className="w-3.5 h-3.5" />
             </button>
@@ -640,14 +639,14 @@ export function DatabendJpg() {
           <button 
             onClick={triggerReset} 
             className="p-1.5 border border-zinc-850 hover:border-zinc-700 bg-black hover:bg-zinc-900 rounded text-zinc-400 hover:text-white transition-all cursor-pointer"
-            title="Reset bender values"
+            title="Set all five effects to 0"
           >
             <Ban className="w-4 h-4 text-red-500" />
           </button>
         </div>
 
         <div className="font-mono text-[10px] text-zinc-650 tracking-wider relative top-0.5">
-          STATUS: <span className="text-emerald-400 font-bold">READY</span>
+          SOURCE: <span className="text-emerald-400 font-bold">{customImageSrc ? 'YOUR IMAGE' : PRESETS[activePresetIndex].name.toUpperCase()}</span>
         </div>
       </div>
 
@@ -683,7 +682,7 @@ export function DatabendJpg() {
             className="px-3 py-1.5 bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-850 hover:border-violet-500 text-zinc-300 hover:text-white font-mono text-[9px] uppercase font-bold tracking-wider rounded-sm transition-all flex items-center gap-2 cursor-pointer outline-none shadow-md"
           >
             <Upload className="w-3.5 h-3.5 text-violet-400" />
-            {customImageSrc ? "📁 Change Custom Photo" : "📁 Bend Your Own Picture"}
+            {customImageSrc ? "Load another image" : "Load your own image"}
           </button>
         </div>
 
@@ -700,12 +699,12 @@ export function DatabendJpg() {
             {isLiveAnimating ? (
               <>
                 <Square className="w-3 h-3 fill-current" />
-                LFO Loop On
+                LFO on
               </>
             ) : (
               <>
                 <Play className="w-3 h-3 fill-current text-[#00ffbb]" />
-                Static Mode
+                LFO off
               </>
             )}
           </button>
@@ -727,11 +726,11 @@ export function DatabendJpg() {
           {/* Slice displacement slider */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-baseline font-mono text-[9px] text-zinc-500 uppercase tracking-wider font-bold">
-              <span>Slice Shift (0x0F)</span>
+              <span>Slice Shift</span>
               <span className="text-violet-400 font-bold">{sliceOffset}px</span>
             </div>
             <input 
-              aria-label="Slice Shift (0x0F)"
+              aria-label="Slice Shift"
               type="range"
               min="0"
               max="150"
@@ -739,17 +738,17 @@ export function DatabendJpg() {
               onChange={(e) => handleParamChange(() => setSliceOffset(parseInt(e.target.value)))}
               className="w-full h-1 bg-zinc-900 accent-violet-500 cursor-pointer rounded"
             />
-            <span className="block text-[8px] text-zinc-600 font-mono">Displaces horizontal rows symmetrically.</span>
+            <span className="block text-[8px] text-zinc-600 font-mono">Shifts some of the 14 horizontal bands sideways, by up to 2× this value in px.</span>
           </div>
 
           {/* RGB color separation split */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-baseline font-mono text-[9px] text-zinc-500 uppercase tracking-wider font-bold">
-              <span>Color Separation</span>
+              <span>Colour Separation</span>
               <span className="text-cyan-400 font-bold">{rgbSeparation}px</span>
             </div>
             <input 
-              aria-label="Color Separation"
+              aria-label="Colour Separation"
               type="range"
               min="0"
               max="60"
@@ -757,17 +756,17 @@ export function DatabendJpg() {
               onChange={(e) => handleParamChange(() => setRgbSeparation(parseInt(e.target.value)))}
               className="w-full h-1 bg-zinc-900 accent-cyan-400 cursor-pointer rounded"
             />
-            <span className="block text-[8px] text-zinc-600 font-mono">Splits red, green, & blue wavelengths.</span>
+            <span className="block text-[8px] text-zinc-600 font-mono">Offsets the red and blue channels sideways in opposite directions, in px.</span>
           </div>
 
           {/* Color melting / Row sorting */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-baseline font-mono text-[9px] text-zinc-500 uppercase tracking-wider font-bold">
-              <span>Acid Pixel Sorter</span>
-              <span className="text-[#00ffbb] font-bold">{colorMelt}px</span>
+              <span>Pixel Melt</span>
+              <span className="text-[#00ffbb] font-bold">{colorMelt}</span>
             </div>
             <input 
-              aria-label="Acid Pixel Sorter"
+              aria-label="Pixel Melt"
               type="range"
               min="0"
               max="100"
@@ -775,17 +774,17 @@ export function DatabendJpg() {
               onChange={(e) => handleParamChange(() => setColorMelt(parseInt(e.target.value)))}
               className="w-full h-1 bg-zinc-900 accent-[#00ffbb] cursor-pointer rounded"
             />
-            <span className="block text-[8px] text-zinc-600 font-mono">Melts colors downward in vertical paths.</span>
+            <span className="block text-[8px] text-zinc-600 font-mono">Smears pixels down some columns; smear length is 3.5× this value in px.</span>
           </div>
 
           {/* Sine wave row distortion */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-baseline font-mono text-[9px] text-zinc-500 uppercase tracking-wider font-bold">
-              <span>Sine Wave Wobble</span>
+              <span>Sine Wobble</span>
               <span className="text-[#ffaa00] font-bold">{waveDistortion}px</span>
             </div>
             <input 
-              aria-label="Sine Wave Wobble"
+              aria-label="Sine Wobble"
               type="range"
               min="0"
               max="50"
@@ -793,14 +792,14 @@ export function DatabendJpg() {
               onChange={(e) => handleParamChange(() => setWaveDistortion(parseInt(e.target.value)))}
               className="w-full h-1 bg-zinc-900 accent-[#ffaa00] cursor-pointer rounded"
             />
-            <span className="block text-[8px] text-zinc-600 font-mono">Wallows rows back/forth like magnetic tape.</span>
+            <span className="block text-[8px] text-zinc-600 font-mono">Bends rows sideways along sine waves, by up to 1.5× this value in px.</span>
           </div>
 
           {/* Byte Corruption random blocks */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-baseline font-mono text-[9px] text-zinc-500 uppercase tracking-wider font-bold">
               <span>Byte Scrambler</span>
-              <span className="text-red-400 font-bold">{byteCorruption}%</span>
+              <span className="text-red-400 font-bold">{byteCorruption}</span>
             </div>
             <input 
               aria-label="Byte Scrambler"
@@ -811,16 +810,16 @@ export function DatabendJpg() {
               onChange={(e) => handleParamChange(() => setByteCorruption(parseInt(e.target.value)))}
               className="w-full h-1 bg-zinc-900 accent-red-400 cursor-pointer rounded"
             />
-            <span className="block text-[8px] text-zinc-600 font-mono">Injects colored digital static bars.</span>
+            <span className="block text-[8px] text-zinc-600 font-mono">Overwrites rectangular blocks with stripe and noise patterns; higher values add more blocks.</span>
           </div>
         </div>
       )}
 
       {/* Info panel footer */}
       <div className="h-10 border-t border-zinc-900 shrink-0 bg-[#060608] flex items-center justify-between px-4 sm:px-6 font-mono text-[8.5px] text-zinc-600">
-        <span>* DATA CORRUPTION LEVEL: {((sliceOffset + rgbSeparation + colorMelt + waveDistortion + byteCorruption) / 4).toFixed(1)}%</span>
-        <span className="hidden sm:inline">CRITERIA: RAW JPG INDEX OUT OF RANGE CORRUPTION (3125/3072 HEX OFFSET)</span>
-        <span>Aesthetic: Cyberpunk Retro CRT</span>
+        <span>Canvas: 760 × 450 px</span>
+        <span className="hidden sm:inline">Effects work on decoded pixels, not JPEG bytes</span>
+        <span>Export: PNG</span>
       </div>
     </div>
   );

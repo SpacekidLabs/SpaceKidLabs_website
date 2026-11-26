@@ -27,7 +27,8 @@ export default function Post() {
 
       <p>
         The lab does this with six bandpass filters on the noise (Q 2, centred at 120, 350, 800, 1800, 4000 and
-        9000 Hz). An analyser measures the recording's level in six matching regions, and each noise band's gain is set
+        9000 Hz). An analyser measures the recording's level in six frequency regions (which only roughly line up with the
+        filters), and each noise band's gain is set
         to 1 minus that level times the carving strength (0.2 to 1). The recording itself is muted, so you only hear
         the noise. There is also a positive mode that does the opposite and opens a noise band when the recording has
         energy there, which makes it a simple noise-excited channel vocoder.

@@ -4,12 +4,12 @@ import { motion } from 'motion/react';
 import { fadeOutAndClose } from '../lib/audio';
 
 const FREQ_BANDS = [
-  { label: 'Sub-Bass', freq: 120, range: '20-200Hz' },
-  { label: 'Low-Mids', freq: 350, range: '200-500Hz' },
-  { label: 'Mids', freq: 800, range: '500-1.2kHz' },
-  { label: 'High-Mids', freq: 1800, range: '1.2-2.5kHz' },
-  { label: 'Presence', freq: 4000, range: '2.5-6kHz' },
-  { label: 'Brilliance', freq: 9000, range: '6-15kHz' }
+  { label: 'Band 1', freq: 120, range: '120 Hz' },
+  { label: 'Band 2', freq: 350, range: '350 Hz' },
+  { label: 'Band 3', freq: 800, range: '800 Hz' },
+  { label: 'Band 4', freq: 1800, range: '1800 Hz' },
+  { label: 'Band 5', freq: 4000, range: '4000 Hz' },
+  { label: 'Band 6', freq: 9000, range: '9000 Hz' }
 ];
 
 export function NoiseFossilLab() {
@@ -18,7 +18,7 @@ export function NoiseFossilLab() {
   const [carvingMode, setCarvingMode] = useState<'negative' | 'positive'>('negative');
   const [carveDepth, setCarveDepth] = useState<number>(0.85); // how aggressively to carve
   const [selectedSource, setSelectedSource] = useState<'drums' | 'arp' | 'vocal' | 'upload'>('drums');
-  const [sourceName, setSourceName] = useState<string>('Synthetic Percussion');
+  const [sourceName, setSourceName] = useState<string>('Synthetic drums, 135 BPM');
   
   // Real-time analysis states for UI representation
   const [sourceBandEnergies, setSourceBandEnergies] = useState<number[]>([0, 0, 0, 0, 0, 0]);
@@ -212,7 +212,7 @@ export function NoiseFossilLab() {
             setTimeout(() => startAudio(), 100);
           }
         } catch (err) {
-          alert("Error decoding audio file. Make sure it is an audio file.");
+          alert("Could not decode this file. Try a WAV, MP3 or OGG file.");
           setUploadProgress(null);
         } finally {
           tempCtx.close();
@@ -248,7 +248,7 @@ export function NoiseFossilLab() {
       let sourceBuffer: AudioBuffer;
       if (selectedSource === 'upload') {
         if (!uploadedAudioBufferRef.current) {
-          alert("Please upload an audio file first, or choose a synthetic preset.");
+          alert("Load an audio file first, or pick one of the synthetic sources.");
           ctx.close();
           audioCtxRef.current = null;
           return;
@@ -400,10 +400,10 @@ export function NoiseFossilLab() {
   const handleSourceChange = (type: 'drums' | 'arp' | 'vocal' | 'upload') => {
     setSelectedSource(type);
     let name = '';
-    if (type === 'drums') name = 'Synthetic Percussion Beat';
-    else if (type === 'arp') name = 'Cosmic Arpeggio Chain';
-    else if (type === 'vocal') name = 'Organic Shaman Vocals';
-    else name = uploadedAudioBufferRef.current ? fileInputRef.current?.files?.[0]?.name || 'Uploaded File' : 'No Uploaded Signal';
+    if (type === 'drums') name = 'Synthetic drums, 135 BPM';
+    else if (type === 'arp') name = 'Synthetic arpeggio';
+    else if (type === 'vocal') name = 'Synthetic voice';
+    else name = uploadedAudioBufferRef.current ? fileInputRef.current?.files?.[0]?.name || 'Uploaded file' : 'No file loaded';
     
     setSourceName(name);
 
@@ -424,9 +424,9 @@ export function NoiseFossilLab() {
       {/* Title block */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-zinc-900 pb-5 gap-3">
         <div>
-          <span className="font-mono text-[9px] text-[#f97316] font-bold tracking-widest uppercase">// SPECTRAL IMPRINT LAB // EXPERIMENT 24</span>
+          <span className="font-mono text-[9px] text-[#f97316] font-bold tracking-widest uppercase">// NOISE FOSSIL LAB</span>
           <h3 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
-            Spectral Carving & Auditory Negatives
+            Carving White Noise with a Source
           </h3>
         </div>
         
@@ -440,7 +440,7 @@ export function NoiseFossilLab() {
           }`}
         >
           {isPlaying ? <Square className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-          {isPlaying ? 'STOP FOSSIL SYNTH' : 'INITIALIZE SPECTRAL CARVER'}
+          {isPlaying ? 'STOP' : 'START'}
         </button>
       </div>
 
@@ -451,7 +451,7 @@ export function NoiseFossilLab() {
           
           {/* Signal Source Selector */}
           <div className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-sm space-y-4">
-            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Trigger Signal Source</span>
+            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Source</span>
             
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -463,7 +463,7 @@ export function NoiseFossilLab() {
                 }`}
               >
                 <Sparkles className="w-3 h-3 text-[#f97316]" />
-                Techno Beat
+                Drums
               </button>
               
               <button
@@ -475,7 +475,7 @@ export function NoiseFossilLab() {
                 }`}
               >
                 <Layers className="w-3 h-3 text-orange-400" />
-                Synth Arp
+                Arpeggio
               </button>
 
               <button
@@ -487,7 +487,7 @@ export function NoiseFossilLab() {
                 }`}
               >
                 <RefreshCw className="w-3 h-3 text-orange-400" />
-                Cyber Vocal
+                Voice
               </button>
 
               <button
@@ -499,7 +499,7 @@ export function NoiseFossilLab() {
                 }`}
               >
                 <Upload className="w-3 h-3" />
-                {uploadedAudioBufferRef.current ? 'Re-Upload' : 'Upload File'}
+                {uploadedAudioBufferRef.current ? 'Load Another' : 'Load File'}
               </button>
             </div>
 
@@ -514,7 +514,7 @@ export function NoiseFossilLab() {
             {uploadProgress !== null && (
               <div className="space-y-1 pt-1">
                 <div className="flex justify-between text-[9px] font-mono text-zinc-400">
-                  <span>DECODING AUDIO FILE...</span>
+                  <span>DECODING FILE...</span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
@@ -524,18 +524,18 @@ export function NoiseFossilLab() {
             )}
 
             <div className="text-[10px] font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded-sm border border-zinc-900 flex justify-between">
-              <span className="text-zinc-500">ACTIVE SIGNAL:</span>
+              <span className="text-zinc-500">SELECTED:</span>
               <span className="text-white truncate max-w-[200px]">{sourceName}</span>
             </div>
           </div>
 
           {/* Carver settings parameters */}
           <div className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-sm space-y-4">
-            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Carver Modulations</span>
+            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Carving</span>
 
             {/* Carving Mode toggle (Negative vs Positive) */}
             <div className="space-y-1.5">
-              <span className="text-zinc-400 font-mono text-[11px] block uppercase">Spectral Negative Alignment</span>
+              <span className="text-zinc-400 font-mono text-[11px] block uppercase">Mode</span>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setCarvingMode('negative')}
@@ -544,9 +544,9 @@ export function NoiseFossilLab() {
                       ? 'bg-zinc-900 border-[#f97316] text-[#f97316]'
                       : 'bg-zinc-950 border-zinc-900 text-zinc-500 hover:border-zinc-800'
                   }`}
-                  title="Noise is silenced in frequency bands where the source is active"
+                  title="Each noise band is turned down when the source has energy there. Switching mode stops playback."
                 >
-                  Fossil (Negative)
+                  Negative
                 </button>
                 <button
                   onClick={() => setCarvingMode('positive')}
@@ -555,9 +555,9 @@ export function NoiseFossilLab() {
                       ? 'bg-zinc-900 border-orange-400 text-orange-400'
                       : 'bg-zinc-950 border-zinc-900 text-zinc-500 hover:border-zinc-800'
                   }`}
-                  title="Noise is only allowed to flow inside the bands where the source is active"
+                  title="Each noise band is turned up only when the source has energy there. Switching mode stops playback."
                 >
-                  Imprint (Positive)
+                  Positive
                 </button>
               </div>
             </div>
@@ -579,20 +579,20 @@ export function NoiseFossilLab() {
                 className="w-full accent-[#f97316] bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Higher depth produces deep, high-contrast negatives (spectral voids).
+                Scales how far the source level moves each noise band's gain, from 20% to 100%.
               </span>
             </div>
 
             {/* Master Volume */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">NOISE FOSSIL GAIN</span>
+                <span className="text-zinc-400">OUTPUT GAIN</span>
                 <span className="text-zinc-500">{Math.round(volume * 100)}%</span>
               </div>
               <div className="flex items-center gap-2">
                 {volume === 0 ? <VolumeX className="w-4 h-4 text-zinc-650" /> : <Volume2 className="w-4 h-4 text-zinc-400" />}
                 <input
-                  aria-label="Noise Fossil Gain"
+                  aria-label="Output Gain"
                   type="range"
                   min="0"
                   max="0.4"
@@ -612,7 +612,7 @@ export function NoiseFossilLab() {
           {/* Main Visual Wave Matrix */}
           <div className="p-4 bg-zinc-950/50 border border-zinc-900 rounded-sm space-y-4">
             <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">
-              // Multi-Band Spectral Coupling Analysis
+              // Band Levels
             </span>
 
             {/* Visual Bars for original signal vs noise fossiled output */}
@@ -631,8 +631,8 @@ export function NoiseFossilLab() {
                     <div className="flex justify-between items-center text-[10px] font-mono">
                       <span className="text-zinc-300 font-medium">{band.label} <span className="text-zinc-600 font-light text-[9px]">{band.range}</span></span>
                       <div className="flex gap-3 text-[9px]">
-                        <span className="text-zinc-500 font-light">SRC IN: <span className="text-zinc-400">{srcPercent}%</span></span>
-                        <span className="text-zinc-500 font-light">FOSSIL GAIN: <span className="text-[#f97316]">{noisePercent}%</span></span>
+                        <span className="text-zinc-500 font-light">SOURCE: <span className="text-zinc-400">{srcPercent}%</span></span>
+                        <span className="text-zinc-500 font-light">NOISE GAIN: <span className="text-[#f97316]">{noisePercent}%</span></span>
                       </div>
                     </div>
 
@@ -662,8 +662,8 @@ export function NoiseFossilLab() {
             </div>
 
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 pt-2 border-t border-zinc-900">
-              <span className="uppercase tracking-wider">// Left row: Input Signal Energy Structure</span>
-              <span className="uppercase tracking-wider">Right row: Resulting Shaded Noise Fossil //</span>
+              <span className="uppercase tracking-wider">Left: source level per band</span>
+              <span className="uppercase tracking-wider">Right: noise band gain</span>
             </div>
           </div>
 
@@ -672,12 +672,12 @@ export function NoiseFossilLab() {
             <div className="flex items-start gap-2.5">
               <Info className="w-4 h-4 text-[#f97316] shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <span className="font-mono text-[10px] font-bold text-zinc-300 uppercase tracking-widest block">✦ Understanding the Artifact</span>
+                <span className="font-mono text-[10px] font-bold text-zinc-300 uppercase tracking-widest block">What you hear</span>
                 <p>
-                  You are hearing pure white noise. There is absolutely no direct audio leaking from your source file or synthesizer. Instead, the white noise is carefully segmented into 6 separate frequency bands. The energy envelope of each band in the source audio dynamically, instantaneously punches a hole (or shapes an imprint) into the equivalent frequency of the white noise.
+                  You only hear white noise; the source is analysed but muted. The noise is split by six bandpass filters (Q 2, centred at 120 to 9000 Hz), and the source's level in six analyser regions sets each band's gain, updated once per screen frame with a 20 ms smoothing time constant. The bands are broad and overlap, so carving makes dips in the noise, not silent gaps.
                 </p>
                 <p className="pt-1 select-none text-[10px] font-mono text-[#f97316]">
-                  // Select Mode: "Fossil" to hear the ghostly negative contour, or "Imprint" to hear the textured positive silhouette.
+                  // Negative turns noise down where the source is loud; positive lets noise through only there, like a simple noise-excited vocoder.
                 </p>
               </div>
             </div>

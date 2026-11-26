@@ -351,16 +351,16 @@ export function WavesetsVisualizer() {
       {/* HEADER ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-900 pb-4 gap-2">
         <div>
-          <span className="font-mono text-[10px] text-[#00ffaa] font-bold tracking-widest uppercase">// EXPERIMENTAL SYNTHESIS</span>
+          <span className="font-mono text-[10px] text-[#00ffaa] font-bold tracking-widest uppercase">// WAVESET LAB</span>
           <h3 className="text-white font-display font-medium text-base uppercase tracking-wider">
-            Waveset Object Dissector & Rebuilder
+            Waveset Editor
           </h3>
         </div>
         <button
           onClick={() => setShowInfo(!showInfo)}
           className="text-xs font-mono text-zinc-500 hover:text-white transition-colors flex items-center gap-1 self-start sm:self-auto"
         >
-          <HelpCircle className="w-3.5 h-3.5" /> {showInfo ? 'Close Details' : 'What is this?'}
+          <HelpCircle className="w-3.5 h-3.5" /> {showInfo ? 'Hide notes' : 'How it works'}
         </button>
       </div>
 
@@ -368,11 +368,11 @@ export function WavesetsVisualizer() {
       {showInfo && (
         <div className="text-xs space-y-3 p-4 bg-zinc-950/70 border border-zinc-900 text-zinc-400 font-sans font-light rounded-sm">
           <p>
-            Traditional distortion scales or folds the amplitudes of individual samples. 
-            <strong> Waveset processing</strong> does something different: it breaks your voice, synth, or noise into discrete objects bounded by zero-crossings (where the signal transitions between positive and negative realms).
+            The source is a 150 ms synthetic test tone at 44.1 kHz: a 110 Hz fundamental plus three weaker partials at 2.1, 3 and 4.9 times that frequency, under a sine-shaped fade in and out.
+            This lab cuts it at <strong>every</strong> zero crossing, upward and downward, so each segment below is roughly half a waveset in Wishart's sense (a waveset runs from one upward zero crossing to the next).
           </p>
           <p>
-            By treating each cycle as an individual block asset, we can duplicate, delete, invert, or mathematically reorganize them. Try drawing selections, applying edits, and triggering the dynamic audition synth loop to explore micro-spliced robotic sound textures.
+            Select segments, apply an operation to them, and press Play loop to hear the edited signal repeat. The operations change the order, length, direction or level of whole segments and leave the shape inside each one alone. The reset button restores the original tone.
           </p>
         </div>
       )}
@@ -381,7 +381,7 @@ export function WavesetsVisualizer() {
       <div className="relative bg-black/90 p-4 border border-zinc-950 rounded-sm">
         <div className="absolute top-2 left-2 text-[8px] font-mono text-zinc-600 tracking-widest uppercase flex items-center gap-1.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#00ffaa] animate-pulse"></span>
-          Interactive Waveset Chain ({wavesets.length} wavesets found)
+          Segments ({wavesets.length} between zero crossings)
         </div>
 
         {/* INTERACTIVE COMPOSITE WAVEFORM VIEW */}
@@ -419,7 +419,7 @@ export function WavesetsVisualizer() {
                   role="button"
                   tabIndex={0}
                   aria-pressed={isSel}
-                  aria-label={`Waveset ${w.id}`}
+                  aria-label={`Segment ${index + 1}, ${sampleCount} samples`}
                   style={{ width: `${boxWidth}px` }}
                   className={`h-full border-t border-b shrink-0 relative flex flex-col justify-between p-1 transition-all cursor-pointer rounded-sm group overflow-hidden ${
                     isSel 
@@ -430,7 +430,7 @@ export function WavesetsVisualizer() {
                   {/* Local Header */}
                   <div className="flex justify-between items-center text-[8px] font-mono text-zinc-600 group-hover:text-zinc-400">
                     <span>#{index + 1}</span>
-                    <span>{sampleCount}s</span>
+                    <span>{sampleCount}</span>
                   </div>
 
                   {/* SVG Waveset Render */}
@@ -468,7 +468,7 @@ export function WavesetsVisualizer() {
 
         {/* SELECTION ASSISTANCE */}
         <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 mt-2 border-t border-zinc-900/60 pt-3">
-          <span>💡 CLICK to toggle selection, SHIFT+CLICK for range</span>
+          <span>CLICK to select, SHIFT+CLICK for a range · number = length in samples</span>
           <div className="flex gap-2">
             <button 
               onClick={handleSelectAll} 
@@ -500,11 +500,11 @@ export function WavesetsVisualizer() {
           >
             {isPlaying ? (
               <>
-                <Square className="w-4 h-4 fill-current" /> Stop Loop
+                <Square className="w-4 h-4 fill-current" /> Stop
               </>
             ) : (
               <>
-                <Play className="w-4 h-4 fill-current" /> Loop Audition
+                <Play className="w-4 h-4 fill-current" /> Play loop
               </>
             )}
           </button>
@@ -512,7 +512,7 @@ export function WavesetsVisualizer() {
           <button
             onClick={generatePristine}
             className="px-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white transition-colors rounded-sm flex items-center justify-center"
-            title="Reset to pristine original vowel wave shape"
+            title="Reset to the original test tone"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
@@ -537,14 +537,14 @@ export function WavesetsVisualizer() {
           </div>
 
           <div className="text-[10px] font-mono text-zinc-500">
-            Selected: <span className="text-[#00ffaa] font-bold">{selectedIds.length}</span> of {wavesets.length} objects
+            Selected: <span className="text-[#00ffaa] font-bold">{selectedIds.length}</span> of {wavesets.length} segments
           </div>
         </div>
       </div>
 
       {/* OPERATIONS CONSOLE CONTAINER */}
       <div className="space-y-3">
-        <div className="text-xs font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-900 pb-1.5">// DSP OPERATIONS ON SELECTED OBJECTS</div>
+        <div className="text-xs font-mono text-zinc-500 uppercase tracking-widest border-b border-zinc-900 pb-1.5">// OPERATIONS ON SELECTED SEGMENTS</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {/* Shuffling */}
           <button
@@ -554,8 +554,8 @@ export function WavesetsVisualizer() {
           >
             <Shuffle className="w-3.5 h-3.5 text-[#00ffaa]" />
             <div className="text-left">
-              <span className="block text-white text-[10px] font-mono font-bold uppercase">Shuffle Order</span>
-              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Randomize positioning</span>
+              <span className="block text-white text-[10px] font-mono font-bold uppercase">Shuffle</span>
+              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Random order (2+ selected)</span>
             </div>
           </button>
 
@@ -567,8 +567,8 @@ export function WavesetsVisualizer() {
           >
             <Sparkles className="w-3.5 h-3.5 text-[#00ffaa]" />
             <div className="text-left">
-              <span className="block text-white text-[10px] font-mono font-bold uppercase">Loop Repeat</span>
-              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Double cycles inline</span>
+              <span className="block text-white text-[10px] font-mono font-bold uppercase">Repeat</span>
+              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Play each one twice</span>
             </div>
           </button>
 
@@ -580,8 +580,8 @@ export function WavesetsVisualizer() {
           >
             <ChevronRight className="w-3.5 h-3.5 rotate-180 text-[#00ffaa]" />
             <div className="text-left">
-              <span className="block text-white text-[10px] font-mono font-bold uppercase">Reverse Wave</span>
-              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Flip temporal playback</span>
+              <span className="block text-white text-[10px] font-mono font-bold uppercase">Reverse</span>
+              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Reverse each in time</span>
             </div>
           </button>
 
@@ -593,8 +593,8 @@ export function WavesetsVisualizer() {
           >
             <SquareIcon className="w-3.5 h-3.5 text-red-500" />
             <div className="text-left">
-              <span className="block text-white text-[10px] font-mono font-bold uppercase">Delete Cycles</span>
-              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Fracture waveforms</span>
+              <span className="block text-white text-[10px] font-mono font-bold uppercase">Delete</span>
+              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Remove; loop gets shorter</span>
             </div>
           </button>
 
@@ -607,7 +607,7 @@ export function WavesetsVisualizer() {
             <span className="text-[10px] font-mono text-[#00ffaa] font-bold">↔</span>
             <div className="text-left">
               <span className="block text-white text-[10px] font-mono font-bold uppercase">Stretch (2x)</span>
-              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Interpolate twice as long</span>
+              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Resample, octave down</span>
             </div>
           </button>
 
@@ -619,8 +619,8 @@ export function WavesetsVisualizer() {
           >
             <span className="text-[10px] font-mono text-[#00ffaa] font-bold">→←</span>
             <div className="text-left">
-              <span className="block text-white text-[10px] font-mono font-bold uppercase">Compress (0.5x)</span>
-              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Shrink size by half</span>
+              <span className="block text-white text-[10px] font-mono font-bold uppercase">Squash (0.5x)</span>
+              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Resample, octave up</span>
             </div>
           </button>
 
@@ -632,8 +632,8 @@ export function WavesetsVisualizer() {
           >
             <span className="text-[10px] font-mono text-[#00ffaa] font-bold">±</span>
             <div className="text-left">
-              <span className="block text-white text-[10px] font-mono font-bold uppercase">Invert Phase</span>
-              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Multiply wave by -1</span>
+              <span className="block text-white text-[10px] font-mono font-bold uppercase">Invert</span>
+              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Multiply by -1</span>
             </div>
           </button>
 
@@ -645,8 +645,8 @@ export function WavesetsVisualizer() {
           >
             <span className="text-[10px] font-mono text-[#00ffaa] font-bold">▼</span>
             <div className="text-left">
-              <span className="block text-white text-[10px] font-mono font-bold uppercase">Attenuate (40%)</span>
-              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Soften wave amplitude</span>
+              <span className="block text-white text-[10px] font-mono font-bold uppercase">Level (40%)</span>
+              <span className="block text-[8px] text-zinc-500 group-hover:text-zinc-400">Scale by 0.4 (about -8 dB)</span>
             </div>
           </button>
         </div>

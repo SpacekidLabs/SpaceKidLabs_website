@@ -71,11 +71,11 @@ export function DoublePendulum() {
       onMouseLeave={() => { isHoveredRef.current = false; setIsHovered(false); }}
     >
       <div className="text-xs font-mono text-zinc-500 absolute top-6 left-6 tracking-widest uppercase transition-colors group-hover:text-brand-orange">
-        Visual: Acoustic Pendulum Mechanics
+        Sketch: double pendulum geometry (no sound)
       </div>
       
       <div className={`absolute bottom-6 left-6 text-xs font-mono transition-opacity duration-500 ${isHovered ? 'opacity-0' : 'opacity-60 text-white'}`}>
-        [ HOVER TO INTERACT ]
+        [ HOVER TO ANIMATE ]
       </div>
 
       <svg viewBox="-150 -60 300 360" className="w-full max-w-[350px] h-auto overflow-visible mt-8">
@@ -97,7 +97,7 @@ export function DoublePendulum() {
         
         {/* First Mass */}
         <circle cx={points.m1x} cy={points.m1y} r="10" fill="#00e5ff" />
-        <text x={points.m1x + 25} y={points.m1y + 4} fill="#00e5ff" fontSize="10" fontFamily="monospace" letterSpacing="1">JOINT (FRICTION)</text>
+        <text x={points.m1x + 25} y={points.m1y + 4} fill="#00e5ff" fontSize="10" fontFamily="monospace" letterSpacing="1">UPPER WEIGHT</text>
         
         {/* Second Rod */}
         <line x1={points.m1x} y1={points.m1y} x2={points.m2x} y2={points.m2y} stroke="#444" strokeWidth="6" strokeLinecap="round" />

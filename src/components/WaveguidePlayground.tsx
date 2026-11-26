@@ -149,7 +149,7 @@ export function WaveguidePlayground() {
 
         ctx.fillStyle = 'rgba(0, 255, 204, 0.8)';
         ctx.font = '7px monospace';
-        ctx.fillText('Z^-M_TICK', travelX - 22, h / 2 - 12);
+        ctx.fillText('z^-M loop', travelX - 22, h / 2 - 12);
       }
 
       time += 1;
@@ -277,24 +277,24 @@ export function WaveguidePlayground() {
   // Node glossary descriptions
   const nodeInfo = {
     excitation: {
-      title: 'Excitation Node (Impulse Generator)',
-      formula: 'x[n] = [Initial Noise or Click]',
-      desc: 'Mimics the real physical act of plucking or striking a string. Rather than sustaining sound vectors, this launches a single burst of energy inside the feedback circuit, setting the circular buffer into motion.',
+      title: 'Excitation',
+      formula: 'delay line filled once at n = 0',
+      desc: 'At the start of each pluck the delay line is filled with M samples of the chosen excitation: white noise, a half-sine bump, a 5-sample click, or a rising ramp (saw). Nothing is added after that, so the loop only loses energy from then on.',
     },
     delay: {
-      title: 'Delay Line Node (z^-M String Length)',
-      formula: 'M = f_s / f_0 (samples)',
-      desc: 'Simulates the physical length of the string where f_s is sample rate and f_0 is pitch. Traveling waves take exactly M samples to complete a full trip. Shorter delay lengths yield high-pitched treble vibrations.',
+      title: 'Delay line (z^-M)',
+      formula: 'M = floor(f_s / f_0) samples',
+      desc: 'The string is a delay line M samples long, where f_s is the sample rate of your audio device and f_0 is the pitch setting. A higher pitch means a shorter line. The averaging filter adds about half a sample to the loop, so the pitch you hear is close to f_s / (M + 1/2) rather than exactly the slider value.',
     },
     filter: {
-      title: 'Lowpass Damping Node (Reflection Air Loss)',
-      formula: 'H(z) = (1 + z^-1) / 2',
-      desc: 'Models high-frequency friction loss. High-frequencies dissipate quickly as waves reflect from boundaries, mimicking string materials (e.g., dead rubber vs. shiny acoustic copper/metal rods).',
+      title: 'Low-pass and loss',
+      formula: 'y[n] = g * (x[n] + x[n+1]) / 2',
+      desc: 'Each sample is averaged with the next one, a gentle low-pass, and multiplied by the feedback amount g (0.950 to 0.999). High frequencies lose more on every pass than low ones, so the tone darkens as it decays. A DC blocker in the same loop stops the saturator from building up an offset.',
     },
     shaper: {
-      title: 'Waveshaping Saturator Node (Nonlinearity)',
-      formula: 'y[n] = tanh(α * x[n]) / α',
-      desc: 'Controls acoustic saturation in the feedback path. High drive amounts simulate acoustic energy colliding aggressively against wood surfaces or buzzing frets, adding rich, metallic even and odd harmonics.',
+      title: 'Saturator',
+      formula: 'tanh: y[n] = tanh(α * x[n]) / α',
+      desc: 'A saturating curve inside the feedback loop, so it acts on every pass. Drive sets α, how hard the signal is pushed into the curve. tanh and cubic are symmetric and add odd harmonics; the diode curve treats the negative half much more gently than the positive half, which adds even harmonics as well.',
     }
   };
 
@@ -307,10 +307,10 @@ export function WaveguidePlayground() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3 border-b border-zinc-900 pb-2">
           <span className="font-mono text-[9px] uppercase tracking-widest text-[#ffaa00] flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" /> Waveguide DSP Block Diagram
+            <Sparkles className="w-3.5 h-3.5" /> Karplus-Strong block diagram
           </span>
           <span className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest hidden sm:inline">
-            Interactive Signal Flow // Tap Nodes below to inspect equations
+            Click a block for details
           </span>
         </div>
 
@@ -331,7 +331,7 @@ export function WaveguidePlayground() {
               <Zap className={`w-3.5 h-3.5 ${activeNode === 'excitation' ? 'text-[#ffaa00]' : 'text-zinc-500'}`} />
               <span className="font-mono text-[9.5px] uppercase tracking-wider text-white font-semibold">1. Excitation</span>
             </div>
-            <p className="font-mono text-[8px] text-zinc-500 capitalize">{excitationType} plucker impulse</p>
+            <p className="font-mono text-[8px] text-zinc-500 capitalize">{excitationType} burst</p>
           </button>
 
           {/* Connection Vector Arrow */}
@@ -350,7 +350,7 @@ export function WaveguidePlayground() {
               <Cpu className={`w-3.5 h-3.5 ${activeNode === 'delay' ? 'text-[#ffaa00]' : 'text-zinc-500'}`} />
               <span className="font-mono text-[9.5px] uppercase tracking-wider text-white font-semibold">2. Delay line</span>
             </div>
-            <p className="font-mono text-[8px] text-zinc-500">{Math.floor(44100 / pitch)} cells (z^-M)</p>
+            <p className="font-mono text-[8px] text-zinc-500">{Math.floor(44100 / pitch)} samples at 44.1 kHz</p>
           </button>
 
           {/* Connection Vector Arrow */}
@@ -367,9 +367,9 @@ export function WaveguidePlayground() {
           >
             <div className="flex items-center gap-2 mb-1">
               <Filter className={`w-3.5 h-3.5 ${activeNode === 'filter' ? 'text-[#ffaa00]' : 'text-zinc-500'}`} />
-              <span className="font-mono text-[9.5px] uppercase tracking-wider text-white font-semibold">3. Damping loss</span>
+              <span className="font-mono text-[9.5px] uppercase tracking-wider text-white font-semibold">3. Low-pass + loss</span>
             </div>
-            <p className="font-mono text-[8px] text-zinc-500">Mave: {(damping * 100).toFixed(1)}% air decay</p>
+            <p className="font-mono text-[8px] text-zinc-500">Feedback: {(damping * 100).toFixed(1)}% per pass</p>
           </button>
 
           {/* Connection Vector Arrow */}
@@ -387,9 +387,9 @@ export function WaveguidePlayground() {
             <div className={`absolute left-0 bottom-0 top-0 w-0.5 rounded-l-sm bg-[#00ffcc]`} style={{ height: `${nonLinDrive * 100}%` }} />
             <div className="flex items-center gap-2 mb-1">
               <Activity className={`w-3.5 h-3.5 ${activeNode === 'shaper' ? 'text-[#ffaa00]' : 'text-zinc-400'}`} />
-              <span className="font-mono text-[9.5px] uppercase tracking-wider text-white font-semibold">4. Nonlinearity</span>
+              <span className="font-mono text-[9.5px] uppercase tracking-wider text-white font-semibold">4. Saturator</span>
             </div>
-            <p className="font-mono text-[8px] text-zinc-500 capitalize">{nonlinearType} drive feedback</p>
+            <p className="font-mono text-[8px] text-zinc-500 capitalize">Curve: {nonlinearType}</p>
           </button>
 
         </div>
@@ -427,10 +427,10 @@ export function WaveguidePlayground() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="font-mono text-[9px] uppercase tracking-widest text-[#ffaa00] flex items-center gap-1.5 bg-[#ffaa00]/10 px-2.5 py-0.5 rounded-sm border border-[#ffaa00]/20">
-                <Waves className="w-3.5 h-3.5" /> Wave Dynamics Simulator
+                <Waves className="w-3.5 h-3.5" /> String
               </span>
               <span className="font-mono text-[9px] text-zinc-500 uppercase tracking-tight">
-                ACTIVE BUFFER CHANNELS: 1 // S-RATE: 44.1 KHZ
+                MONO · 2 S PER PLUCK
               </span>
             </div>
 
@@ -443,7 +443,7 @@ export function WaveguidePlayground() {
               
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none select-none">
                 <span className="font-mono text-[10px] text-white bg-black/80 px-4 py-2 border border-zinc-800 tracking-widest uppercase">
-                  ⚡ Pluck Virtual String
+                  Click to pluck
                 </span>
               </div>
             </div>
@@ -459,7 +459,7 @@ export function WaveguidePlayground() {
               <Play className="w-4 h-4 fill-current" /> Pluck String
             </button>
             <div className="font-mono text-[9px] text-zinc-500 flex items-center gap-2 uppercase">
-              <Volume2 className="w-3.5 h-3.5 text-zinc-650" /> Web Audio Synthesis enabled
+              <Volume2 className="w-3.5 h-3.5 text-zinc-650" /> Animation is illustrative
             </div>
           </div>
         </div>
@@ -469,12 +469,12 @@ export function WaveguidePlayground() {
           <div className="space-y-6">
             <div className="flex items-center gap-2 border-b border-zinc-900 pb-2">
               <Sliders className="w-3.5 h-3.5 text-[#ff8c00]" />
-              <span className="font-mono text-[10px] text-white uppercase tracking-widest">Acoustic Boundary Controls</span>
+              <span className="font-mono text-[10px] text-white uppercase tracking-widest">String controls</span>
             </div>
 
             {/* Parameter: Excitation profile selector */}
             <div className="space-y-2">
-              <label className="font-mono text-xs text-zinc-400 block mb-1">1. Excitation Type</label>
+              <label className="font-mono text-xs text-zinc-400 block mb-1">1. Excitation</label>
               <div className="grid grid-cols-4 gap-1.5">
                 {(['noise', 'sine', 'click', 'saw'] as ExcitationType[]).map((type) => (
                   <button
@@ -495,11 +495,11 @@ export function WaveguidePlayground() {
             {/* Slider 1: Pitch (String Length) */}
             <div className="space-y-1.5">
               <div className="flex justify-between font-mono text-xs text-zinc-400">
-                <span>2. String Length (Pitch)</span>
+                <span>2. Pitch (delay length)</span>
                 <span className="text-[#ff8c00] font-semibold">{pitch} Hz</span>
               </div>
               <input
-                aria-label="String Length (Pitch)"
+                aria-label="Pitch (delay length)"
                 type="range"
                 min="110" // A2
                 max="660" // E5
@@ -509,19 +509,19 @@ export function WaveguidePlayground() {
                 className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-[#ff8c00]"
               />
               <div className="flex justify-between font-mono text-[8px] text-zinc-600">
-                <span>110Hz [LONG / BASS]</span>
-                <span>660Hz [SHORT / TREBLE]</span>
+                <span>110 Hz [LONGER DELAY]</span>
+                <span>660 Hz [SHORTER DELAY]</span>
               </div>
             </div>
 
             {/* Slider 2: Damping (Reflection loss / Materials) */}
             <div className="space-y-1.5">
               <div className="flex justify-between font-mono text-xs text-zinc-400">
-                <span>3. Material Loss (Damping)</span>
+                <span>3. Feedback per pass</span>
                 <span className="text-[#00ffcc] font-semibold">{(damping * 100).toFixed(2)}%</span>
               </div>
               <input
-                aria-label="Material Loss (Damping)"
+                aria-label="Feedback per pass"
                 type="range"
                 min="0.950"
                 max="0.999"
@@ -531,14 +531,14 @@ export function WaveguidePlayground() {
                 className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-[#00ffcc]"
               />
               <div className="flex justify-between font-mono text-[8px] text-zinc-600">
-                <span>95% [DAMPED / WOOD]</span>
-                <span>99.9% [SUSTAIN / METAL]</span>
+                <span>95% [SHORT DECAY]</span>
+                <span>99.9% [LONG DECAY]</span>
               </div>
             </div>
 
             {/* Parameter: Nonlinear Saturation Model */}
             <div className="space-y-2 pt-2 border-t border-zinc-900/60">
-              <label className="font-mono text-xs text-zinc-400 block mb-1">4. Feedback Saturation Mode</label>
+              <label className="font-mono text-xs text-zinc-400 block mb-1">4. Saturator in the loop</label>
               <div className="grid grid-cols-4 gap-1.5 mb-2">
                 {(['none', 'tanh', 'cubic', 'diode'] as NonlinearType[]).map((type) => (
                   <button
@@ -558,11 +558,11 @@ export function WaveguidePlayground() {
               {nonlinearType !== 'none' && (
                 <div className="space-y-1.5 pt-1">
                   <div className="flex justify-between font-mono text-xs text-zinc-400">
-                    <span className="text-zinc-500">Nonlinear Drive (Gain)</span>
+                    <span className="text-zinc-500">Drive</span>
                     <span className="text-[#00ffcc]">{(nonLinDrive * 100).toFixed(0)}%</span>
                   </div>
                   <input
-                    aria-label="Nonlinear Drive (Gain)"
+                    aria-label="Saturator drive"
                     type="range"
                     min="0"
                     max="1.0"
@@ -577,8 +577,8 @@ export function WaveguidePlayground() {
           </div>
 
           <div className="pt-4 border-t border-zinc-950 mt-6 text-[10px] font-mono text-zinc-500 leading-normal">
-            <span className="text-[#ffaa00] font-bold block mb-0.5">[COSMIC HINT]</span>
-            Select default <span className="text-zinc-350">Noise</span> with <span className="text-zinc-350">Diode Clipper</span> and 90% Drive for a crunchy tube-driven electric guitar timbre!
+            <span className="text-[#ffaa00] font-bold block mb-0.5">[TRY]</span>
+            <span className="text-zinc-350">Noise</span> with the <span className="text-zinc-350">diode</span> saturator at about 90% drive gives a grittier pluck with added even harmonics.
           </div>
         </div>
         

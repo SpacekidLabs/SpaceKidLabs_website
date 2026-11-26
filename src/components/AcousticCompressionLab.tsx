@@ -9,21 +9,21 @@ interface BandConfig {
 }
 
 const BANDS: BandConfig[] = [
-  { freq: 150, label: 'Sub (150Hz)' },
-  { freq: 300, label: 'Bass (300Hz)' },
-  { freq: 600, label: 'Low-Mid (600Hz)' },
-  { freq: 1200, label: 'Mid (1.2kHz)' },
-  { freq: 2200, label: 'High-Mid (2.2kHz)' },
-  { freq: 4000, label: 'Presence (4kHz)' },
-  { freq: 7000, label: 'Treble (7kHz)' },
-  { freq: 12000, label: 'Air (12kHz)' }
+  { freq: 150, label: '150 Hz' },
+  { freq: 300, label: '300 Hz' },
+  { freq: 600, label: '600 Hz' },
+  { freq: 1200, label: '1.2 kHz' },
+  { freq: 2200, label: '2.2 kHz' },
+  { freq: 4000, label: '4 kHz' },
+  { freq: 7000, label: '7 kHz' },
+  { freq: 12000, label: '12 kHz' }
 ];
 
 export function AcousticCompressionLab() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.20);
   const [selectedSource, setSelectedSource] = useState<'melody' | 'drumbeat' | 'vocal' | 'upload'>('melody');
-  const [sourceName, setSourceName] = useState<string>('Polyphonic Ambient Chords');
+  const [sourceName, setSourceName] = useState<string>('Synthetic chord pad');
   
   // Acoustic Compression Parameters
   const [compressionRatio, setCompressionRatio] = useState<number>(0.60); // 0 (none) to 1 (extreme)
@@ -247,7 +247,7 @@ export function AcousticCompressionLab() {
             setTimeout(() => startAudio(), 150);
           }
         } catch (err) {
-          alert('Could not parse audio data correctly.');
+          alert('Could not decode this audio file.');
           setUploadProgress(null);
         } finally {
           parserCtx.close();
@@ -264,7 +264,7 @@ export function AcousticCompressionLab() {
     try {
       const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtxClass) {
-        alert('Web Audio API is not supported in your modern browser.');
+        alert('This browser does not support the Web Audio API.');
         return;
       }
 
@@ -283,7 +283,7 @@ export function AcousticCompressionLab() {
       let sourceBuffer: AudioBuffer;
       if (selectedSource === 'upload') {
         if (!uploadedAudioBufferRef.current) {
-          alert("Please upload your audio clip first or choose a default synthesizer preset.");
+          alert("Upload an audio file first, or pick one of the built-in sources.");
           ctx.close();
           audioCtxRef.current = null;
           return;
@@ -468,10 +468,10 @@ export function AcousticCompressionLab() {
   const handleSourceSelect = (src: 'melody' | 'drumbeat' | 'vocal' | 'upload') => {
     setSelectedSource(src);
     let title = '';
-    if (src === 'melody') title = 'Polyphonic Ambient Chords';
-    else if (src === 'drumbeat') title = 'Acoustic Techno Breakbeat';
-    else if (src === 'vocal') title = 'Vocoded Human Conversation Probe';
-    else title = uploadedAudioBufferRef.current ? fileInputRef.current?.files?.[0]?.name || 'Uploaded File' : 'No Uploaded File';
+    if (src === 'melody') title = 'Synthetic chord pad';
+    else if (src === 'drumbeat') title = 'Synthetic drum loop (125 BPM)';
+    else if (src === 'vocal') title = 'Synthetic voice';
+    else title = uploadedAudioBufferRef.current ? fileInputRef.current?.files?.[0]?.name || 'Uploaded file' : 'No file loaded';
 
     setSourceName(title);
 
@@ -492,9 +492,9 @@ export function AcousticCompressionLab() {
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-zinc-900 pb-5 gap-3">
         <div>
-          <span className="font-mono text-[9px] text-[#6366f1] font-bold tracking-widest uppercase">// COMPLEXITY DECIMATOR // COMPRESSOR W-25</span>
+          <span className="font-mono text-[9px] text-[#6366f1] font-bold tracking-widest uppercase">// ACOUSTIC COMPRESSION LAB</span>
           <h3 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
-            Spectral Information Compressor
+            Eight-Band Spectral Compressor
           </h3>
         </div>
 
@@ -508,7 +508,7 @@ export function AcousticCompressionLab() {
           }`}
         >
           {isPlaying ? <Square className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-          {isPlaying ? 'ABORT ACOUSTIC STAGE' : 'INITIALIZE INFORMATION DECIMATOR'}
+          {isPlaying ? 'STOP' : 'PLAY'}
         </button>
       </div>
 
@@ -519,7 +519,7 @@ export function AcousticCompressionLab() {
           
           {/* Loop Source Selector */}
           <div className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-sm space-y-4">
-            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Sound Input Matrix</span>
+            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Source</span>
             
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -531,7 +531,7 @@ export function AcousticCompressionLab() {
                 }`}
               >
                 <Activity className="w-3 h-3 text-[#6366f1]" />
-                Melody Pad
+                Chord Pad
               </button>
               
               <button
@@ -543,7 +543,7 @@ export function AcousticCompressionLab() {
                 }`}
               >
                 <Zap className="w-3 h-3 text-indigo-400" />
-                Drum Break
+                Drum Loop
               </button>
 
               <button
@@ -555,7 +555,7 @@ export function AcousticCompressionLab() {
                 }`}
               >
                 <RefreshCw className="w-3 h-3 text-indigo-400" />
-                Speech Probe
+                Synth Voice
               </button>
 
               <button
@@ -567,7 +567,7 @@ export function AcousticCompressionLab() {
                 }`}
               >
                 <Upload className="w-3 h-3" />
-                {uploadedAudioBufferRef.current ? 'Re-Upload' : 'Upload Audio'}
+                {uploadedAudioBufferRef.current ? 'Upload Another' : 'Upload File'}
               </button>
             </div>
 
@@ -582,7 +582,7 @@ export function AcousticCompressionLab() {
             {uploadProgress !== null && (
               <div className="space-y-1 pt-1">
                 <div className="flex justify-between text-[9px] font-mono text-zinc-400">
-                  <span>DECODING USER FILE...</span>
+                  <span>DECODING FILE...</span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden">
@@ -592,18 +592,18 @@ export function AcousticCompressionLab() {
             )}
 
             <div className="text-[10px] font-mono text-zinc-400 bg-zinc-950 px-3 py-2 rounded-sm border border-zinc-900 flex justify-between">
-              <span className="text-zinc-500">INPUT SOUND:</span>
+              <span className="text-zinc-500">SOURCE:</span>
               <span className="text-white truncate max-w-[200px]">{sourceName}</span>
             </div>
           </div>
 
           {/* Decimator Parameters */}
           <div className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-sm space-y-4">
-            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Compression Modifiers</span>
+            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Parameters</span>
 
             {/* Selector: Resynthesis Method */}
             <div className="space-y-1.5">
-              <span className="text-zinc-400 font-mono text-[11px] block uppercase">Resynthesis Mode</span>
+              <span className="text-zinc-400 font-mono text-[11px] block uppercase">Output Mode</span>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setResynthesisMode('filtered')}
@@ -612,9 +612,9 @@ export function AcousticCompressionLab() {
                       ? 'bg-zinc-900 border-[#6366f1] text-[#6366f1]'
                       : 'bg-zinc-950 border-zinc-900 text-zinc-500 hover:border-zinc-800'
                   }`}
-                  title="Splits original audio frequencies directly using bandpass filter banking"
+                  title="Plays the original audio through the open bands. Switching mode stops playback."
                 >
-                  Subtractive Filters
+                  Filtered
                 </button>
                 <button
                   onClick={() => setResynthesisMode('sinebank')}
@@ -623,9 +623,9 @@ export function AcousticCompressionLab() {
                       ? 'bg-zinc-900 border-[#6366f1] text-[#6366f1]'
                       : 'bg-zinc-950 border-zinc-900 text-zinc-500 hover:border-zinc-800'
                   }`}
-                  title="Replaces audio signals with pure sinusoidal additive oscillators"
+                  title="Replaces each band with a sine wave at its centre frequency. Switching mode stops playback."
                 >
-                  Sine-Bank (Vocoder)
+                  Sine Bank
                 </button>
               </div>
             </div>
@@ -633,11 +633,11 @@ export function AcousticCompressionLab() {
             {/* Slider 1: Allowed simultaneous bands */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">SPECTRAL BAND CAP</span>
+                <span className="text-zinc-400">BAND CAP</span>
                 <span className="text-[#6366f1] font-bold">{allowedBands} / 8 bands</span>
               </div>
               <input
-                aria-label="Spectral Band Cap"
+                aria-label="Band cap"
                 type="range"
                 min="1"
                 max="8"
@@ -647,18 +647,18 @@ export function AcousticCompressionLab() {
                 className="w-full accent-[#6366f1] bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Reduce permitted active bands to choke complexity. At 1-2, you only hear major peak lines!
+                How many of the loudest bands are let through, 1–8; bands below 5% level are muted anyway. Takes effect the next time you press play.
               </span>
             </div>
 
             {/* Slider 2: Envelope Amplitude Quantization Ratio */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">AMPLITUDE RESOLUTION (QUANTIZE)</span>
+                <span className="text-zinc-400">AMPLITUDE RESOLUTION</span>
                 <span className="text-indigo-400 font-semibold">{Math.round(compressionRatio * 100)}%</span>
               </div>
               <input
-                aria-label="Amplitude Resolution (Quantize)"
+                aria-label="Amplitude resolution"
                 type="range"
                 min="0.0"
                 max="0.95"
@@ -668,18 +668,18 @@ export function AcousticCompressionLab() {
                 className="w-full accent-indigo-500 bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Higher values flatten soft sounds and squeeze levels into brutal step steps.
+                Higher values round band levels to fewer steps (13 at 15%, 2 at 95%; no rounding at 10% or below). Takes effect the next time you press play.
               </span>
             </div>
 
             {/* Slider 3: Temporal Frame rate Resolution */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">Acoustic Temporal Update Speed</span>
+                <span className="text-zinc-400">UPDATE RATE</span>
                 <span className="text-[#6366f1] font-bold">{(temporalResolution / 1.5).toFixed(1)} Hz</span>
               </div>
               <input
-                aria-label="Acoustic Temporal Update Speed"
+                aria-label="Update rate"
                 type="range"
                 min="1"
                 max="15"
@@ -689,20 +689,20 @@ export function AcousticCompressionLab() {
                 className="w-full accent-[#6366f1] bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-650 block leading-tight font-mono">
-                Reduce update rate to create beautiful rhythmic, "blocky" step arrays frozen in time intervals.
+                How often band levels are recalculated, from every 1.5 s to every 100 ms; in between they are held. Takes effect the next time you press play.
               </span>
             </div>
 
             {/* Master Gain Volume */}
             <div className="space-y-1.5 pt-1">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">COMPRESSED AUDIO VOLUME</span>
+                <span className="text-zinc-400">OUTPUT LEVEL</span>
                 <span className="text-zinc-500">{Math.round(volume * 100)}%</span>
               </div>
               <div className="flex items-center gap-2">
                 {volume === 0 ? <VolumeX className="w-4 h-4 text-zinc-650" /> : <Volume2 className="w-4 h-4 text-zinc-400" />}
                 <input
-                  aria-label="Compressed Audio Volume"
+                  aria-label="Output level"
                   type="range"
                   min="0"
                   max="0.4"
@@ -720,7 +720,7 @@ export function AcousticCompressionLab() {
         <div className="lg:col-span-7 space-y-5">
           <div className="p-4 bg-zinc-950/50 border border-zinc-900 rounded-sm space-y-4">
             <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">
-              // SPECTRAL REDUNDANCY LEVEL ANALYSER
+              // BAND LEVELS: INPUT AND OUTPUT
             </span>
 
             {/* Matrix comparison blocks */}
@@ -743,8 +743,8 @@ export function AcousticCompressionLab() {
                       </div>
                       
                       <div className="flex gap-4 text-[9px] text-zinc-500">
-                        <span>ORIGINAL: <strong className="font-normal text-zinc-400">{rawPercent}%</strong></span>
-                        <span>COMPRESSED: <strong className="font-normal text-indigo-400">{compressedPercent}%</strong></span>
+                        <span>IN: <strong className="font-normal text-zinc-400">{rawPercent}%</strong></span>
+                        <span>OUT: <strong className="font-normal text-indigo-400">{compressedPercent}%</strong></span>
                       </div>
                     </div>
 
@@ -765,7 +765,7 @@ export function AcousticCompressionLab() {
 
                       {/* Indicator tag label layer */}
                       <span className="absolute right-2 font-mono text-[8px] text-zinc-650 leading-none">
-                        {isApproved ? '// ACTIVE PASS' : '// RESOLUTION SHUTDOWN'}
+                        {isApproved ? 'OPEN' : 'MUTED'}
                       </span>
                     </div>
                   </div>
@@ -774,8 +774,8 @@ export function AcousticCompressionLab() {
             </div>
 
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 pt-2 border-t border-zinc-900">
-              <span className="uppercase tracking-wider">// Horizontal dark blocks: Input Audio Density map</span>
-              <span className="uppercase tracking-wider">Colored layer: Squeezed Acoustic Output //</span>
+              <span className="uppercase tracking-wider">// Grey bar: input level</span>
+              <span className="uppercase tracking-wider">Coloured bar: level let through //</span>
             </div>
           </div>
 
@@ -784,12 +784,12 @@ export function AcousticCompressionLab() {
             <div className="flex items-start gap-2.5">
               <Info className="w-4 h-4 text-[#6366f1] shrink-0 mt-0.5" />
               <div className="space-y-1.5">
-                <span className="font-mono text-[10px] font-bold text-zinc-300 uppercase tracking-widest block">✦ Complexity decimation versus traditional compression</span>
+                <span className="font-mono text-[10px] font-bold text-zinc-300 uppercase tracking-widest block">How this differs from a normal compressor</span>
                 <p>
-                  Standard audio compressors monitor volume thresholds and pull down transient bursts to shrink dynamic ranges. <strong>Acoustic Compression</strong> leaves volume ranges unrestricted. Instead, it limits the total volume of simultaneous acoustic definitions by decimating the frequency grid. 
+                  A normal compressor turns the signal down when it goes over a threshold, which reduces dynamic range. This one reduces spectral detail instead: it measures the level in eight bands, lets only the loudest few through, rounds their levels to a few steps and holds them between updates. Make-up gain rises as fewer bands are allowed, so the output stays at roughly the same loudness.
                 </p>
                 <p>
-                  Under heavy limits, your sound collapses into simple hollow synthesizer chunks, resembling digital low-bit block archives or early telephony circuits, while preserving the foundational musical movement of your track.
+                  With tight settings the sound is reduced to a few fixed bands switching on and off, closer to a crude channel vocoder than to the original, though the rhythm of the input still comes through.
                 </p>
               </div>
             </div>

@@ -63,8 +63,9 @@ export default function Post() {
       </p>
 
       <p>
-        The lab below splits a synthetic vowel-like wave at 120 Hz into wavesets. Select one or more (Shift-click for a
-        range), then reverse, invert, stretch, squash or change the level of just those and listen to the result.
+        The lab below cuts a short synthetic tone (110 Hz with a few inharmonic partials) at every zero crossing, so each
+        segment is about half a waveset. Select one or more (Shift-click for a range), then reverse, repeat, delete,
+        stretch, squash, invert or change the level of just those and listen to the result.
       </p>
 
       <p>

@@ -194,13 +194,13 @@ export function MusicalCalculators() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-900 pb-5">
         <div>
           <span className="font-mono text-[9px] text-[#00ffbb] uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1">
-            <Sparkles className="w-3 h-3 text-[#00ffbb]" /> BEDROOM STUDIO ASSISTANT
+            <Sparkles className="w-3 h-3 text-[#00ffbb]" /> STUDIO CALCULATORS
           </span>
           <h3 className="text-xl font-display font-medium text-white tracking-tight">
-            The SpaceKid Utility Rack
+            Utility Rack
           </h3>
           <p className="text-xs text-zinc-500 font-sans font-light mt-0.5">
-            A precise, latency-adjusted Swiss Army knife for calculating delay taps, sample rate stretching, pitch-to-freq mappings, and digital file sizes.
+            Delay times from a tempo, notes to frequencies, the pitch change from resampling to a new tempo, and uncompressed file sizes.
           </p>
         </div>
       </div>
@@ -211,19 +211,19 @@ export function MusicalCalculators() {
         <div className="lg:col-span-6 space-y-6">
           <div className="p-4 bg-black/40 border border-zinc-900/85 rounded-sm relative">
             <div className="absolute top-2 right-3 font-mono text-[8px] text-zinc-650 flex items-center gap-1.5">
-              <Clock className="w-3 h-3 text-cyan-400" /> TAP LATENCY
+              <Clock className="w-3 h-3 text-cyan-400" /> 60000 / BPM
             </div>
 
             <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full" />
-              Tempo-to-Delay Alignment (BPM)
+              Delay Times from Tempo
             </h4>
 
             <div className="space-y-4 mb-5">
               <div className="flex items-center gap-4">
                 <div className="flex-1">
                   <div className="flex justify-between text-[10px] text-zinc-500 font-mono uppercase mb-2">
-                    <span>Project Tempo (BPM)</span>
+                    <span>Tempo (BPM)</span>
                     <span className="text-white font-bold">{bpm} BPM</span>
                   </div>
                   <input
@@ -253,9 +253,9 @@ export function MusicalCalculators() {
               <div className="grid grid-cols-3 text-zinc-600 font-mono text-[9px] uppercase tracking-wider border-b border-zinc-900/60 pb-1 mb-1 px-1">
                 <span>Value</span>
                 <span className="text-right">Delay Time</span>
-                <span className="text-right">LFO Rate</span>
+                <span className="text-right">Rate (1 / time)</span>
               </div>
-              <div tabIndex={0} role="region" aria-label="Note frequency table" className="max-h-[220px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+              <div tabIndex={0} role="region" aria-label="Delay times per note value" className="max-h-[220px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                 {delayTypes.map((tap, idx) => {
                   const ms = calcDelayTime(tap.mult);
                   // Frequency of LFO in Hz is 1 / (ms / 1000)
@@ -278,10 +278,10 @@ export function MusicalCalculators() {
             {/* Pre-delay tips */}
             <div className="mt-4 p-3 bg-cyan-950/5 border border-cyan-500/[0.08] rounded-sm">
               <div className="text-[10px] text-cyan-300 font-mono font-bold uppercase mb-1">
-                ⭐ SpaceKid's Pro Reverb Glue Hack:
+                Reverb pre-delay
               </div>
               <p className="text-[10.5px] text-zinc-500 leading-normal font-sans font-light">
-                To separate your vocal transient elegantly from the reverb puddle, set your pre-delay to a <strong>1/64</strong> or <strong>1/128</strong> tap value. At {bpm} BPM, try a pre-delay of <strong className="text-white">{(calcDelayTime(1/16)).toFixed(1)} ms</strong> (1/16th) or <strong className="text-white">{(calcDelayTime(1/64)).toFixed(1)} ms</strong> (1/64th) for pristine decay clarity!
+                A tempo-synced pre-delay lets the start of a vocal sound before the reverb comes in. At {bpm} BPM, a 1/64 note is <strong className="text-white">{(calcDelayTime(1/16)).toFixed(1)} ms</strong> and a 1/256 note is <strong className="text-white">{(calcDelayTime(1/64)).toFixed(1)} ms</strong>.
               </p>
             </div>
           </div>
@@ -293,12 +293,12 @@ export function MusicalCalculators() {
           {/* Note Pitch to Freq mapping */}
           <div className="p-4 bg-black/40 border border-zinc-900/85 rounded-sm relative">
             <div className="absolute top-2 right-3 font-mono text-[8px] text-zinc-650 flex items-center gap-1.5">
-              <Music className="w-3 h-3 text-emerald-400" /> ACOUSTIC BRIDGE
+              <Music className="w-3 h-3 text-emerald-400" /> A4 = 440 HZ
             </div>
 
             <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-              Pitch & Frequency Solver
+              Note and Frequency
             </h4>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -313,7 +313,7 @@ export function MusicalCalculators() {
                 />
               </div>
               <div>
-                <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Identified Pitch</label>
+                <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Nearest Note</label>
                 <div className="w-full bg-[#0a0a0c] border border-zinc-950 p-2 font-mono text-xs text-center text-white font-bold select-none">
                   {pitchName} {centsDeviation !== 0 ? `(${centsDeviation > 0 ? '+' : ''}${centsDeviation.toFixed(1)}¢)` : ''}
                 </div>
@@ -323,11 +323,11 @@ export function MusicalCalculators() {
             <div className="space-y-3 mb-4">
               <div>
                 <div className="flex justify-between text-[10px] text-zinc-500 font-mono uppercase mb-1">
-                  <span>MIDI NOTE / KEYBOARD TARGET</span>
+                  <span>MIDI NOTE</span>
                   <span className="text-[#00ffbb] font-bold">MIDI {midiNoteVal} ({NOTE_NAMES[midiNoteVal % 12]}{Math.floor(midiNoteVal/12) - 1})</span>
                 </div>
                 <input
-                  aria-label="Midi"
+                  aria-label="MIDI note"
                   type="range"
                   min="21"
                   max="108"
@@ -336,9 +336,9 @@ export function MusicalCalculators() {
                   className="w-full h-1 bg-zinc-900 accent-[#00ffbb] cursor-pointer rounded-lg"
                 />
                 <div className="flex justify-between font-mono text-[8px] text-zinc-600 px-1 mt-1">
-                  <span>A0 (Piano low)</span>
+                  <span>A0 (lowest piano key)</span>
                   <span>Middle C (C4)</span>
-                  <span>C8 (Piano high)</span>
+                  <span>C8 (highest piano key)</span>
                 </div>
               </div>
             </div>
@@ -354,11 +354,11 @@ export function MusicalCalculators() {
             >
               {isPlaying ? (
                 <>
-                  <Square className="w-3.5 h-3.5 fill-current" /> Stop Tuning Tone
+                  <Square className="w-3.5 h-3.5 fill-current" /> Stop Tone
                 </>
               ) : (
                 <>
-                  <Volume2 className="w-3.5 h-3.5" /> Audition Tone (Pure Sine)
+                  <Volume2 className="w-3.5 h-3.5" /> Play Sine Tone
                 </>
               )}
             </button>
@@ -367,23 +367,23 @@ export function MusicalCalculators() {
           {/* Time stretch / Sample rate resample pitch shift */}
           <div className="p-4 bg-black/40 border border-zinc-900/85 rounded-sm relative">
             <div className="absolute top-2 right-3 font-mono text-[8px] text-zinc-650 flex items-center gap-1.5">
-              <RotateCw className="w-3 h-3 text-[#ffaa00]" /> RATE SPEED
+              <RotateCw className="w-3 h-3 text-[#ffaa00]" /> 12 × LOG2(RATIO)
             </div>
 
             <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-[#ffaa00] rounded-full" />
-              Old-School Resample & Pitch Bender
+              Resample to a New Tempo
             </h4>
 
             <p className="text-[10px] text-zinc-500 leading-normal mb-4 font-sans font-light">
-              Want to pitch/stretch a sample inside a retro Akai, MPC, or E-MU sampler? Input the original sample BPM and your target track BPM to get the exact pitch shift required for a raw resampled fit.
+              Changing a sample's tempo by changing its playback speed, as a tape machine or a sampler without time-stretch does, also changes its pitch. Enter the sample's tempo and the project tempo to get the playback speed and the resulting pitch shift.
             </p>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Original Sample BPM</label>
+                <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Sample BPM</label>
                 <input
-                  aria-label="Original Sample BPM"
+                  aria-label="Sample BPM"
                   type="number"
                   min="30"
                   max="300"
@@ -393,9 +393,9 @@ export function MusicalCalculators() {
                 />
               </div>
               <div>
-                <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Target Project BPM</label>
+                <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Project BPM</label>
                 <input
-                  aria-label="Target Project BPM"
+                  aria-label="Project BPM"
                   type="number"
                   min="30"
                   max="300"
@@ -408,17 +408,17 @@ export function MusicalCalculators() {
 
             <div className="bg-[#0a0a0c] border border-zinc-950 p-3 rounded-sm font-mono text-[10.5px] space-y-2 text-zinc-400">
               <div className="flex justify-between border-b border-zinc-900/50 pb-1.5">
-                <span>Stretch Length Ratio:</span>
+                <span>Playback speed:</span>
                 <span className="text-white font-bold">{percentRatio.toFixed(1)}%</span>
               </div>
               <div className="flex justify-between border-b border-zinc-900/50 pb-1.5">
-                <span>Resample Pitch Offset:</span>
+                <span>Pitch shift:</span>
                 <span className="text-[#ffaa00] font-bold">
                   {semitoneShift >= 0 ? '+' : ''}{semitoneShift.toFixed(2)} semitones
                 </span>
               </div>
               <div className="flex justify-between text-[9px] text-zinc-550 pt-0.5">
-                <span>In cents deviation:</span>
+                <span>In cents:</span>
                 <span>{centsShift >= 0 ? '+' : ''}{centsShift.toFixed(0)}¢</span>
               </div>
             </div>
@@ -427,12 +427,12 @@ export function MusicalCalculators() {
           {/* Sample Sizing data calculator */}
           <div className="p-4 bg-black/40 border border-zinc-900/85 rounded-sm relative">
             <div className="absolute top-2 right-3 font-mono text-[8px] text-zinc-650 flex items-center gap-1.5">
-              <Database className="w-3 h-3 text-blue-400" /> PCM BITRATE
+              <Database className="w-3 h-3 text-blue-400" /> PCM
             </div>
 
             <h4 className="font-mono text-xs font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
               <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
-              Raw PCM Audio Data Size Calculator
+              Uncompressed File Size
             </h4>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -462,16 +462,16 @@ export function MusicalCalculators() {
               </div>
 
               <div>
-                <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Sample Rate / Format</label>
+                <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Sample Rate</label>
                 <select aria-label="Sample rate"
                   value={sampleRate}
                   onChange={(e) => setSampleRate(parseInt(e.target.value))}
                   className="w-full bg-black border border-[#1d1d23] text-white p-2 font-mono text-xs focus:ring-0 focus:outline-none cursor-pointer"
                 >
-                  <option value={44100}>44.1 kHz (CD Quality)</option>
-                  <option value={48000}>48.0 kHz (Film/Studio)</option>
-                  <option value={88200}>88.2 kHz (High-Res)</option>
-                  <option value={96000}>96.0 kHz (Audiophile)</option>
+                  <option value={44100}>44.1 kHz (CD)</option>
+                  <option value={48000}>48 kHz (video)</option>
+                  <option value={88200}>88.2 kHz</option>
+                  <option value={96000}>96 kHz</option>
                 </select>
               </div>
             </div>
@@ -484,9 +484,9 @@ export function MusicalCalculators() {
                   onChange={(e) => setBitDepth(parseInt(e.target.value))}
                   className="w-full bg-black border border-[#1d1d23] text-white p-2 font-mono text-xs focus:ring-0 focus:outline-none cursor-pointer"
                 >
-                  <option value={16}>16-bit (Standard Int)</option>
-                  <option value={24}>24-bit (Professional Studio)</option>
-                  <option value={32}>32-bit (Floating Point)</option>
+                  <option value={16}>16-bit integer</option>
+                  <option value={24}>24-bit integer</option>
+                  <option value={32}>32-bit float</option>
                 </select>
               </div>
 
@@ -497,15 +497,15 @@ export function MusicalCalculators() {
                   onChange={(e) => setChannels(parseInt(e.target.value))}
                   className="w-full bg-black border border-[#1d1d23] text-white p-2 font-mono text-xs focus:ring-0 focus:outline-none cursor-pointer"
                 >
-                  <option value={1}>1 Channel (Mono)</option>
-                  <option value={2}>2 Channels (Stereo)</option>
+                  <option value={1}>1 (mono)</option>
+                  <option value={2}>2 (stereo)</option>
                 </select>
               </div>
             </div>
 
             <div className="p-3 bg-blue-950/10 border border-blue-500/20 text-center font-mono">
-              <span className="text-[10px] text-zinc-500 uppercase block">Estimated Uncompressed Wav Size:</span>
-              <span className="text-lg text-white font-bold tracking-tight">{getFileSizeMB()} Megabytes (MB)</span>
+              <span className="text-[10px] text-zinc-500 uppercase block">Audio data, without file header:</span>
+              <span className="text-lg text-white font-bold tracking-tight">{getFileSizeMB()} MiB</span>
             </div>
           </div>
 

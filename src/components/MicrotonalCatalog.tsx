@@ -13,91 +13,91 @@ interface SoftwareItem {
 
 const CATALOG_DATA: SoftwareItem[] = [
   // Essential Instruments
-  { name: 'Surge XT', url: 'https://surge-synthesizer.github.io/', desc: 'S-tier open-source hybrid synth. Unrivaled microtonal support with built-in scale editors, MTS-ESP, and Scala file importing.', category: 'essential', format: 'VST3, AU, CLAP, Standalone', supportsMTS: true, isFree: true },
-  { name: 'Vital', url: 'https://vital.audio/', desc: 'Spectacular spectral warping wavetable synthesizer. Full custom scale (.scl / .kbm) file drag-and-drop support.', category: 'essential', format: 'VST3, AU, CLAP, Standalone', supportsMTS: true, isFree: true },
-  { name: 'Pianoteq', url: 'https://www.modartt.com/pianoteq', desc: 'Symphonic physical modeling acoustic piano engine. Extremely granular microtuning parameters with complete MIDI scale tables.', category: 'essential', format: 'VST3, AU, Standalone', supportsMTS: true },
-  { name: 'Phase Plant', url: 'https://kilohearts.com/products/phase_plant', desc: 'Sovereign modular wavetable synth. Implements real-time MTS-ESP client tuning redirection.', category: 'essential', format: 'VST3, AU, AAX', supportsMTS: true },
-  { name: 'VCV Rack', url: 'https://vcvrack.com/', desc: 'Modular virtual rack. Pitch inputs are fully continuous volt-per-octave, making microtuning natively fluid.', category: 'essential', format: 'VST3, Standalone', supportsMTS: false, isFree: true },
-  { name: 'Dexed', url: 'https://asb2m10.github.io/dexed/', desc: 'Classic multi-platform FM synth replicating the DX7. Supports Scala tuning files directly.', category: 'essential', format: 'VST3, AU, Standalone', supportsMTS: true, isFree: true },
-  { name: 'UVI Falcon', url: 'https://www.uvi.net/falcon.html', desc: 'Colossal hybrid instrument. Natively loads Scala microtuning tables into its complex synth engine.', category: 'essential', format: 'VST3, AU, AAX', supportsMTS: true },
-  { name: 'Omnisphere', url: 'https://www.spectrasonics.net/products/omnisphere/', desc: 'Spectrasonics flagship power synth. Full .scl scale integration.', category: 'essential', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Trilian', url: 'https://www.spectrasonics.net/products/trilian/', desc: 'Total bass synth module. Synchronizes with global scale files natively.', category: 'essential', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Keyscape', url: 'https://www.spectrasonics.net/products/keyscape/', desc: 'Curated historic keyboards, integrating identical microtuning properties.', category: 'essential', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Surge XT', url: 'https://surge-synthesizer.github.io/', desc: 'Open-source hybrid synth. Loads .scl and .kbm files, has a built-in tuning editor and works as an MTS-ESP client.', category: 'essential', format: 'VST3, AU, CLAP, Standalone', supportsMTS: true, isFree: true },
+  { name: 'Vital', url: 'https://vital.audio/', desc: 'Wavetable synth with spectral warping. Loads .scl and .kbm files.', category: 'essential', format: 'VST3, AU, CLAP, Standalone', supportsMTS: true, isFree: true },
+  { name: 'Pianoteq', url: 'https://www.modartt.com/pianoteq', desc: 'Physically modelled piano and other keyboard instruments, with detailed microtuning settings and Scala file support.', category: 'essential', format: 'VST3, AU, Standalone', supportsMTS: true },
+  { name: 'Phase Plant', url: 'https://kilohearts.com/products/phase_plant', desc: "Kilohearts' modular synth. Works as an MTS-ESP client.", category: 'essential', format: 'VST3, AU, AAX', supportsMTS: true },
+  { name: 'VCV Rack', url: 'https://vcvrack.com/', desc: 'Virtual modular system. Pitch is a continuous 1 V/octave signal, so any tuning can be patched directly.', category: 'essential', format: 'VST3, Standalone', supportsMTS: false, isFree: true },
+  { name: 'Dexed', url: 'https://asb2m10.github.io/dexed/', desc: 'FM synth modelled on the Yamaha DX7. Loads Scala files directly.', category: 'essential', format: 'VST3, AU, Standalone', supportsMTS: true, isFree: true },
+  { name: 'UVI Falcon', url: 'https://www.uvi.net/falcon.html', desc: "UVI's hybrid sampler and synth. Loads Scala tuning files.", category: 'essential', format: 'VST3, AU, AAX', supportsMTS: true },
+  { name: 'Omnisphere', url: 'https://www.spectrasonics.net/products/omnisphere/', desc: "Spectrasonics' main synth. Loads .scl scale files.", category: 'essential', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Trilian', url: 'https://www.spectrasonics.net/products/trilian/', desc: "Spectrasonics' bass instrument, with the same scale file support as Omnisphere.", category: 'essential', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Keyscape', url: 'https://www.spectrasonics.net/products/keyscape/', desc: "Spectrasonics' collection of sampled keyboards, with the same tuning support.", category: 'essential', format: 'VST3, AU', supportsMTS: true },
 
   // u-he
-  { name: 'Zebra 2 / HZ', url: 'https://u-he.com/products/zebra/', desc: 'Wireless modular hybrid synth. Custom scale tables are defined via simple text tables (.tun files).', category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
-  { name: 'Diva', url: 'https://u-he.com/products/diva/', desc: 'Dinosaur Impersonating Virtual Analogue. Recreates classic analog filters tuned to arbitrary steps.', category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
-  { name: 'Hive 2', url: 'https://u-he.com/products/hive/', desc: 'Futuristic streamline wavetable synthesizer with quick scale loading setups.', category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
-  { name: 'Bazille', url: 'https://u-he.com/products/bazille/', desc: 'Monstrous digital modular phase distortion engine supporting full tuning tables.', category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
-  { name: 'ACE', url: 'https://u-he.com/products/ace/', desc: 'Any Cable Everywhere. Analog-style patching with u-he tuning slot integrations.', category: 'uhe', format: 'VST', supportsMTS: true },
-  { name: 'Repro', url: 'https://u-he.com/products/repro/', desc: 'Brilliant model of Sequential Pro-One & Prophet 5 utilizing custom MTS layers.', category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
+  { name: 'Zebra 2 / HZ', url: 'https://u-he.com/products/zebra/', desc: "u-he's modular-style synth. Tunings are loaded as .tun files.", category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
+  { name: 'Diva', url: 'https://u-he.com/products/diva/', desc: 'Virtual analogue synth modelling classic analogue circuits, with microtuning support.', category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
+  { name: 'Hive 2', url: 'https://u-he.com/products/hive/', desc: 'Wavetable synth aimed at fast sound design, with scale file loading.', category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
+  { name: 'Bazille', url: 'https://u-he.com/products/bazille/', desc: 'Digital modular synth built around phase distortion, with tuning table support.', category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
+  { name: 'ACE', url: 'https://u-he.com/products/ace/', desc: "Small semi-modular, analogue-style synth (the name stands for Any Cable Everywhere), with u-he's tuning support.", category: 'uhe', format: 'VST', supportsMTS: true },
+  { name: 'Repro', url: 'https://u-he.com/products/repro/', desc: 'Models of the Sequential Pro-One and Prophet-5, with MTS-ESP tuning.', category: 'uhe', format: 'VST3, AU, CLAP', supportsMTS: true },
 
   // Arturia
-  { name: 'Pigments', url: 'https://www.arturia.com/products/software-instruments/pigments/overview', desc: 'Modern polychrome wavetable/sample engine. Natively import .scl files with instant graphical intervals display.', category: 'arturia', format: 'VST3, AU, CLAP, Standalone', supportsMTS: true },
-  { name: 'MiniFreak V', url: 'https://www.arturia.com/products/software-instruments/minifreak-v/overview', desc: 'Hybrid mathematical synth with integrated Scala format loaders.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Buchla Easel V', url: 'https://www.arturia.com/products/software-instruments/buchla-easel-v', desc: 'West-coast experimental synth model supporting continuous microtuning presets.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Prophet-5 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Analog emulation with global user-defined microtuning maps.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Prophet VS V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Vector synthesis recreation featuring custom tuning matrix slots.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'SQ80 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Wavetable model matching the classic Ensoniq vintage tuning options.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'DX7 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Reinforced 6-operator FM engine with extended micro-interval configurations.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'CZ V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Casio Phase Distortion emulation with microtonal scale grids.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'CS-80 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Grand iconic synthesizer with vintage custom microtuning systems.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Matrix-12 V', url: 'https://www.arturia.com/products/software-instruments', desc: '12-voice behemoth supporting individual voice microtuning scaling.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Jup-8 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Vintage classic pad monster, with customized xenharmonic map assignments.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Augmented Series', url: 'https://www.arturia.com/products/software-instruments', desc: 'Innovative acoustic-synthetic hybrids supporting MTS-ESP.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Pigments', url: 'https://www.arturia.com/products/software-instruments/pigments/overview', desc: "Arturia's wavetable and sample synth. Imports .scl files and shows the intervals graphically.", category: 'arturia', format: 'VST3, AU, CLAP, Standalone', supportsMTS: true },
+  { name: 'MiniFreak V', url: 'https://www.arturia.com/products/software-instruments/minifreak-v/overview', desc: 'Software version of the MiniFreak hybrid synth, with Scala file loading.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Buchla Easel V', url: 'https://www.arturia.com/products/software-instruments/buchla-easel-v', desc: 'Model of the Buchla Music Easel, a West Coast synth, with microtuning presets.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Prophet-5 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Prophet-5 emulation with user-defined microtuning.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Prophet VS V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Model of the Prophet VS vector synth, with custom tuning.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'SQ80 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Model of the Ensoniq SQ-80, with custom tuning.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'DX7 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Six-operator FM model of the Yamaha DX7, with microtuning options.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'CZ V', url: 'https://www.arturia.com/products/software-instruments', desc: "Model of Casio's CZ phase distortion synths, with microtonal scales.", category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'CS-80 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Model of the Yamaha CS-80, with custom microtuning.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Matrix-12 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Model of the 12-voice Oberheim Matrix-12, with microtuning.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Jup-8 V', url: 'https://www.arturia.com/products/software-instruments', desc: 'Model of the Roland Jupiter-8, with custom tuning maps.', category: 'arturia', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Augmented Series', url: 'https://www.arturia.com/products/software-instruments', desc: "Arturia's instruments combining samples and synthesis. MTS-ESP client.", category: 'arturia', format: 'VST3, AU', supportsMTS: true },
 
   // Madrona Labs
-  { name: 'Aalto', url: 'https://madronalabs.com/products/aalto', desc: 'West-coast patchable synthesizer with a complex resonant delay. Built-in instant loading for .scl tuning files.', category: 'madrona', format: 'VST, AU', supportsMTS: true },
-  { name: 'Kaivo', url: 'https://madronalabs.com/products/kaivo', desc: 'Physical modeling & granular synthesizer. Perfect for vibrating microtonal strings and plates.', category: 'madrona', format: 'VST, AU', supportsMTS: true },
-  { name: 'Virta', url: 'https://madronalabs.com/products/virta', desc: 'Acoustic-controlled analyzer & resonator VST supporting Scala inputs.', category: 'madrona', format: 'VST, AU', supportsMTS: true },
+  { name: 'Aalto', url: 'https://madronalabs.com/products/aalto', desc: 'Patchable West Coast-style synth with a resonant delay. Loads .scl tuning files.', category: 'madrona', format: 'VST, AU', supportsMTS: true },
+  { name: 'Kaivo', url: 'https://madronalabs.com/products/kaivo', desc: 'Granular sampler feeding physically modelled resonators, such as strings and plates. Loads .scl files.', category: 'madrona', format: 'VST, AU', supportsMTS: true },
+  { name: 'Virta', url: 'https://madronalabs.com/products/virta', desc: 'Synth driven by the pitch and level of an audio input, with Scala tuning support.', category: 'madrona', format: 'VST, AU', supportsMTS: true },
 
   // Applied Acoustics Systems
-  { name: 'Chromaphone 3', url: 'https://www.applied-acoustics.com/chromaphone-3/', desc: 'Incredible acoustic object resonator. Essential for microtonal percussive bell nodes.', category: 'aas', format: 'VST3, AU, Standalone', supportsMTS: true },
-  { name: 'String Studio VS-3', url: 'https://www.applied-acoustics.com/string-studio-vs-3/', desc: 'Physical waveguide modeler. Direct tuning matrix for non-equal microtonal tension.', category: 'aas', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Lounge Lizard EP-5', url: 'https://www.applied-acoustics.com/lounge-lizard-ep-5/', desc: 'Rhodes & Wurlitzer acoustic modeling with subtle microtonal stretch options.', category: 'aas', format: 'VST3, AU, Standalone', supportsMTS: true },
-  { name: 'Ultra Analog VA-3', url: 'https://www.applied-acoustics.com/ultra-analog-va-3/', desc: 'High-definition virtual analog architecture with microtuning table maps.', category: 'aas', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Chromaphone 3', url: 'https://www.applied-acoustics.com/chromaphone-3/', desc: 'Physical modelling of resonating objects such as membranes, bars and plates. Useful for tuned percussion in other scales.', category: 'aas', format: 'VST3, AU, Standalone', supportsMTS: true },
+  { name: 'String Studio VS-3', url: 'https://www.applied-acoustics.com/string-studio-vs-3/', desc: 'Physically modelled string instruments, with microtuning support.', category: 'aas', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Lounge Lizard EP-5', url: 'https://www.applied-acoustics.com/lounge-lizard-ep-5/', desc: 'Modelled Rhodes and Wurlitzer electric pianos, with microtuning options.', category: 'aas', format: 'VST3, AU, Standalone', supportsMTS: true },
+  { name: 'Ultra Analog VA-3', url: 'https://www.applied-acoustics.com/ultra-analog-va-3/', desc: 'Virtual analogue synth with microtuning tables.', category: 'aas', format: 'VST3, AU', supportsMTS: true },
 
   // TAL
-  { name: 'TAL-Sampler', url: 'https://tal-software.com/products/tal-sampler', desc: 'S-tier vintage sound sampler. Recreates classic hardware D/A jitter combined with robust Scala/MTS loading config.', category: 'tal', format: 'VST3, AU, CLAP, AAX', supportsMTS: true },
-  { name: 'TAL-U-NO-LX', url: 'https://tal-software.com/products/tal-u-no-lx', desc: 'Exquisite analog Juno-60 replication supporting full Scala scale tables.', category: 'tal', format: 'VST3, AU, CLAP', supportsMTS: true },
-  { name: 'TAL-Mod', url: 'https://tal-software.com/products', desc: 'Virtual semi-modular patching synthesizer with micro-interval scale boards.', category: 'tal', format: 'VST3, AU, CLAP', supportsMTS: true },
-  { name: 'TAL-J-8', url: 'https://tal-software.com/products', desc: 'Precise emulation of the Roland Jupiter-8 featuring MTS-ESP client integration.', category: 'tal', format: 'VST3, AU, CLAP', supportsMTS: true },
-  { name: 'TAL-BassLine-101', url: 'https://tal-software.com/products', desc: 'Monophonic bass synth. Natively slides through microtonal intervals.', category: 'tal', format: 'VST3, AU', supportsMTS: true },
-  { name: 'TAL-Pha', url: 'https://tal-software.com/products', desc: 'Emulation of Alpha Juno II, incorporating full microtuning options.', category: 'tal', format: 'VST3, AU, CLAP', supportsMTS: true },
+  { name: 'TAL-Sampler', url: 'https://tal-software.com/products/tal-sampler', desc: 'Sampler that models the converters of vintage hardware samplers. Supports Scala and MTS-ESP tuning.', category: 'tal', format: 'VST3, AU, CLAP, AAX', supportsMTS: true },
+  { name: 'TAL-U-NO-LX', url: 'https://tal-software.com/products/tal-u-no-lx', desc: 'Emulation of the Roland Juno-60, with Scala scale support.', category: 'tal', format: 'VST3, AU, CLAP', supportsMTS: true },
+  { name: 'TAL-Mod', url: 'https://tal-software.com/products', desc: 'Virtual analogue synth with modular-style routing and microtuning.', category: 'tal', format: 'VST3, AU, CLAP', supportsMTS: true },
+  { name: 'TAL-J-8', url: 'https://tal-software.com/products', desc: 'Emulation of the Roland Jupiter-8. MTS-ESP client.', category: 'tal', format: 'VST3, AU, CLAP', supportsMTS: true },
+  { name: 'TAL-BassLine-101', url: 'https://tal-software.com/products', desc: 'Emulation of the Roland SH-101 monosynth, with microtuning.', category: 'tal', format: 'VST3, AU', supportsMTS: true },
+  { name: 'TAL-Pha', url: 'https://tal-software.com/products', desc: 'Emulation of the Roland Alpha Juno 2, with microtuning options.', category: 'tal', format: 'VST3, AU, CLAP', supportsMTS: true },
 
   // Experimental
-  { name: 'crusher-X', url: 'https://www.accsone.com/', desc: 'The sovereign of granular synthesis. Creates microtonal grain clouds, space physics textures, and chaotic pitch arrays.', category: 'experimental', format: 'VST3, AU, Standalone', supportsMTS: true },
-  { name: 'RipplerX', url: 'https://github.com/tiagolr/ripplerx-plugin', desc: 'A chaotic physical modeling resonator plugin built for microtonal exciters.', category: 'experimental', format: 'VST3, AU', supportsMTS: true, isFree: true },
-  { name: 'Triple Cheese', url: 'https://u-he.com/products/triplecheese/', desc: 'Free fun comb filter synthesizer. Natively supports Scala and MTS tuning.', category: 'experimental', format: 'VST3, AU, CLAP', supportsMTS: true, isFree: true },
-  { name: 'PolyGAS', url: 'https://stone-voices.ru/mini-vst/polygas', desc: 'Granular synthesizer utilizing custom graintables and deep Scala scale support.', category: 'experimental', format: 'VST', supportsMTS: true, isFree: true },
-  { name: 'Uhhyou Plugins', url: 'https://github.com/ryukau', desc: 'Superb collection of open-source experimental synthesis plugins, specialized in complex physical and phase-modulation algorithms.', category: 'experimental', format: 'VST3, CLAP, Standalone', supportsMTS: true, isFree: true },
-  { name: 'EP-MK1', url: 'https://www.mikemorenodsp.com/', desc: 'Pure PureData DSP model of physical mechanical piano tines, supporting microtesting.', category: 'experimental', format: 'PD, Standalone', supportsMTS: false, isFree: true },
+  { name: 'crusher-X', url: 'https://www.accsone.com/', desc: 'Granular synthesis software with microtonal pitch control.', category: 'experimental', format: 'VST3, AU, Standalone', supportsMTS: true },
+  { name: 'RipplerX', url: 'https://github.com/tiagolr/ripplerx-plugin', desc: 'Physical modelling resonator plugin with mallet and noise exciters.', category: 'experimental', format: 'VST3, AU', supportsMTS: true, isFree: true },
+  { name: 'Triple Cheese', url: 'https://u-he.com/products/triplecheese/', desc: "u-he's comb filter synth. Supports Scala and MTS-ESP tuning.", category: 'experimental', format: 'VST3, AU, CLAP', supportsMTS: true, isFree: true },
+  { name: 'PolyGAS', url: 'https://stone-voices.ru/mini-vst/polygas', desc: 'Granular synth with its own grain tables and Scala tuning support.', category: 'experimental', format: 'VST', supportsMTS: true, isFree: true },
+  { name: 'Uhhyou Plugins', url: 'https://github.com/ryukau', desc: 'Collection of open-source experimental synths and effects, many based on physical models and phase modulation.', category: 'experimental', format: 'VST3, CLAP, Standalone', supportsMTS: true, isFree: true },
+  { name: 'EP-MK1', url: 'https://www.mikemorenodsp.com/', desc: 'Physically modelled tine electric piano.', category: 'experimental', format: 'PD, Standalone', supportsMTS: false, isFree: true },
 
   // Tuning Tools
-  { name: 'Scala', url: 'https://www.huygens-fokker.org/scala/', desc: 'The sovereign classic software for microtonal systems. Holds a database of ~50,000 historic and modern scales.', category: 'tools', format: 'Desktop Utility', supportsMTS: false, isFree: true },
-  { name: 'Scale Workshop', url: 'https://scaleworkshop.plainsound.org/', desc: 'Essential online tool to easily design custom scales, visualize frequencies, and export .scl / MTS-ESP / MIDI files.', category: 'tools', format: 'Web App', supportsMTS: false, isFree: true },
-  { name: 'ODDSound MTS-ESP', url: 'https://oddsound.com/mtsesp.php', desc: 'The industry-standard master microtuning system. Integrates entire DAWs to align all synth plugins to a singular tuning in real-time.', category: 'tools', format: 'Master Utility', supportsMTS: true },
-  { name: 'Entonal Studio', url: 'https://entonal.studio/', desc: 'Modern microtuning plugin mapper. Beautiful interval wheel supporting custom MPE and hardware scaling.', category: 'tools', format: 'VST3, AU, Standalone', supportsMTS: true },
-  { name: 'Infinitone 2', url: 'https://infinitone.com/', desc: 'Generative geometric interval synthesizer and real-time microtonal pitch modifier.', category: 'tools', format: 'VST3, AU', supportsMTS: true },
-  { name: 'Pivotuner', url: 'https://www.pivotuner.com/', desc: 'Real-time pitch tracking modulator centering dynamic-just intonation loops.', category: 'tools', format: 'Standalone Utility', supportsMTS: false },
-  { name: 'Wilsonic', url: 'https://wilsonic.co/', desc: 'Brilliant conceptual pitch navigator visualizing Erv Wilson\'s multi-dimensional lattices.', category: 'tools', format: 'iOS App / Concept', supportsMTS: false },
+  { name: 'Scala', url: 'https://www.huygens-fokker.org/scala/', desc: "Manuel Op de Coul's program for building and analysing scales. Its archive holds several thousand historical and modern scales.", category: 'tools', format: 'Desktop Utility', supportsMTS: false, isFree: true },
+  { name: 'Scale Workshop', url: 'https://scaleworkshop.plainsound.org/', desc: 'Browser tool for designing scales and exporting them as .scl, .kbm and other tuning formats.', category: 'tools', format: 'Web App', supportsMTS: false, isFree: true },
+  { name: 'ODDSound MTS-ESP', url: 'https://oddsound.com/mtsesp.php', desc: 'One master plugin sets the tuning of every compatible plugin in the DAW session, in real time.', category: 'tools', format: 'Master Utility', supportsMTS: true },
+  { name: 'Entonal Studio', url: 'https://entonal.studio/', desc: 'Microtuning plugin for designing scales and mapping them to keyboards, including MPE controllers.', category: 'tools', format: 'VST3, AU, Standalone', supportsMTS: true },
+  { name: 'Infinitone 2', url: 'https://infinitone.com/', desc: 'Real-time microtonal pitch tool.', category: 'tools', format: 'VST3, AU', supportsMTS: true },
+  { name: 'Pivotuner', url: 'https://www.pivotuner.com/', desc: 'Retunes notes in real time towards just intonation, based on the notes being played.', category: 'tools', format: 'Standalone Utility', supportsMTS: false },
+  { name: 'Wilsonic', url: 'https://wilsonic.co/', desc: "App for exploring Erv Wilson's tuning lattices and scale structures.", category: 'tools', format: 'iOS App / Concept', supportsMTS: false },
 
   // Further Exploration
-  { name: 'Xenharmonic Wiki', url: 'https://en.xen.wiki/w/List_of_microtonal_software_plugins', desc: 'The undisputed holy grail encyclopedic hub detailing every single hardware, software, and theory concept.', category: 'exploration', format: 'Wiki Database', supportsMTS: false, isFree: true },
-  { name: 'Sevish Microtonal Guides', url: 'https://sevish.com/', desc: 'Legendary microtonal electronic music producer. Excellent documentation on synths, tutorials, and tutorials.', category: 'exploration', format: 'Guides & Music', supportsMTS: false, isFree: true }
+  { name: 'Xenharmonic Wiki', url: 'https://en.xen.wiki/w/List_of_microtonal_software_plugins', desc: 'Community wiki on tunings and microtonal theory. This page lists microtonal software and plugins.', category: 'exploration', format: 'Wiki Database', supportsMTS: false, isFree: true },
+  { name: 'Sevish Microtonal Guides', url: 'https://sevish.com/', desc: 'Site of the microtonal electronic musician Sevish, with guides to microtonal synths and tools.', category: 'exploration', format: 'Guides & Music', supportsMTS: false, isFree: true }
 ];
 
 const CATEGORY_LABELS: Record<string, string> = {
-  all: 'Show All Systems',
-  essential: 'Essential Power Synths',
-  uhe: 'u-he Systems',
+  all: 'All',
+  essential: 'Synths',
+  uhe: 'u-he',
   arturia: 'Arturia V Collection',
   madrona: 'Madrona Labs',
   aas: 'Applied Acoustics (AAS)',
-  tal: 'Togu Audio Line (TAL)',
-  experimental: 'Experimental & PD',
-  tools: 'Scale Designers & MTS',
-  exploration: 'Exploration Wiki Hubs'
+  tal: 'TAL (Togu Audio Line)',
+  experimental: 'Experimental',
+  tools: 'Tuning Tools',
+  exploration: 'Further Reading'
 };
 
 export function MicrotonalCatalog() {
@@ -157,13 +157,6 @@ export function MicrotonalCatalog() {
               </div>
             );
           })}
-        </div>
-
-        {/* Microtonal Quote Footer */}
-        <div className="p-3.5 bg-zinc-950 border border-zinc-900/60 rounded-sm text-center">
-          <span className="font-sans text-xs text-zinc-400 italic">
-            "The twelve notes of equal temperament are not the edges of music. They're just the default settings."
-          </span>
         </div>
       </div>
 

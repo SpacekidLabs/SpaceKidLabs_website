@@ -182,9 +182,9 @@ export function ZwickerToneLab() {
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-900 pb-4 gap-2">
         <div>
-          <span className="font-mono text-[9px] text-[#14b8a6] font-bold tracking-widest uppercase">// AUDITORY AFTERIMAGE // SYSTEM W-23</span>
+          <span className="font-mono text-[9px] text-[#14b8a6] font-bold tracking-widest uppercase">// AUDITORY AFTERIMAGE</span>
           <h3 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
-            The Zwicker Tone Illusion Lab
+            Zwicker Tone
           </h3>
         </div>
         <span className="font-mono text-[9px] px-2 py-0.5 rounded-sm bg-zinc-900 text-[#14b8a6]/80 border border-zinc-850 self-start">
@@ -194,7 +194,7 @@ export function ZwickerToneLab() {
 
       {/* Overview Instruction */}
       <p className="text-zinc-400 font-sans font-light text-sm leading-relaxed max-w-xl">
-        Plays white noise with a silent gap (<strong className="text-[#14b8a6] font-normal">notch</strong>) cut out of it. Listen for 5–10 seconds, then press <strong className="text-red-400 font-normal">ABRUPT SILENCE</strong>. Many people hear a faint tone for a few seconds afterwards, pitched inside the gap.
+        Plays white noise with a band removed (the <strong className="text-[#14b8a6] font-normal">gap</strong>), made with two low-pass and two high-pass filters, 24 dB per octave on each edge. Listen for 5–10 seconds, then press <strong className="text-red-400 font-normal">STOP NOISE</strong>. Some listeners hear a faint tone for a few seconds afterwards, pitched inside the gap near its lower edge.
       </p>
 
       {/* Layout Grid */}
@@ -203,7 +203,7 @@ export function ZwickerToneLab() {
         {/* Parameters Column */}
         <div className="lg:col-span-5 space-y-5">
           <div className="p-4 bg-zinc-950/60 border border-zinc-900/80 rounded-sm space-y-4">
-            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Noise & Filter settings</span>
+            <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase border-b border-zinc-900 pb-1.5">// Noise and gap</span>
             
             {/* Play Notched Noise */}
             <div className="grid grid-cols-1 gap-2">
@@ -216,7 +216,7 @@ export function ZwickerToneLab() {
                 }`}
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                {isPlaying ? 'ACTIVE: PLAYING NOISE' : 'PLAY NOTCHED NOISE'}
+                {isPlaying ? 'PLAYING (CLICK TO STOP)' : 'PLAY NOISE'}
               </button>
 
               {/* Stop immediately button (Abrupt trigger) */}
@@ -230,18 +230,18 @@ export function ZwickerToneLab() {
                 }`}
               >
                 <ZapOff className="w-3.5 h-3.5" />
-                ABRUPT SILENCE (CUT SOUND)
+                STOP NOISE
               </button>
             </div>
 
             {/* Slider: Notch Frequency */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">NOTCH FOCAL REGION</span>
+                <span className="text-zinc-400">GAP CENTRE</span>
                 <span className="text-[#14b8a6] font-bold">{notchFreq} Hz</span>
               </div>
               <input
-                aria-label="Notch Focal Region"
+                aria-label="Gap centre frequency in hertz"
                 type="range"
                 min="800"
                 max="2500"
@@ -251,18 +251,18 @@ export function ZwickerToneLab() {
                 className="w-full accent-[#14b8a6] bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-600 block leading-tight font-mono">
-                Choose the spectral void coordinate. Typically most effective between 1 kHz and 2 kHz.
+                Centre of the gap, 800 to 2500 Hz in 50 Hz steps.
               </span>
             </div>
 
             {/* Slider: Q-factor (Narrowness) */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">NOTCH WIDTH</span>
+                <span className="text-zinc-400">GAP WIDTH</span>
                 <span className="text-zinc-350">{gapOctaves.toFixed(2)} oct</span>
               </div>
               <input
-                aria-label="Notch width in octaves"
+                aria-label="Gap width in octaves"
                 type="range"
                 min="0.25"
                 max="1.5"
@@ -272,20 +272,20 @@ export function ZwickerToneLab() {
                 className="w-full accent-[#14b8a6]/80 bg-zinc-900 h-1 rounded-sm cursor-pointer"
               />
               <span className="text-[9px] text-zinc-600 block leading-tight font-mono">
-                The effect needs a wide gap: try 0.5 to 1 octave. Too narrow and nothing appears.
+                Width of the gap, 0.25 to 1.5 octaves. Try 0.5 to 1 octave; a narrow gap usually produces no tone.
               </span>
             </div>
 
             {/* Selector: Volume */}
             <div className="space-y-1.5 pt-1">
               <div className="flex justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">NOISE INTENSITY</span>
+                <span className="text-zinc-400">NOISE LEVEL</span>
                 <span className="text-zinc-500">{Math.round(volume * 100)}%</span>
               </div>
               <div className="flex items-center gap-2">
                 {volume === 0 ? <VolumeX className="w-4 h-4 text-zinc-600" /> : <Volume2 className="w-4 h-4 text-zinc-400" />}
                 <input
-                  aria-label="Noise Intensity"
+                  aria-label="Noise level"
                   type="range"
                   min="0"
                   max="0.3"
@@ -304,10 +304,10 @@ export function ZwickerToneLab() {
           <div className="p-4 bg-zinc-950/50 border border-zinc-900 rounded-sm space-y-3">
             <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
               <span className="text-zinc-500 font-mono text-[10px] tracking-wide block uppercase">
-                // Spectral Magnitude Analysis (Frequency vs Volume)
+                // Gap position (drawn, not measured)
               </span>
               <span className="text-[9px] font-mono px-1.5 py-0.2 bg-zinc-900 text-zinc-500 border border-zinc-800 rounded-sm">
-                NOTCHED BROADBAND SPECTRUM
+                LOG FREQUENCY
               </span>
             </div>
 
@@ -359,26 +359,26 @@ export function ZwickerToneLab() {
               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 bg-black/80 px-2 py-0.5 border border-zinc-900 rounded-sm pointer-events-none select-none">
                 <div className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-[#14b8a6] animate-pulse' : 'bg-zinc-800'}`} />
                 <span className="font-mono text-[8px] text-zinc-500 uppercase tracking-widest">
-                  {isPlaying ? `FREQUENCY VOID CENTERED AT ${notchFreq}Hz` : 'NOISE ENGINE IDLE'}
+                  {isPlaying ? `GAP CENTRE ${notchFreq} Hz` : 'NOISE OFF'}
                 </span>
               </div>
             </div>
 
             <div className="flex justify-between text-[9px] font-mono text-zinc-650 px-1">
-              <span>800 Hz (LOW END MIDRANGE)</span>
-              <span>2.5 kHz (HIGH SHELF MIDRANGE)</span>
+              <span>800 Hz</span>
+              <span>2.5 kHz</span>
             </div>
           </div>
 
           {/* Quick instructions of use */}
           <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-sm">
-            <span className="block font-mono text-[9px] text-zinc-500 uppercase tracking-widest mb-1.5">✦ LAB METHOD PROTOCOL</span>
+            <span className="block font-mono text-[9px] text-zinc-500 uppercase tracking-widest mb-1.5">STEPS</span>
             <ol className="list-decimal list-inside text-[11px] font-sans text-zinc-400 space-y-1 font-light">
-              <li>Turn up your headphone volume moderately.</li>
-              <li>Press <strong className="text-zinc-300">PLAY NOTCHED NOISE</strong>. Listen to the steady rushing static sound.</li>
-              <li>Focus your attention directly on the noise for at least <strong className="text-zinc-300">8 to 15 seconds</strong>.</li>
-              <li>Suddenly strike the red <strong className="text-red-400 font-normal">ABRUPT SILENCE</strong> button.</li>
-              <li>Remain completely still. Live expectation will bloom instantly in your ears!</li>
+              <li>Use headphones at a moderate level.</li>
+              <li>Press <strong className="text-zinc-300">PLAY NOISE</strong>.</li>
+              <li>Listen to the noise for <strong className="text-zinc-300">5 to 10 seconds</strong>.</li>
+              <li>Press <strong className="text-red-400 font-normal">STOP NOISE</strong>. The sound cuts off with no fade.</li>
+              <li>Listen to the silence for a few seconds. If you hear a faint tone, it sits inside the gap near its lower edge. Not everyone hears it.</li>
             </ol>
           </div>
         </div>

@@ -102,10 +102,10 @@ export function ImpossibleInstruments() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-900 pb-4 mb-6 gap-3">
         <div>
           <span className="font-mono text-[8px] font-black tracking-widest text-[#ec4899] uppercase bg-[#ec4899]/5 px-2 py-0.5 border border-[#ec4899]/15 rounded-sm">
-            WAVEGUIDE SCHEMATIC LAYOUTS
+            DIAGRAM
           </span>
           <h3 className="font-display font-black text-xl tracking-tighter text-white uppercase mt-1">
-            Loop Architecture & Waveguides
+            String Loop and Modal Resonators
           </h3>
         </div>
 
@@ -119,7 +119,7 @@ export function ImpossibleInstruments() {
                 : 'text-zinc-550 hover:text-zinc-350 border border-transparent'
             }`}
           >
-            01 // Plucked String (Karplus-Strong)
+            01 Karplus-Strong loop
           </button>
           <button
             onClick={() => { setActiveTab('resonator'); setIsAnimating(false); setAnimationStep(-1); }}
@@ -129,7 +129,7 @@ export function ImpossibleInstruments() {
                 : 'text-zinc-550 hover:text-zinc-350 border border-transparent'
             }`}
           >
-            02 // Parallel Modal Resonator
+            02 Modal resonators
           </button>
         </div>
       </div>
@@ -138,7 +138,7 @@ export function ImpossibleInstruments() {
         // TAB 1: WAVEGUIDE FEEDBACK CIRCUIT WITH INTERACTIVE PROPAGATION
         <div className="space-y-6">
           <p className="text-zinc-400 font-sans font-light text-xs leading-relaxed max-w-2xl">
-            This flowchart maps the <strong>Karplus-Strong waveguide</strong>—a recursive feedback loop that forces noise to assemble into pitched acoustic string vibrations. Click the trigger button to watch the acoustic impulse travel and decay through the circuit components.
+            This diagram shows a <strong>Karplus-Strong loop</strong>: a short burst goes into a delay line, through a low-pass filter and a gain stage, and back to the input, so it repeats every d samples, loses a little high end each time, and settles into a pitched tone. Play preview animates a pulse around the loop. The sound is a single oscillator through a low-pass filter, set from the controls below, not a simulation of the loop.
           </p>
 
           {/* Interactive Schematic Board */}
@@ -164,9 +164,9 @@ export function ImpossibleInstruments() {
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
                   <Zap className={`w-4 h-4 mb-1.5 ${animationStep === 0 ? 'text-[#ec4899] animate-bounce' : 'text-zinc-550'}`} />
-                  <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-white">01. Exciter</span>
+                  <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-white">Exciter</span>
                   <span className="font-sans text-[8px] text-zinc-650 mt-1 text-center font-light leading-normal">
-                    White noise burst / physical click impulse (Field spike)
+                    Short burst of white noise, or a click
                   </span>
                   
                   {/* Glowing step indicator */}
@@ -190,7 +190,7 @@ export function ImpossibleInstruments() {
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
                   <span className="font-mono text-xs font-black text-white">+</span>
-                  <span className="font-mono text-[8px] uppercase tracking-wider text-zinc-550 mt-1">Summing Node</span>
+                  <span className="font-mono text-[8px] uppercase tracking-wider text-zinc-550 mt-1">Input + feedback</span>
                   
                   <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center font-mono text-[8px] text-zinc-400">
                     2
@@ -209,14 +209,14 @@ export function ImpossibleInstruments() {
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
                   <Activity className="w-4 h-4 mb-1.5 text-cyan-500" />
-                  <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-cyan-400">02. Delay Buffer</span>
+                  <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-cyan-400">Delay line</span>
                   <span className="font-sans text-[8px] text-zinc-550 mt-1 text-center font-light leading-normal">
-                    Physically delays waveform in memory by <strong className="text-white">{delaySamples} samples</strong> ($f = 1 / d$)
+                    Delays the signal by <strong className="text-white">{delaySamples} samples</strong>; in a real loop the pitch is f_s / d
                   </span>
                   
                   {/* Indicator parameters */}
                   <div className="mt-2 text-[7px] font-mono text-[#ec4899] bg-zinc-900/50 px-1 py-0.5 rounded-[2px] border border-zinc-850">
-                    PITCH FREQ: {Math.round(220 * (128 / delaySamples))}Hz
+                    PREVIEW: {Math.round(220 * (128 / delaySamples))} Hz
                   </div>
 
                   <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center font-mono text-[8px] text-zinc-400">
@@ -239,13 +239,13 @@ export function ImpossibleInstruments() {
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
                   <Sliders className="w-4 h-4 mb-1.5 text-violet-500" />
-                  <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-violet-400">03. Lowpass Filter</span>
+                  <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-violet-400">Low-pass filter</span>
                   <span className="font-sans text-[8px] text-zinc-550 mt-1 text-center font-light leading-normal">
-                    Absorbs high frequencies sequentially modeling string friction
+                    Removes a little more high end on every pass, so the tone darkens as it decays
                   </span>
 
                   <div className="mt-2 text-[7px] font-mono text-zinc-550 bg-zinc-900/50 px-1 py-0.5 rounded-[2px] border border-zinc-850">
-                    DAMP: {(dampingCutoff/1000).toFixed(1)}kHz
+                    CUTOFF: {(dampingCutoff/1000).toFixed(1)} kHz
                   </div>
 
                   <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center font-mono text-[8px] text-zinc-400">
@@ -265,9 +265,9 @@ export function ImpossibleInstruments() {
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
                   <FolderSync className="w-4 h-4 mb-1 text-amber-500" />
-                  <span className="font-mono text-[8px] uppercase font-bold tracking-widest text-amber-400">04. Feedback Controller (g)</span>
+                  <span className="font-mono text-[8px] uppercase font-bold tracking-widest text-amber-400">Feedback gain (g)</span>
                   <span className="font-sans text-[8px] text-zinc-650 mt-1 text-center font-light">
-                    Reduces recirculating signal strength to prevent runaway sound overload. Set to <strong className="text-white">{Math.round(feedbackGain * 100)}%</strong>.
+                    Scales the signal on each pass; below 100% the loop dies away. Set to <strong className="text-white">{Math.round(feedbackGain * 100)}%</strong>.
                   </span>
 
                   <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center font-mono text-[8px] text-zinc-400">
@@ -289,10 +289,10 @@ export function ImpossibleInstruments() {
 
             {/* Custom Interactive Loop Controls panel */}
             <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-[10px] font-mono select-none">
-              <span className="text-zinc-550">👉 IMPULSE PROPAGATOR SCHEMATIC</span>
+              <span className="text-zinc-550">KARPLUS-STRONG LOOP</span>
               {isAnimating && (
                 <span className="text-[#ec4899] font-black animate-pulse uppercase">
-                  ⚡ Recirculating Wave packet (Sample node {animationStep})
+                  Pulse moving through the loop
                 </span>
               )}
             </div>
@@ -305,11 +305,11 @@ export function ImpossibleInstruments() {
             {/* Control 1: Physical Size (Delay) */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center font-mono text-[9px] text-zinc-400">
-                <span>📏 Physical Buffer Length (Delay)</span>
-                <span className="text-white">{delaySamples} Smp</span>
+                <span>Delay length (d)</span>
+                <span className="text-white">{delaySamples} samples</span>
               </div>
               <input 
-                aria-label="Physical Buffer Length (Delay)"
+                aria-label="Delay length in samples"
                 type="range"
                 min="32"
                 max="256"
@@ -319,18 +319,18 @@ export function ImpossibleInstruments() {
                 className="w-full accent-[#ec4899] bg-zinc-900" 
               />
               <p className="text-[8px] text-zinc-650 leading-normal font-sans font-light">
-                Higher values lengthen the waveguide loop string size, which pitch-shifts note frequencies lower.
+                Length of the delay line, 32 to 256 samples. Longer means lower; the preview plays 220 Hz × 128 / d.
               </p>
             </div>
 
             {/* Control 2: Friction absorption */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center font-mono text-[9px] text-zinc-400">
-                <span>🍃 Lowpass Friction Absorption</span>
+                <span>Low-pass cutoff</span>
                 <span className="text-white">{(dampingCutoff/1000).toFixed(1)} kHz</span>
               </div>
               <input 
-                aria-label="Lowpass Friction Absorption"
+                aria-label="Low-pass cutoff"
                 type="range"
                 min="300"
                 max="12000"
@@ -340,18 +340,18 @@ export function ImpossibleInstruments() {
                 className="w-full accent-violet-500 bg-zinc-900" 
               />
               <p className="text-[8px] text-zinc-650 leading-normal font-sans font-light">
-                Models physical wood, copper or nylon. Dampen frequencies to make waveguide decay hollow or rustic.
+                Cutoff of the low-pass filter, 0.3 to 12 kHz. Lower values give a duller tone.
               </p>
             </div>
 
             {/* Control 3: Sustain coeff */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center font-mono text-[9px] text-zinc-400">
-                <span>⏳ Loop Sustain Retention Coeff (g)</span>
+                <span>Feedback gain (g)</span>
                 <span className="text-white">{(feedbackGain*100).toFixed(0)}%</span>
               </div>
               <input 
-                aria-label="Loop Sustain Retention Coeff (g)"
+                aria-label="Feedback gain"
                 type="range"
                 min="0.10"
                 max="0.94"
@@ -361,7 +361,7 @@ export function ImpossibleInstruments() {
                 className="w-full accent-cyan-400 bg-zinc-900" 
               />
               <p className="text-[8px] text-zinc-650 leading-normal font-sans font-light">
-                Capped securely at 94% to avoid positive gain loops entering nasty feedback overflows.
+                Gain per pass, 10 to 94%. In the preview it sets the fade time: about g × 1.6 s.
               </p>
             </div>
 
@@ -375,7 +375,7 @@ export function ImpossibleInstruments() {
               className={`flex items-center gap-2 px-6 py-3 bg-[#ec4899] hover:bg-pink-600 disabled:bg-zinc-900 disabled:text-zinc-650 font-mono text-xs font-bold uppercase tracking-wider text-white border border-[#ec4899]/20 rounded-sm transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-pink-500/10`}
             >
               <Volume2 className="w-4 h-4" />
-              Excite Instrument Loop
+              Play preview
             </button>
           </div>
 
@@ -384,7 +384,7 @@ export function ImpossibleInstruments() {
         // TAB 2: PARALLEL MODAL RESONATOR MATRIX SCHEMATIC
         <div className="space-y-6">
           <p className="text-zinc-400 font-sans font-light text-xs leading-relaxed max-w-2xl">
-            This flowchart maps the second primary school of physical modeling: <strong>Modal Synthesis</strong>. Instead of recirculating feedback sequentially, a single burst of energy is split parallel across a matrix of discrete resonance bandpass nodes simulating metal bells or ceramic shells.
+            <strong>Modal synthesis</strong> is the other common resonator. There is no feedback loop: one excitation feeds several band-pass resonators in parallel, one per mode of the object, and their outputs are added together. Inharmonic mode frequencies give bell- or bar-like sounds. The preview here is a single decaying sine (about g × 3 s), not a model of the modes.
           </p>
 
           {/* Resonator Diagram Board */}
@@ -406,9 +406,9 @@ export function ImpossibleInstruments() {
                   : 'bg-zinc-950 border-zinc-900 text-zinc-400'
               }`}>
                 <Zap className="w-3.5 h-3.5 mb-1 text-yellow-500" />
-                <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-white">Excitation Burst</span>
+                <span className="font-mono text-[9px] uppercase font-bold tracking-wider text-white">Excitation</span>
                 <span className="font-sans text-[7px] text-zinc-650 mt-0.5 text-center font-light leading-normal">
-                  Microscopic finger snap or mallet spike
+                  A short impulse, such as a mallet hit
                 </span>
               </div>
 
@@ -438,12 +438,12 @@ export function ImpossibleInstruments() {
                     ? 'bg-emerald-500/10 border-emerald-500 text-white' 
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
-                  <span className="font-mono text-[9px] font-bold text-emerald-400">Node A (f1)</span>
+                  <span className="font-mono text-[9px] font-bold text-emerald-400">Mode 1 (f1)</span>
                   <span className="font-sans text-[7px] text-zinc-650 mt-1 text-center font-light leading-normal">
-                    FUNDAMENTAL<br />Resonator
+                    Fundamental<br />band-pass
                   </span>
                   <div className="mt-1.5 text-[7px] font-mono text-zinc-500">
-                    Q = Max Sustain
+                    High Q, long ring
                   </div>
                 </div>
 
@@ -453,12 +453,12 @@ export function ImpossibleInstruments() {
                     ? 'bg-cyan-500/10 border-cyan-500 text-white' 
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
-                  <span className="font-mono text-[9px] font-bold text-cyan-400">Node B (f2)</span>
+                  <span className="font-mono text-[9px] font-bold text-cyan-400">Mode 2 (f2)</span>
                   <span className="font-sans text-[7px] text-zinc-650 mt-1 text-center font-light leading-normal">
-                    OVERTONE BELL<br />Resonator
+                    Overtone<br />band-pass
                   </span>
                   <div className="mt-1.5 text-[7px] font-mono text-zinc-500">
-                    Q = Mid Ring
+                    Medium Q
                   </div>
                 </div>
 
@@ -468,12 +468,12 @@ export function ImpossibleInstruments() {
                     ? 'bg-fuchsia-500/10 border-fuchsia-500 text-white' 
                     : 'bg-zinc-950 border-zinc-900 text-zinc-400'
                 }`}>
-                  <span className="font-mono text-[9px] font-bold text-fuchsia-400">Node C (f3)</span>
+                  <span className="font-mono text-[9px] font-bold text-fuchsia-400">Mode 3 (f3)</span>
                   <span className="font-sans text-[7px] text-zinc-650 mt-1 text-center font-light leading-normal">
-                    INHARMONIC ANVIL<br />Resonator
+                    Inharmonic<br />band-pass
                   </span>
                   <div className="mt-1.5 text-[7px] font-mono text-zinc-500">
-                    Q = Fast Decay
+                    Low Q, short ring
                   </div>
                 </div>
 
@@ -485,19 +485,19 @@ export function ImpossibleInstruments() {
               </div>
 
               <div className="flex flex-col items-center">
-                <div className="font-mono text-[8px] tracking-wider text-zinc-550 uppercase">SUMMED OUT OUTLET</div>
+                <div className="font-mono text-[8px] tracking-wider text-zinc-550 uppercase">OUTPUT (SUM)</div>
                 <div className="text-zinc-400 font-sans text-[9px] mt-1 text-center font-light">
-                  A unified physical chime body constructed out of split nodes
+                  The resonator outputs are added together
                 </div>
               </div>
 
             </div>
 
             <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-[10px] font-mono select-none">
-              <span className="text-zinc-550">👉 PARALLEL MODAL SYNTHESIS SPECTRUM</span>
+              <span className="text-zinc-550">MODAL SYNTHESIS</span>
               {isAnimating && (
                 <span className="text-[#ec4899] font-black animate-pulse">
-                  SPLIT RECIRCULATION ACTIVE
+                  PULSE SPLITTING TO MODES
                 </span>
               )}
             </div>
@@ -512,7 +512,7 @@ export function ImpossibleInstruments() {
               className={`flex items-center gap-2 px-6 py-3 bg-[#ec4899] hover:bg-[#ec4899]/80 disabled:bg-zinc-900 disabled:text-zinc-650 font-mono text-xs font-bold uppercase tracking-wider text-white border border-[#ec4899]/20 rounded-sm transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md shadow-[#ec4899]/10`}
             >
               <Volume2 className="w-4 h-4" />
-              Excite Modal Resonator Matrix
+              Play preview
             </button>
           </div>
 

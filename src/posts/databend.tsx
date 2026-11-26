@@ -80,7 +80,7 @@ export default function Post() {
 
       <p>
         In the lab below you can load one of three generated images or upload your own, adjust the five effects, switch on
-        an LFO that animates them, undo and redo changes, and export the frame as a PNG.
+        an LFO that animates them, reset everything to zero, and export the frame as a PNG.
       </p>
 
       <div className="mt-8 border-t border-zinc-900 pt-8">
