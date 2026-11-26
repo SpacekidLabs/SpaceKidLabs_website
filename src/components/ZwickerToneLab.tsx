@@ -164,9 +164,9 @@ export function ZwickerToneLab() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-900 pb-4 gap-2">
         <div>
           <span className="font-mono text-[9px] text-[#14b8a6] font-bold tracking-widest uppercase">// AUDITORY AFTERIMAGE // SYSTEM W-23</span>
-          <h4 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
             The Zwicker Tone Illusion Lab
-          </h4>
+          </h3>
         </div>
         <span className="font-mono text-[9px] px-2 py-0.5 rounded-sm bg-zinc-900 text-[#14b8a6]/80 border border-zinc-850 self-start">
           GHOST COGNITION MECHANICS
@@ -222,6 +222,7 @@ export function ZwickerToneLab() {
                 <span className="text-[#14b8a6] font-bold">{notchFreq} Hz</span>
               </div>
               <input
+                aria-label="Notch Focal Region"
                 type="range"
                 min="800"
                 max="2500"
@@ -242,6 +243,7 @@ export function ZwickerToneLab() {
                 <span className="text-zinc-350">{notchQ} px</span>
               </div>
               <input
+                aria-label="Notch Narrowness (Q)"
                 type="range"
                 min="4"
                 max="25"
@@ -264,6 +266,7 @@ export function ZwickerToneLab() {
               <div className="flex items-center gap-2">
                 {volume === 0 ? <VolumeX className="w-4 h-4 text-zinc-600" /> : <Volume2 className="w-4 h-4 text-zinc-400" />}
                 <input
+                  aria-label="Noise Intensity"
                   type="range"
                   min="0"
                   max="0.3"

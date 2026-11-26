@@ -107,10 +107,11 @@ export function ArchivePost({
         {isSpecial ? (
           <>
             <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-1000 pointer-events-none" style={{ backgroundImage: `radial-gradient(circle at 70% 50%, ${accentColor} 0%, transparent 60%)` }} />
-            <div className="absolute -top-8 -left-2 md:-left-8 text-[12rem] font-display font-black text-white/[0.02] pointer-events-none select-none z-0 group-hover:text-white/[0.04] transition-colors duration-700">
+            <div aria-hidden="true" className="absolute -top-8 -left-2 md:-left-8 text-[12rem] font-display font-black text-white/[0.02] pointer-events-none select-none z-0 group-hover:text-white/[0.04] transition-colors duration-700">
                ★
             </div>
             <div 
+              aria-hidden="true"
               className="absolute right-0 top-0 bottom-0 w-1/3 overflow-hidden pointer-events-none flex items-center justify-end pr-8 opacity-[0.08] group-hover:opacity-20 transition-all duration-1000 z-0 scale-110 group-hover:scale-125 group-hover:-rotate-12"
               style={{ color: accentColor }}
             >
@@ -123,12 +124,13 @@ export function ArchivePost({
         ) : (
           <>
             {/* Generative background number */}
-            <div className="absolute -top-8 -left-2 md:-left-8 text-[12rem] font-display font-black text-white/[0.02] pointer-events-none select-none z-0 group-hover:text-white/[0.04] transition-colors duration-700">
+            <div aria-hidden="true" className="absolute -top-8 -left-2 md:-left-8 text-[12rem] font-display font-black text-white/[0.02] pointer-events-none select-none z-0 group-hover:text-white/[0.04] transition-colors duration-700">
               {String(index).padStart(2, '0')}
             </div>
             
             {/* Generative geometric shape */}
             <div 
+              aria-hidden="true"
               className="absolute right-0 top-0 bottom-0 w-1/3 overflow-hidden pointer-events-none flex items-center justify-end pr-8 opacity-[0.03] group-hover:opacity-10 transition-opacity duration-700 z-0"
               style={{ color: accentColor }}
             >
@@ -154,7 +156,7 @@ export function ArchivePost({
         >
           <div className="flex flex-wrap items-center gap-4 text-[10px] md:text-xs font-mono text-zinc-500 mb-6 uppercase tracking-widest">
               <span className="flex items-center gap-2"><Calendar className="w-3 h-3" /> {date}</span>
-              <span className="text-zinc-800">|</span>
+              <span className="text-zinc-800" aria-hidden="true">|</span>
               {tags.map((tag, idx) => (
                 <span 
                   key={idx} 
@@ -184,16 +186,24 @@ export function ArchivePost({
                 </Link>
               )}
               {!isDetailed && (
-                <div 
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggle();
+                  }}
+                  aria-expanded={isOpen}
+                  aria-controls={`post-body-${index}`}
+                  aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${title}`}
                   className="w-10 h-10 rounded-full border border-zinc-800 flex items-center justify-center shrink-0 transition-colors duration-500 bg-[#111]"
                   style={{ 
                     borderColor: isOpen ? accentColor : undefined,
-                    color: isOpen ? accentColor : '#666',
+                    color: isOpen ? accentColor : '#8b8b94',
                     boxShadow: isOpen ? `0 0 20px ${accentColor}20` : undefined
                   }}
                 >
-                  {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                </div>
+                  {isOpen ? <ChevronUp className="w-5 h-5" aria-hidden="true" /> : <ChevronDown className="w-5 h-5" aria-hidden="true" />}
+                </button>
               )}
             </div>
           </div>
@@ -202,6 +212,7 @@ export function ArchivePost({
         <AnimatePresence initial={false}>
           {isOpen && (
             <motion.div
+              id={`post-body-${index}`}
               initial={isDetailed ? undefined : { height: 0, opacity: 0 }}
               animate={isDetailed ? undefined : { height: 'auto', opacity: 1 }}
               exit={isDetailed ? undefined : { height: 0, opacity: 0 }}

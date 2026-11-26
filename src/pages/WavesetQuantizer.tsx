@@ -313,6 +313,7 @@ export function WavesetQuantizer() {
                           <span className="text-white">{numClusters}</span>
                         </label>
                         <input 
+                          aria-label="Cluster Count (K)"
                           type="range" 
                           min="4" 
                           max="256" 
@@ -329,6 +330,7 @@ export function WavesetQuantizer() {
                           <span className="text-white">{cyclesPerWaveset * 2}</span>
                         </label>
                         <input 
+                          aria-label="Zero-Crossings per Segment"
                           type="range" 
                           min="1" 
                           max="8" 

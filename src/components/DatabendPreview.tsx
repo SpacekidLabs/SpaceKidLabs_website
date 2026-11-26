@@ -86,27 +86,27 @@ export function DatabendPreview() {
         {/* Toolbar */}
         <div className="flex items-center gap-3">
           <div className="flex items-center border border-[#222] rounded bg-[#0a0a0a]">
-            <button className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] hover:text-white transition-colors" title="Play"><Play className="w-4 h-4 fill-current" /></button>
-            <button className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Stop"><Square className="w-3.5 h-3.5 fill-current" /></button>
+            <div className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] hover:text-white transition-colors" title="Play"><Play className="w-4 h-4 fill-current" /></div>
+            <div className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Stop"><Square className="w-3.5 h-3.5 fill-current" /></div>
           </div>
           
           <div className="flex items-center border border-[#222] rounded bg-[#0a0a0a] text-xs font-mono text-[#aaa]">
-            <button className="px-4 py-1.5 hover:bg-[#1a1a1a] hover:text-white transition-colors">FX</button>
-            <button className="px-3 py-1.5 hover:bg-[#1a1a1a] border-l border-[#222] flex items-center gap-2 hover:text-white transition-colors"><Scissors className="w-3.5 h-3.5"/> Slices</button>
-            <button className="px-4 py-1.5 hover:bg-[#1a1a1a] border-l border-[#222] hover:text-white transition-colors">Export</button>
-            <button className="px-3 py-1.5 hover:bg-[#1a1a1a] border-l border-[#222] flex items-center gap-2 hover:text-white transition-colors"><Move className="w-3.5 h-3.5"/> Drag</button>
+            <div className="px-4 py-1.5 hover:bg-[#1a1a1a] hover:text-white transition-colors">FX</div>
+            <div className="px-3 py-1.5 hover:bg-[#1a1a1a] border-l border-[#222] flex items-center gap-2 hover:text-white transition-colors"><Scissors className="w-3.5 h-3.5"/> Slices</div>
+            <div className="px-4 py-1.5 hover:bg-[#1a1a1a] border-l border-[#222] hover:text-white transition-colors">Export</div>
+            <div className="px-3 py-1.5 hover:bg-[#1a1a1a] border-l border-[#222] flex items-center gap-2 hover:text-white transition-colors"><Move className="w-3.5 h-3.5"/> Drag</div>
           </div>
           
           <div className="flex items-center border border-[#222] rounded bg-[#0a0a0a]">
-             <button className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] hover:text-white transition-colors" title="Browse"><Folder fill="none" className="w-4 h-4" /></button>
-             <button className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Cancel/Clear"><Ban className="w-4 h-4" /></button>
-             <button className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Copy"><Copy className="w-4 h-4" /></button>
-             <button className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+             <div className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] hover:text-white transition-colors" title="Browse"><Folder fill="none" className="w-4 h-4" /></div>
+             <div className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Cancel/Clear"><Ban className="w-4 h-4" /></div>
+             <div className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Copy"><Copy className="w-4 h-4" /></div>
+             <div className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></div>
           </div>
           
           <div className="flex items-center border border-[#222] rounded bg-[#0a0a0a]">
-             <button className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] hover:text-white transition-colors" title="Undo"><Undo className="w-4 h-4" /></button>
-             <button className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Redo"><Redo className="w-4 h-4" /></button>
+             <div className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] hover:text-white transition-colors" title="Undo"><Undo className="w-4 h-4" /></div>
+             <div className="px-3 py-1.5 hover:bg-[#1a1a1a] text-[#888] border-l border-[#222] hover:text-white transition-colors" title="Redo"><Redo className="w-4 h-4" /></div>
           </div>
         </div>
         

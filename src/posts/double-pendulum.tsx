@@ -40,7 +40,7 @@ export default function Post() {
       </div>
 
       <div className="border border-zinc-900/65 bg-black/45 p-5 rounded-sm space-y-4 mb-8">
-        <h4 className="font-mono text-xs font-bold text-[#ff5500]">// STRANGELY SIMPLE SETUP</h4>
+        <h3 className="font-mono text-xs font-bold text-[#ff5500]">// STRANGELY SIMPLE SETUP</h3>
         <div className="space-y-4 text-sm text-zinc-300 font-sans font-light leading-relaxed">
           <p>
             Feed sound into the top anchor point:

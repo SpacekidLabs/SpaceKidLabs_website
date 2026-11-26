@@ -13,9 +13,9 @@ export function NoiseForgePreview() {
           <div className="flex items-center gap-1 bg-[#0a0a0a] border border-[#2a2a30] rounded px-2 py-1 text-[10px]">
              CPU: <span className="text-[#ff5555] animate-pulse">42%</span>
           </div>
-          <button className="h-6 w-6 rounded bg-[#2a2a30] flex items-center justify-center hover:bg-[#3f3f46]">
+          <div className="h-6 w-6 rounded bg-[#2a2a30] flex items-center justify-center hover:bg-[#3f3f46]">
              <Power className="w-3 h-3 text-white" />
-          </button>
+          </div>
         </div>
       </div>
 
@@ -92,8 +92,8 @@ export function NoiseForgePreview() {
       {/* Bottom Bar */}
       <div className="h-10 border-t border-[#2a2a30] bg-[#141517] flex items-center justify-between px-4 text-[10px] uppercase">
         <div className="flex gap-4">
-           <button className="hover:text-white transition-colors flex items-center gap-1"><Settings2 className="w-3 h-3" /> Routing</button>
-           <button className="hover:text-white transition-colors flex items-center gap-1"><Sliders className="w-3 h-3" /> Presets</button>
+           <div className="hover:text-white transition-colors flex items-center gap-1"><Settings2 className="w-3 h-3" /> Routing</div>
+           <div className="hover:text-white transition-colors flex items-center gap-1"><Sliders className="w-3 h-3" /> Presets</div>
         </div>
         <div className="flex items-center gap-2">
            Output:

@@ -104,9 +104,9 @@ export function ImpossibleInstruments() {
           <span className="font-mono text-[8px] font-black tracking-widest text-[#ec4899] uppercase bg-[#ec4899]/5 px-2 py-0.5 border border-[#ec4899]/15 rounded-sm">
             WAVEGUIDE SCHEMATIC LAYOUTS
           </span>
-          <h4 className="font-display font-black text-xl tracking-tighter text-white uppercase mt-1">
+          <h3 className="font-display font-black text-xl tracking-tighter text-white uppercase mt-1">
             Loop Architecture & Waveguides
-          </h4>
+          </h3>
         </div>
 
         {/* Dynamic selector */}
@@ -309,6 +309,7 @@ export function ImpossibleInstruments() {
                 <span className="text-white">{delaySamples} Smp</span>
               </div>
               <input 
+                aria-label="Physical Buffer Length (Delay)"
                 type="range"
                 min="32"
                 max="256"
@@ -329,6 +330,7 @@ export function ImpossibleInstruments() {
                 <span className="text-white">{(dampingCutoff/1000).toFixed(1)} kHz</span>
               </div>
               <input 
+                aria-label="Lowpass Friction Absorption"
                 type="range"
                 min="300"
                 max="12000"
@@ -349,6 +351,7 @@ export function ImpossibleInstruments() {
                 <span className="text-white">{(feedbackGain*100).toFixed(0)}%</span>
               </div>
               <input 
+                aria-label="Loop Sustain Retention Coeff (g)"
                 type="range"
                 min="0.10"
                 max="0.94"

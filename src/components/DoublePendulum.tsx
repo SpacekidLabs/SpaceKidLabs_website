@@ -74,7 +74,7 @@ export function DoublePendulum() {
         Visual: Acoustic Pendulum Mechanics
       </div>
       
-      <div className={`absolute bottom-6 left-6 text-xs font-mono transition-opacity duration-500 ${isHovered ? 'opacity-0' : 'opacity-40 text-white'}`}>
+      <div className={`absolute bottom-6 left-6 text-xs font-mono transition-opacity duration-500 ${isHovered ? 'opacity-0' : 'opacity-60 text-white'}`}>
         [ HOVER TO INTERACT ]
       </div>
 

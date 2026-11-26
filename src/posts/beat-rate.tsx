@@ -78,7 +78,7 @@ export default function Post() {
       </div>
 
       <div className="border border-zinc-900/65 bg-black/45 p-5 rounded-sm space-y-4 mb-4">
-        <h4 className="font-mono text-xs font-bold text-[#00ffbb]">// MATHEMATICS OF ACOUSTIC DRIFT</h4>
+        <h3 className="font-mono text-xs font-bold text-[#00ffbb]">// MATHEMATICS OF ACOUSTIC DRIFT</h3>
         <div className="space-y-4 text-sm text-zinc-300 font-sans font-light leading-relaxed">
           <p>
             The math behind it is surprisingly simple. <br />

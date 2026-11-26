@@ -53,37 +53,37 @@ export default function Post() {
       {/* Six Modes Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h4 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// BEATS</h4>
+          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// BEATS</h3>
           <p className="text-zinc-300 text-sm font-sans font-light">
             Chops it into nervous little pieces.
           </p>
         </div>
         <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h4 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// TONES</h4>
+          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// TONES</h3>
           <p className="text-zinc-300 text-sm font-sans font-light">
             Smears it into something synthetic.
           </p>
         </div>
         <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h4 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// TEXTURE</h4>
+          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// TEXTURE</h3>
           <p className="text-zinc-300 text-sm font-sans font-light">
             Turns it into dust and weather.
           </p>
         </div>
         <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h4 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// RE-PITCH</h4>
+          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// RE-PITCH</h3>
           <p className="text-zinc-300 text-sm font-sans font-light">
             Lets gravity take over.
           </p>
         </div>
         <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h4 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// COMPLEX</h4>
+          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// COMPLEX</h3>
           <p className="text-zinc-300 text-sm font-sans font-light">
             Blurs the edges together.
           </p>
         </div>
         <div className="border border-zinc-900/60 bg-black/45 p-4 rounded-sm">
-          <h4 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// COMPLEX PRO</h4>
+          <h3 className="font-mono text-xs font-bold text-[#a855f7] mb-1.5">// COMPLEX PRO</h3>
           <p className="text-zinc-300 text-sm font-sans font-light">
             Tries its best to keep the mask from slipping.
           </p>

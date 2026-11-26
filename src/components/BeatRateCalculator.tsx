@@ -137,9 +137,9 @@ export function BeatRateCalculator() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-900 pb-4 gap-2">
         <div>
           <span className="font-mono text-[10px] text-[#00ffbb] font-bold tracking-widest uppercase">// MATH TOOL</span>
-          <h4 className="text-white font-display font-medium text-base uppercase tracking-wider">
+          <h3 className="text-white font-display font-medium text-base uppercase tracking-wider">
             Acoustic Inter-frequency Resolver & Audition Pad
-          </h4>
+          </h3>
         </div>
         <span className="font-mono text-[9px] px-2 py-0.5 rounded-sm bg-zinc-900 text-zinc-500 border border-zinc-850">
           REALSTATE EQ LABS
@@ -174,6 +174,7 @@ export function BeatRateCalculator() {
           </div>
           <div className="flex items-center gap-2 flex-1 sm:flex-none sm:w-48">
             <input
+              aria-label="Monitor Volume"
               type="range"
               min="0"
               max="0.4"
@@ -197,6 +198,7 @@ export function BeatRateCalculator() {
             <span className="text-[#00ffbb] font-bold">{freq1.toFixed(2)} Hz</span>
           </div>
           <input
+            aria-label="Frequency 1 (f1)"
             type="range"
             min="20"
             max="1000"
@@ -207,6 +209,7 @@ export function BeatRateCalculator() {
           />
           <div className="flex gap-2">
             <input
+              aria-label="Frequency 1 in hertz"
               type="number"
               min="1"
               max="20000"
@@ -234,6 +237,7 @@ export function BeatRateCalculator() {
             <span className="text-[#00ffbb] font-bold">{freq2.toFixed(2)} Hz</span>
           </div>
           <input
+            aria-label="Frequency 2 (f2)"
             type="range"
             min="20"
             max="1000"
@@ -244,6 +248,7 @@ export function BeatRateCalculator() {
           />
           <div className="flex gap-2">
             <input
+              aria-label="Frequency 2 in hertz"
               type="number"
               min="1"
               max="20000"

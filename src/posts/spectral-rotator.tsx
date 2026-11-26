@@ -32,7 +32,7 @@ export default function Post() {
       </div>
 
       <div className="border border-zinc-900/65 bg-black/45 p-5 rounded-sm space-y-4 mb-8">
-        <h4 className="font-mono text-xs font-bold text-[#00e5ff]">// THE IMMEDIATE OBJECTION</h4>
+        <h3 className="font-mono text-xs font-bold text-[#00e5ff]">// THE IMMEDIATE OBJECTION</h3>
         <div className="space-y-3 text-sm text-zinc-300 font-sans font-light leading-relaxed">
           <p>
             If you stop after the first step, it mostly sounds terrible.

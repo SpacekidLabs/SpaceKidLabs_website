@@ -174,7 +174,7 @@ export function SamplesPage() {
         category === value ? 'bg-brand-orange text-black border-brand-orange' : 'border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600'
       }`}
     >
-      {label} <span className="opacity-60">{count}</span>
+      {label} <span className="opacity-80">{count}</span>
     </button>
   );
 
@@ -192,9 +192,9 @@ export function SamplesPage() {
         <ScrollReveal className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="flex items-center gap-4 mb-16">
             <Archive className="w-8 h-8 text-brand-orange" />
-            <h2 className="text-3xl font-display font-black tracking-widest text-white uppercase">
+            <h1 className="text-3xl font-display font-black tracking-widest text-white uppercase">
               Sample Libraries & Packs
-            </h2>
+            </h1>
           </div>
 
           <div className="max-w-4xl mx-auto space-y-12">
@@ -213,7 +213,7 @@ export function SamplesPage() {
               </div>
               
               <div className="p-8 flex-1 flex flex-col">
-                <h3 className="font-display font-bold text-2xl text-white mb-2 uppercase tracking-wide">DataBend Process Pack</h3>
+                <h2 className="font-display font-bold text-2xl text-white mb-2 uppercase tracking-wide">DataBend Process Pack</h2>
                 <p className="text-sm text-zinc-400 font-sans leading-relaxed mb-6">
                   Not pristine. Not genre-correct. Just useful chaos.
                 </p>
@@ -256,10 +256,10 @@ export function SamplesPage() {
               <CornerAccents />
               <div className="bg-zinc-900/80 border-b border-zinc-800 px-4 md:px-6 py-4 space-y-4">
                 <div className="flex items-center justify-between gap-4">
-                  <h4 className="font-mono text-sm text-white uppercase tracking-widest flex items-center gap-2">
+                  <h3 className="font-mono text-sm text-white uppercase tracking-widest flex items-center gap-2">
                     <Play className="w-4 h-4 text-brand-orange" />
                     Sample Preview
-                  </h4>
+                  </h3>
                   <label className="flex items-center gap-2 font-mono text-[10px] text-zinc-400 uppercase tracking-widest cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -302,7 +302,7 @@ export function SamplesPage() {
                 {groups.map(([name, list]) => (
                   <div key={name}>
                     <div className="px-4 md:px-6 py-2 bg-zinc-950 border-b border-zinc-900 font-mono text-[10px] text-zinc-500 uppercase tracking-widest sticky top-16 z-10">
-                      {name} <span className="text-zinc-700">({list.length})</span>
+                      {name} <span className="text-zinc-500">({list.length})</span>
                     </div>
                     {list.map(sample => (
                       <SampleRow

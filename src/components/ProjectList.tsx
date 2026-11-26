@@ -299,6 +299,7 @@ export function ProjectList() {
                     backgroundColor: '#050505',
                     boxShadow: `0 10px 40px -15px rgba(0,0,0,0.8), 0 0 40px -10px ${proj.color}05`
                   }}
+                  aria-hidden="true"
                 >
                   {renderPreview(proj.id)}
                 </div>

@@ -731,6 +731,7 @@ export function DatabendJpg() {
               <span className="text-violet-400 font-bold">{sliceOffset}px</span>
             </div>
             <input 
+              aria-label="Slice Shift (0x0F)"
               type="range"
               min="0"
               max="150"
@@ -748,6 +749,7 @@ export function DatabendJpg() {
               <span className="text-cyan-400 font-bold">{rgbSeparation}px</span>
             </div>
             <input 
+              aria-label="Color Separation"
               type="range"
               min="0"
               max="60"
@@ -765,6 +767,7 @@ export function DatabendJpg() {
               <span className="text-[#00ffbb] font-bold">{colorMelt}px</span>
             </div>
             <input 
+              aria-label="Acid Pixel Sorter"
               type="range"
               min="0"
               max="100"
@@ -782,6 +785,7 @@ export function DatabendJpg() {
               <span className="text-[#ffaa00] font-bold">{waveDistortion}px</span>
             </div>
             <input 
+              aria-label="Sine Wave Wobble"
               type="range"
               min="0"
               max="50"
@@ -799,6 +803,7 @@ export function DatabendJpg() {
               <span className="text-red-400 font-bold">{byteCorruption}%</span>
             </div>
             <input 
+              aria-label="Byte Scrambler"
               type="range"
               min="0"
               max="35"

@@ -73,9 +73,9 @@ export default function Post() {
 
       {/* A few places to start */}
       <div className="border border-zinc-900 bg-zinc-950/45 p-6 rounded-sm space-y-6 mb-10">
-        <h4 className="font-mono text-xs text-zinc-400 font-bold uppercase tracking-widest pb-3 border-b border-zinc-900/60 flex items-center gap-2">
+        <h3 className="font-mono text-xs text-zinc-400 font-bold uppercase tracking-widest pb-3 border-b border-zinc-900/60 flex items-center gap-2">
           <span className="text-[#38bdf8] font-black">//</span> A FEW PLACES TO START:
-        </h4>
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
           {/* 01 */}

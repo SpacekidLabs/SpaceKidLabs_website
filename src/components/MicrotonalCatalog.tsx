@@ -107,9 +107,9 @@ export function MicrotonalCatalog() {
       {/* Header section with micro subheadings */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-zinc-900 pb-4 mb-6 gap-3">
         <div>
-          <h4 className="font-display font-bold text-lg tracking-tight text-white uppercase flex items-center gap-2">
+          <h3 className="font-display font-bold text-lg tracking-tight text-white uppercase flex items-center gap-2">
             Microtonal Software & Synths
-          </h4>
+          </h3>
         </div>
       </div>
 
@@ -124,9 +124,9 @@ export function MicrotonalCatalog() {
             
             return (
               <div key={catKey} className="space-y-2">
-                <h5 className="font-mono text-[9px] font-bold uppercase tracking-widest text-[#d200ff]/80 border-b border-zinc-900 pb-1.5 mb-2">
+                <h4 className="font-mono text-[9px] font-bold uppercase tracking-widest text-[#d200ff]/80 border-b border-zinc-900 pb-1.5 mb-2">
                   // {catLabel}
-                </h5>
+                </h4>
                 <div className="space-y-1.5">
                   {items.map((item, idx) => (
                     <div key={idx} className="flex flex-col sm:flex-row sm:items-baseline justify-between py-1 border-b border-zinc-900/30 last:border-0 pb-1 gap-1.5">

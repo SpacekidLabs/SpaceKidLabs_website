@@ -391,9 +391,9 @@ export function WaveguidePlayground() {
             </div>
             <div className="flex-1 space-y-1">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                <h4 className="text-white font-mono text-[11px] uppercase tracking-wider font-bold">
+                <h3 className="text-white font-mono text-[11px] uppercase tracking-wider font-bold">
                   {nodeInfo[activeNode].title}
-                </h4>
+                </h3>
                 <code className="text-[#00ffcc] font-mono text-[10px] bg-black/40 px-2 py-0.5 border border-zinc-900 leading-none">
                   {nodeInfo[activeNode].formula}
                 </code>
@@ -486,6 +486,7 @@ export function WaveguidePlayground() {
                 <span className="text-[#ff8c00] font-semibold">{pitch} Hz</span>
               </div>
               <input
+                aria-label="String Length (Pitch)"
                 type="range"
                 min="110" // A2
                 max="660" // E5
@@ -507,6 +508,7 @@ export function WaveguidePlayground() {
                 <span className="text-[#00ffcc] font-semibold">{(damping * 100).toFixed(2)}%</span>
               </div>
               <input
+                aria-label="Material Loss (Damping)"
                 type="range"
                 min="0.950"
                 max="0.999"
@@ -547,6 +549,7 @@ export function WaveguidePlayground() {
                     <span className="text-[#00ffcc]">{(nonLinDrive * 100).toFixed(0)}%</span>
                   </div>
                   <input
+                    aria-label="Nonlinear Drive (Gain)"
                     type="range"
                     min="0"
                     max="1.0"

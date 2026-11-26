@@ -194,9 +194,9 @@ export function MusicalCalculators() {
           <span className="font-mono text-[9px] text-[#00ffbb] uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1">
             <Sparkles className="w-3 h-3 text-[#00ffbb]" /> BEDROOM STUDIO ASSISTANT
           </span>
-          <h4 className="text-xl font-display font-medium text-white tracking-tight">
+          <h3 className="text-xl font-display font-medium text-white tracking-tight">
             The SpaceKid Utility Rack
-          </h4>
+          </h3>
           <p className="text-xs text-zinc-500 font-sans font-light mt-0.5">
             A precise, latency-adjusted Swiss Army knife for calculating delay taps, sample rate stretching, pitch-to-freq mappings, and digital file sizes.
           </p>
@@ -225,6 +225,7 @@ export function MusicalCalculators() {
                     <span className="text-white font-bold">{bpm} BPM</span>
                   </div>
                   <input
+                    aria-label="Project Tempo (BPM)"
                     type="range"
                     min="40"
                     max="220"
@@ -234,6 +235,7 @@ export function MusicalCalculators() {
                   />
                 </div>
                 <input
+                  aria-label="Project Tempo (BPM)"
                   type="number"
                   min="40"
                   max="220"
@@ -301,6 +303,7 @@ export function MusicalCalculators() {
               <div>
                 <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Frequency (Hz)</label>
                 <input
+                  aria-label="Frequency (Hz)"
                   type="text"
                   value={freqInput}
                   onChange={(e) => handleFreqChange(e.target.value)}
@@ -322,6 +325,7 @@ export function MusicalCalculators() {
                   <span className="text-[#00ffbb] font-bold">MIDI {midiNoteVal} ({NOTE_NAMES[midiNoteVal % 12]}{Math.floor(midiNoteVal/12) - 1})</span>
                 </div>
                 <input
+                  aria-label="Midi"
                   type="range"
                   min="21"
                   max="108"
@@ -377,6 +381,7 @@ export function MusicalCalculators() {
               <div>
                 <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Original Sample BPM</label>
                 <input
+                  aria-label="Original Sample BPM"
                   type="number"
                   min="30"
                   max="300"
@@ -388,6 +393,7 @@ export function MusicalCalculators() {
               <div>
                 <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Target Project BPM</label>
                 <input
+                  aria-label="Target Project BPM"
                   type="number"
                   min="30"
                   max="300"
@@ -432,6 +438,7 @@ export function MusicalCalculators() {
                 <label className="block text-[9px] text-zinc-500 font-mono uppercase mb-1">Duration (Min:Sec)</label>
                 <div className="flex gap-1.5">
                   <input
+                    aria-label="Duration minutes"
                     type="number"
                     min="0"
                     placeholder="Min"
@@ -440,6 +447,7 @@ export function MusicalCalculators() {
                     className="w-full bg-black border border-zinc-850 p-2 font-mono text-xs text-center text-blue-400 focus:border-blue-400 focus:outline-none"
                   />
                   <input
+                    aria-label="Duration seconds"
                     type="number"
                     min="0"
                     max="59"

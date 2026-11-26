@@ -27,6 +27,7 @@ export function ServicesPage() {
   return (
     <Layout>
       <div className="pt-24 pb-24">
+        <h1 className="sr-only">Services: music production and mixing</h1>
         <ScrollReveal className="max-w-7xl mx-auto px-6 mb-12">
           <Link to="/" className="inline-block text-zinc-400 hover:text-white font-mono text-sm uppercase tracking-widest transition-colors">
              [← Return to Base]
@@ -111,6 +112,7 @@ export function ServicesPage() {
                   <iframe 
                     data-testid="embed-iframe" 
                     style={{ borderRadius: '12px' }} 
+                    title="Spotify playlist: music production"
                     src="https://open.spotify.com/embed/playlist/5NB8mh1pEwDTLB4Q6AR2jG?utm_source=generator&theme=0" 
                     width="100%" 
                     height="352" 
@@ -166,6 +168,7 @@ export function ServicesPage() {
                     <iframe 
                       data-testid="embed-iframe" 
                       style={{ borderRadius: '12px' }} 
+                      title="Spotify playlist: mixing"
                       src="https://open.spotify.com/embed/playlist/7l3XH6hGx4AEyNy2WOqLUQ?utm_source=generator&theme=0" 
                       width="100%" 
                       height="352" 

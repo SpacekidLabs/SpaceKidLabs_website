@@ -220,9 +220,9 @@ export function MissingFundamental() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-900 pb-4 gap-2">
         <div>
           <span className="font-mono text-[9px] text-[#3b82f6] font-bold tracking-widest uppercase">// PSYCHOACOUSTIC EXPERIMENT // SYSTEM W-22</span>
-          <h4 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
             The Missing Fundamental Audition Lab
-          </h4>
+          </h3>
         </div>
         <span className="font-mono text-[9px] px-2 py-0.5 rounded-sm bg-zinc-900 text-[#3b82f6]/80 border border-zinc-850 self-start">
           HEARING IS HOSTED PREDICTION
@@ -271,6 +271,7 @@ export function MissingFundamental() {
                 <span className="text-[#3b82f6] font-bold">{fundamentalFreq} Hz</span>
               </div>
               <input
+                aria-label="FUNDAMENTAL FREQ (f₀)"
                 type="range"
                 min="70"
                 max="220"
@@ -293,6 +294,7 @@ export function MissingFundamental() {
               <div className="flex items-center gap-2">
                 {volume === 0 ? <VolumeX className="w-4 h-4 text-zinc-600" /> : <Volume2 className="w-4 h-4 text-zinc-400" />}
                 <input
+                  aria-label="Master Volume"
                   type="range"
                   min="0"
                   max="0.4"

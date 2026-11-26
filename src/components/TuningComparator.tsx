@@ -231,9 +231,9 @@ export function TuningComparator() {
           <span className="font-mono text-[9px] text-[#aaff00] uppercase tracking-wider font-semibold flex items-center gap-1.5 mb-1">
             <Sparkles className="w-3 h-3 text-[#aaff00] animate-pulse" /> Progression Audition
           </span>
-          <h4 className="text-lg font-display font-medium text-white tracking-tight">
+          <h3 className="text-lg font-display font-medium text-white tracking-tight">
             Tuning Comparison Playground
-          </h4>
+          </h3>
           <p className="text-xs text-zinc-500 font-sans font-light mt-0.5">
             Compare the exact same minor-major chord progression (Am - F - C - G) across different tuning systems.
           </p>

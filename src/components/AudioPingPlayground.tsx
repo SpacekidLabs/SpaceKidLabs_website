@@ -417,10 +417,10 @@ export function AudioPingPlayground() {
     <div className="bg-zinc-950 border border-zinc-900 rounded-sm p-4 md:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-4">
         <div>
-          <h4 className="font-display font-medium text-white text-sm uppercase tracking-wider flex items-center gap-2">
+          <h3 className="font-display font-medium text-white text-sm uppercase tracking-wider flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[#38bdf8]" />
             Real-time Acoustic Exciter Engine
-          </h4>
+          </h3>
           <p className="text-zinc-400 text-xs font-sans font-light mt-1">
             Toggle the nodes. Press any button to fire a 2ms energy impulse and hear the algorithm ring.
           </p>
@@ -439,6 +439,7 @@ export function AudioPingPlayground() {
           <div className="flex items-center gap-2">
             <span className="font-mono text-[9px] text-zinc-500 uppercase">Gain</span>
             <input 
+              aria-label="Gain"
               type="range" 
               min="0" 
               max="1" 

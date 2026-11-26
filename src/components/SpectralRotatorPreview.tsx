@@ -54,12 +54,12 @@ export function SpectralRotatorPreview() {
         {/* Left: Transport / Info */}
         <div className="flex flex-col gap-4">
           <div className="flex gap-2 h-10 w-full">
-            <button className="flex-1 bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:bg-zinc-800 hover:text-white text-zinc-400 transition-colors">
+            <div className="flex-1 bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:bg-zinc-800 hover:text-white text-zinc-400 transition-colors">
               <Play className="w-4 h-4" fill="currentColor" />
-            </button>
-            <button className="flex-1 bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:bg-zinc-800 hover:text-white text-zinc-400 transition-colors">
+            </div>
+            <div className="flex-1 bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:bg-zinc-800 hover:text-white text-zinc-400 transition-colors">
               <Square className="w-3 h-3" fill="currentColor" />
-            </button>
+            </div>
           </div>
           <div className="flex-1 border border-zinc-800 bg-black flex flex-col items-center justify-center">
              <div className="text-[9px] text-zinc-600 mb-1 tracking-widest">TIME INDEX</div>

@@ -32,8 +32,8 @@ export function PeopleVstPreview() {
             <div className="border border-[#3a3020] bg-[#1a1c20] text-[#e4c590] text-xs px-8 py-1 rounded font-mono">INIT</div>
             <div className="w-0 h-0 border-t-4 border-t-transparent border-l-[6px] border-l-[#e4c590] border-b-4 border-b-transparent opacity-60"></div>
           </div>
-          <button className="border border-[#3a3020] bg-[#1a1c20] text-[#e4c590] text-xs px-4 py-1.5 rounded font-bold hover:bg-[#2a2c30] transition-colors">SAVE</button>
-          <button className="border border-[#3a3020] bg-[#1a1c20] text-[#e4c590] text-xs px-4 py-1.5 rounded font-bold hover:bg-[#2a2c30] transition-colors ml-4">BYPASS</button>
+          <div className="border border-[#3a3020] bg-[#1a1c20] text-[#e4c590] text-xs px-4 py-1.5 rounded font-bold hover:bg-[#2a2c30] transition-colors">SAVE</div>
+          <div className="border border-[#3a3020] bg-[#1a1c20] text-[#e4c590] text-xs px-4 py-1.5 rounded font-bold hover:bg-[#2a2c30] transition-colors ml-4">BYPASS</div>
         </div>
       </div>
       
@@ -103,7 +103,7 @@ export function PeopleVstPreview() {
                 <span>Off</span>
                 <span className="text-[8px]">▼</span>
               </div>
-              <button className="border border-[#3a3020] bg-[#1a1c20] text-[#e4c590] text-xs px-6 py-1.5 rounded font-bold hover:bg-[#2a2c30] transition-colors">RND</button>
+              <div className="border border-[#3a3020] bg-[#1a1c20] text-[#e4c590] text-xs px-6 py-1.5 rounded font-bold hover:bg-[#2a2c30] transition-colors">RND</div>
             </div>
         </div>
       </div>

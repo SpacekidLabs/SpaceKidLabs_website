@@ -8,6 +8,11 @@
   --color-brand-orange: #ffaa00;
   --color-brand-gold: #ffcc66;
   --color-brand-dark: #0a0a0a;
+
+  /* Lighter than Tailwind's defaults (#71717a / #52525b) so small grey text passes WCAG AA (4.5:1)
+     on the near-black and zinc-900 backgrounds. 400 > 500 > 600 still go from bright to dim. */
+  --color-zinc-500: #8b8b94;
+  --color-zinc-600: #80808a;
 }
 
 @layer base {
@@ -23,6 +28,52 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+  }
+}
+
+@layer base {
+  /* Keyboard focus: an orange ring on anything focused with the keyboard (not on mouse clicks). */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-orange);
+    outline-offset: 2px;
+  }
+}
+
+/* Hidden until a keyboard user tabs to it, then shown top-left above the navbar. */
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 200;
+  padding: 0.5rem 1rem;
+  background: var(--color-brand-orange);
+  color: #000;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: none;
+}
+
+/* Visitors who ask their system for less motion: no smooth scrolling, looping animations,
+   glitch effects or flicker. Motion (framer) animations are handled by <MotionConfig reducedMotion="user">. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .scanlines {
+    display: none;
   }
 }
 

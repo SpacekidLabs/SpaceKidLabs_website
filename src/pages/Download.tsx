@@ -78,7 +78,7 @@ export function DownloadPage() {
           <div className="absolute top-0 left-0 w-1 h-full bg-red-500" />
           <AlertOctagon className="w-8 h-8 text-red-500 shrink-0 mt-1" />
           <div>
-            <h3 className="font-display font-bold text-red-500 text-lg uppercase tracking-widest mb-2">Notice of Volatility</h3>
+            <h2 className="font-display font-bold text-red-500 text-lg uppercase tracking-widest mb-2">Notice of Volatility</h2>
             <p className="text-red-200/80 font-sans leading-relaxed text-sm md:text-base">
               DATABEND is designed for experimental use. The Commit workflow is strictly destructive, permanently writing over the designated audio file region. 
               Always work on duplicated audio stems. The developers hold zero responsibility for irrecoverably mangled project files or blasted studio monitors. 
@@ -93,7 +93,7 @@ export function DownloadPage() {
           {/* Web Version */}
           <div className="border border-brand-orange bg-brand-orange/5 p-8 relative flex flex-col h-full hover:bg-brand-orange/10 transition-colors group">
             <CornerAccents />
-            <h3 className="text-2xl font-display font-bold text-white mb-2 text-brand-orange">Web App</h3>
+            <h2 className="text-2xl font-display font-bold text-white mb-2 text-brand-orange">Web App</h2>
             <p className="font-mono text-zinc-400 text-sm mb-8">Run directly in your browser</p>
             <div className="mt-auto space-y-3">
               <a href="https://databenddaw.netlify.app/" target="_blank" rel="noreferrer" className="w-full flex items-center justify-between px-4 py-3 bg-brand-orange text-black font-bold uppercase tracking-wider text-sm hover:bg-white transition-colors">
@@ -111,7 +111,7 @@ export function DownloadPage() {
             </div>
             <div className="flex gap-3 items-center mb-2">
               <Apple className="w-6 h-6 text-white" />
-              <h3 className="text-2xl font-display font-bold text-white">macOS</h3>
+              <h2 className="text-2xl font-display font-bold text-white">macOS</h2>
             </div>
             <p className="font-mono text-zinc-400 text-sm mb-8">macOS 11.0+ (Apple Silicon / Intel)</p>
             <div className="mt-auto space-y-3">
@@ -132,7 +132,7 @@ export function DownloadPage() {
         <ScrollReveal className="border border-zinc-800 bg-zinc-950 p-8 rounded-sm">
           <div className="flex items-center gap-3 mb-6 border-b border-zinc-800 pb-4">
             <Terminal className="w-5 h-5 text-brand-orange" />
-            <h3 className="text-xl font-display font-bold text-white uppercase tracking-widest">Release Notes [v1.4.0]</h3>
+            <h2 className="text-xl font-display font-bold text-white uppercase tracking-widest">Release Notes [v1.4.0]</h2>
           </div>
           
           <ul className="space-y-4 font-mono text-sm">

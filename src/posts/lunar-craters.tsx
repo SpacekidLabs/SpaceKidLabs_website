@@ -31,7 +31,7 @@ export default function Post() {
       </div>
 
       <div className="border border-zinc-900/65 bg-black/45 p-5 rounded-sm space-y-4 mb-8">
-        <h4 className="font-mono text-xs font-bold text-[#3b82f6]">// THE FEED JUNK</h4>
+        <h3 className="font-mono text-xs font-bold text-[#3b82f6]">// THE FEED JUNK</h3>
         <div className="space-y-3 text-sm text-zinc-300 font-sans font-light leading-relaxed">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
             <div className="p-3 bg-zinc-950/45 border border-zinc-900/60 rounded-sm">

@@ -501,9 +501,9 @@ export function GranularResonatorLab() {
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-zinc-900 pb-5 gap-3">
         <div>
           <span className="font-mono text-[9px] text-[#d946ef] font-bold tracking-widest uppercase">// PHYSICAL COUPLING LAB // SYNTHESIS W-26</span>
-          <h4 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-white font-display font-medium text-lg uppercase tracking-wider flex items-center gap-2">
             Granular Excitation & Adapting Resonators
-          </h4>
+          </h3>
         </div>
 
         {/* Global Action Button */}
@@ -616,6 +616,7 @@ export function GranularResonatorLab() {
                 <span className="text-[#d946ef] font-bold">{Math.round(grainPosition * 100)}%</span>
               </div>
               <input
+                aria-label="Grain Start Position"
                 type="range"
                 min="0.0"
                 max="0.95"
@@ -636,6 +637,7 @@ export function GranularResonatorLab() {
                 <span className="text-zinc-350">{grainSize} ms</span>
               </div>
               <input
+                aria-label="Grain Duration"
                 type="range"
                 min="40"
                 max="350"
@@ -656,6 +658,7 @@ export function GranularResonatorLab() {
                 <span className="text-zinc-350">{grainDensity} grains/sec</span>
               </div>
               <input
+                aria-label="Grain Density"
                 type="range"
                 min="8"
                 max="45"
@@ -676,6 +679,7 @@ export function GranularResonatorLab() {
                 <span className="text-[#d946ef] font-semibold">{grainPitch.toFixed(2)}x</span>
               </div>
               <input
+                aria-label="Grain Pitch / Playback Speed"
                 type="range"
                 min="0.5"
                 max="2.0"
@@ -702,6 +706,7 @@ export function GranularResonatorLab() {
                 <span className="text-pink-500 font-bold">{resonanceQ}</span>
               </div>
               <input
+                aria-label="Bandpass Sharpness (Resonance Q)"
                 type="range"
                 min="10"
                 max="120"
@@ -722,6 +727,7 @@ export function GranularResonatorLab() {
                 <span className="text-zinc-350">{Math.round(feedbackLevel * 100)}%</span>
               </div>
               <input
+                aria-label="Comb Feedback Coefficient"
                 type="range"
                 min="0.0"
                 max="0.95"
@@ -744,6 +750,7 @@ export function GranularResonatorLab() {
               <div className="flex items-center gap-2">
                 {volume === 0 ? <VolumeX className="w-4 h-4 text-zinc-650" /> : <Volume2 className="w-4 h-4 text-zinc-400" />}
                 <input
+                  aria-label="Resonator Model Envelope (Master)"
                   type="range"
                   min="0"
                   max="0.4"

@@ -352,9 +352,9 @@ export function WavesetsVisualizer() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-900 pb-4 gap-2">
         <div>
           <span className="font-mono text-[10px] text-[#00ffaa] font-bold tracking-widest uppercase">// EXPERIMENTAL SYNTHESIS</span>
-          <h4 className="text-white font-display font-medium text-base uppercase tracking-wider">
+          <h3 className="text-white font-display font-medium text-base uppercase tracking-wider">
             Waveset Object Dissector & Rebuilder
-          </h4>
+          </h3>
         </div>
         <button
           onClick={() => setShowInfo(!showInfo)}
@@ -515,6 +515,7 @@ export function WavesetsVisualizer() {
           <div className="flex items-center gap-2 text-zinc-500 font-mono text-[10px] uppercase tracking-wider">
             <span>VOLUME:</span>
             <input
+              aria-label="Volume"
               type="range"
               min="0"
               max="0.3"

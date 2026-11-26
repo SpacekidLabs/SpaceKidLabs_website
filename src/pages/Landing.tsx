@@ -218,7 +218,7 @@ export function Landing() {
               </div>
             </div>
 
-            <div className="relative transform lg:-rotate-2 hover:rotate-0 transition-transform duration-500 cursor-pointer w-full shadow-2xl" onClick={() => window.location.href='/download'}>
+            <div className="relative transform lg:-rotate-2 hover:rotate-0 transition-transform duration-500 cursor-pointer w-full shadow-2xl" onClick={() => window.location.href='/download'} aria-hidden="true">
               <DatabendPreview />
             </div>
           </div>
