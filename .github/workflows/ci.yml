@@ -32,11 +32,12 @@ jobs:
       - name: Build (site, pre-rendered pages, sitemap/robots)
         run: npm run build:site
 
-      - name: Check generated SEO files
+      - name: Check generated SEO files and RSS feed
         run: |
           test -s dist/robots.txt
           grep -q '</urlset>' dist/sitemap.xml
           grep -q '/archive/' dist/sitemap.xml
+          grep -q '<item>' dist/rss.xml
 
       - name: Check pre-rendered pages
         run: |

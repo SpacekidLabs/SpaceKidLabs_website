@@ -5,6 +5,7 @@
  *
  * Output: dist/index.html for "/", dist/<path>.html for every other page (Netlify serves /archive/wavesets from
  * dist/archive/wavesets.html), and dist/shell.html, the empty app used for any other URL (see netlify.toml).
+ * It also writes dist/rss.xml, the archive's RSS feed, using the same post descriptions.
  *
  * Usage: npx tsx scripts/prerender.ts
  */
@@ -72,6 +73,43 @@ function fillTemplate(template: string, page: PageInfo, appHtml: string): string
   return html;
 }
 
+/** RFC 822 date for RSS, at noon UTC so the day doesn't shift in any time zone. */
+const rssDate = (isoDay: string) => new Date(`${isoDay}T12:00:00Z`).toUTCString();
+
+/** RSS 2.0 feed of the archive, newest first. Deterministic: only changes when posts change. */
+function buildFeed(posts: Post[], descriptions: Map<string, string>): string {
+  const newest = posts.map(p => p.meta.date).sort().at(-1)!;
+  const items = posts.map(p => {
+    const url = `${SITE_URL}/archive/${p.meta.slug}`;
+    return [
+      '    <item>',
+      `      <title>${escapeAttr(p.meta.title)}</title>`,
+      `      <link>${url}</link>`,
+      `      <guid isPermaLink="true">${url}</guid>`,
+      `      <pubDate>${rssDate(p.meta.date)}</pubDate>`,
+      `      <description>${escapeAttr(descriptions.get(`/archive/${p.meta.slug}`) ?? '')}</description>`,
+      ...p.meta.tags.map(tag => `      <category>${escapeAttr(tag)}</category>`),
+      '    </item>',
+    ].join('\n');
+  });
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+    '  <channel>',
+    `    <title>${SITE_NAME} — Archive</title>`,
+    `    <link>${SITE_URL}/archive</link>`,
+    `    <description>Thoughts, esoteric tools and interactive audio experiments from ${SITE_NAME}.</description>`,
+    '    <language>en</language>',
+    `    <lastBuildDate>${rssDate(newest)}</lastBuildDate>`,
+    `    <atom:link href="${SITE_URL}/rss.xml" rel="self" type="application/rss+xml" />`,
+    `    <image><url>${SITE_URL}/apple-touch-icon.png</url><title>${SITE_NAME} — Archive</title><link>${SITE_URL}/archive</link></image>`,
+    ...items,
+    '  </channel>',
+    '</rss>',
+    '',
+  ].join('\n');
+}
+
 function outFile(path: string) {
   return resolve(DIST, path === '/' ? 'index.html' : `.${path}.html`);
 }
@@ -110,16 +148,21 @@ try {
     })),
   ];
 
+  const descriptions = new Map<string, string>();
   for (const page of pages) {
     // Note: React moves large blocks (like the labs) to the end of the HTML and swaps them into place with a
     // tiny inline script as the page loads. The content is all there; that's expected.
     const appHtml = await render(page.path);
     if (!page.description) page.description = firstParagraph(appHtml) ?? DEFAULT_DESCRIPTION;
+    descriptions.set(page.path, page.description);
     const file = outFile(page.path);
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, fillTemplate(template, page, appHtml));
   }
   console.log(`Pre-rendered ${pages.length} pages for ${SITE_URL}`);
+
+  writeFileSync(resolve(DIST, 'rss.xml'), buildFeed(POSTS, descriptions));
+  console.log(`RSS feed: ${POSTS.length} posts`);
 } finally {
   await vite.close();
 }

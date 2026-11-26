@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Link, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
-import { Archive as ArchiveIcon } from 'lucide-react';
+import { Archive as ArchiveIcon, Rss } from 'lucide-react';
 import { ArchivePost } from '../components/ArchivePost';
 import { POSTS } from '../posts';
 
@@ -287,6 +287,15 @@ export function Archive() {
             <p className="text-lg text-zinc-400 font-sans font-light leading-relaxed max-w-2xl mx-auto">
               A log of thoughts, esoteric tools, recommended reading, and unorganized debris from the production process.
             </p>
+
+            {/* Plain <a>: the feed is a file, not a page in the app */}
+            <a
+              href="/rss.xml"
+              className="inline-flex items-center gap-2 mt-6 font-mono text-[10px] uppercase tracking-widest text-zinc-500 hover:text-brand-orange transition-colors"
+            >
+              <Rss className="w-3 h-3" aria-hidden="true" />
+              Subscribe via RSS
+            </a>
           </motion.div>
         </div>
       </section>
