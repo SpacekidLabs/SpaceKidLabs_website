@@ -1,5 +1,7 @@
 # SPACEKID LABS
 
+[![CI](https://github.com/SpacekidLabs/SpaceKidLabs_website/actions/workflows/ci.yml/badge.svg)](https://github.com/SpacekidLabs/SpaceKidLabs_website/actions/workflows/ci.yml)
+
 The website of SPACEKID: experimental audio research, music production and interactive DSP experiments.
 
 It's a React + Vite single-page app served by a small Express server. Many pages have interactive audio demos (wavesets, databending, granular resonators, microtonal tuning, psychoacoustics and more) that run in the browser with the Web Audio API.
@@ -33,7 +35,7 @@ The site runs at http://localhost:3000.
 | `npm run dev` | Starts the Express server with Vite middleware (hot reload) |
 | `npm run build` | Builds the frontend into `dist/` and bundles the server into `dist/server.cjs` |
 | `npm start` | Runs the production build (set `NODE_ENV=production`) |
-| `npm run lint` | Type-checks the project with `tsc` |
+| `npm run lint` | Type-checks the project with `tsc` (also runs on GitHub for every push and pull request) |
 | `npm run clean` | Deletes build output |
 
 ## How it's put together
