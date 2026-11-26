@@ -1,13 +1,15 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { Landing } from './pages/Landing';
-import { DownloadPage } from './pages/Download';
-import { ServicesPage } from './pages/Services';
-import { SamplesPage } from './pages/Samples';
-import { Archive } from './pages/Archive';
+import { lazyNamed } from './lib/lazyNamed';
 
-import { WavesetQuantizer } from './pages/WavesetQuantizer';
-import { NotFoundPage } from './pages/NotFound';
+// Each page is downloaded only when someone opens it.
+const Landing = lazyNamed(() => import('./pages/Landing'), 'Landing');
+const Archive = lazyNamed(() => import('./pages/Archive'), 'Archive');
+const WavesetQuantizer = lazyNamed(() => import('./pages/WavesetQuantizer'), 'WavesetQuantizer');
+const DownloadPage = lazyNamed(() => import('./pages/Download'), 'DownloadPage');
+const ServicesPage = lazyNamed(() => import('./pages/Services'), 'ServicesPage');
+const SamplesPage = lazyNamed(() => import('./pages/Samples'), 'SamplesPage');
+const NotFoundPage = lazyNamed(() => import('./pages/NotFound'), 'NotFoundPage');
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -23,16 +25,19 @@ export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/archive" element={<Archive />} />
-        <Route path="/archive/:slug" element={<Archive />} />
-        <Route path="/waveset-quantizer" element={<WavesetQuantizer />} />
-        <Route path="/download" element={<DownloadPage />} />
-        <Route path="/services" element={<ServicesPage />} />
-        <Route path="/samples" element={<SamplesPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+      {/* Shown only on the very first page load; later navigations keep the current page up while the next one loads. */}
+      <Suspense fallback={<div className="min-h-screen bg-brand-dark" />}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/archive" element={<Archive />} />
+          <Route path="/archive/:slug" element={<Archive />} />
+          <Route path="/waveset-quantizer" element={<WavesetQuantizer />} />
+          <Route path="/download" element={<DownloadPage />} />
+          <Route path="/services" element={<ServicesPage />} />
+          <Route path="/samples" element={<SamplesPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

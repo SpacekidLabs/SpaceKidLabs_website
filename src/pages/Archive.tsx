@@ -6,16 +6,18 @@ import { usePageTitle } from '../lib/usePageTitle';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { Archive as ArchiveIcon, ExternalLink } from 'lucide-react';
 import { ArchivePost } from '../components/ArchivePost';
-import { DoublePendulum } from '../components/DoublePendulum';
-import { DatabendJpg } from '../components/DatabendJpg';
-import { MicrotonalCatalog } from '../components/MicrotonalCatalog';
-import { BeatRateCalculator } from '../components/BeatRateCalculator';
-import { WavesetsVisualizer } from '../components/WavesetsVisualizer';
-import { MissingFundamental } from '../components/MissingFundamental';
-import { ZwickerToneLab } from '../components/ZwickerToneLab';
-import { NoiseFossilLab } from '../components/NoiseFossilLab';
-import { AcousticCompressionLab } from '../components/AcousticCompressionLab';
-import { GranularResonatorLab } from '../components/GranularResonatorLab';
+import { lazyLab } from '../lib/lazyNamed';
+
+// Interactive labs are downloaded only when their post is opened.
+const DoublePendulum = lazyLab(() => import('../components/DoublePendulum'), 'DoublePendulum');
+const DatabendJpg = lazyLab(() => import('../components/DatabendJpg'), 'DatabendJpg');
+const MicrotonalCatalog = lazyLab(() => import('../components/MicrotonalCatalog'), 'MicrotonalCatalog');
+const BeatRateCalculator = lazyLab(() => import('../components/BeatRateCalculator'), 'BeatRateCalculator');
+const MissingFundamental = lazyLab(() => import('../components/MissingFundamental'), 'MissingFundamental');
+const ZwickerToneLab = lazyLab(() => import('../components/ZwickerToneLab'), 'ZwickerToneLab');
+const NoiseFossilLab = lazyLab(() => import('../components/NoiseFossilLab'), 'NoiseFossilLab');
+const AcousticCompressionLab = lazyLab(() => import('../components/AcousticCompressionLab'), 'AcousticCompressionLab');
+const GranularResonatorLab = lazyLab(() => import('../components/GranularResonatorLab'), 'GranularResonatorLab');
 
 function getSlug(title: string): string {
   return title.toLowerCase()
