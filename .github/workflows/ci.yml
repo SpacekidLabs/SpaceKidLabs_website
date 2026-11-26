@@ -29,5 +29,11 @@ jobs:
       - name: Type check
         run: npm run lint
 
-      - name: Build
-        run: npx vite build
+      - name: Build (site + sitemap/robots)
+        run: npm run build:site
+
+      - name: Check generated SEO files
+        run: |
+          test -s dist/robots.txt
+          grep -q '</urlset>' dist/sitemap.xml
+          grep -q '/archive/' dist/sitemap.xml
