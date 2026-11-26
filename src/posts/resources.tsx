@@ -1,4 +1,3 @@
-import { lazyLab } from '../lib/lazyNamed';
 import { ExternalLink } from 'lucide-react';
 import type { PostMeta } from './types';
 import { RESOURCE_LINKS } from '../data/resources';
@@ -33,8 +32,6 @@ function SiteIcon({ url, title }: { url: string; title: string }) {
   );
 }
 
-const MusicalCalculators = lazyLab(() => import('../components/MusicalCalculators'), 'MusicalCalculators');
-
 export const meta: PostMeta = {
   title: "Curated Resources & Bookmarks",
   slug: "resources",
@@ -65,10 +62,6 @@ export default function Post() {
             <span className="font-sans text-sm text-zinc-500 font-light flex-1 mt-1 md:mt-0 text-right"><ExternalLink className="w-4 h-4 inline-block opacity-40 group-hover:opacity-100 transition-opacity" /></span>
           </a>
         ))}
-      </div>
-      {/* Interactive Lab Segment */}
-      <div className="mt-8 border-t border-zinc-900 pt-8">
-        <MusicalCalculators />
       </div>
     </>
   );
