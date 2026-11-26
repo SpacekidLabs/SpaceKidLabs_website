@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Download } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { seededRandom } from '../lib/seededRandom';
 
 // Fixed pattern for the decorative rules grid (same on every render and in the pre-rendered HTML).

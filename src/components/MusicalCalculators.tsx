@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Volume2, Play, Square, Calculator, Clock, Music, RotateCw, Database, Sparkles } from 'lucide-react';
+
+import { Volume2, Square, Clock, Music, RotateCw, Database, Sparkles } from 'lucide-react';
 
 export function MusicalCalculators() {
   const [bpm, setBpm] = useState<number>(120);

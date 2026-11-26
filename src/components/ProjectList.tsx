@@ -1,5 +1,4 @@
-import { motion } from 'motion/react';
-import { ArrowRight, ExternalLink, Cpu, Sliders, Terminal, Download } from 'lucide-react';
+import { ArrowRight, ExternalLink, Cpu, Sliders } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AudioComparison } from './AudioComparison';
 import { SpectralRotatorPreview } from './SpectralRotatorPreview';

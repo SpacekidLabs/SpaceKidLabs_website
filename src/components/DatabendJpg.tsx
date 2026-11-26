@@ -1,22 +1,5 @@
 import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
-import { 
-  Play, 
-  Square, 
-  Sparkles, 
-  Scissors, 
-  Move, 
-  Folder, 
-  Ban, 
-  Copy, 
-  Trash2, 
-  Undo, 
-  Redo, 
-  Upload, 
-  Sliders, 
-  Download, 
-  Layers, 
-  Maximize2 
-} from 'lucide-react';
+import { Play, Square, Scissors, Ban, Undo, Redo, Upload, Sliders, Download, Layers } from 'lucide-react';
 
 interface Preset {
   name: string;

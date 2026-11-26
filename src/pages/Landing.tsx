@@ -1,22 +1,14 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { ProjectList } from '../components/ProjectList';
 import { DatabendPreview } from '../components/DatabendPreview';
-import { PeopleVstPreview } from '../components/PeopleVstPreview';
-import { NoiseForgePreview } from '../components/NoiseForgePreview';
-import { LasySynthPreview } from '../components/LasySynthPreview';
-import { SpectralRotatorPreview } from '../components/SpectralRotatorPreview';
-import { WavesetPreview } from '../components/WavesetPreview';
-import { DataPaintPreview } from '../components/DataPaintPreview';
-import { DataMosPreview } from '../components/DataMosPreview';
 import { YoutubeFacade } from '../components/YoutubeFacade';
 import { AudioComparison } from '../components/AudioComparison';
 import { HeroGraphic } from '../components/HeroGraphic';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Code2, Disc, Mic, SlidersHorizontal, Terminal, Archive, Download, ExternalLink, Activity } from 'lucide-react';
+import { ArrowRight, Code2, Mic, SlidersHorizontal, Terminal, Download } from 'lucide-react';
 
 const CornerAccents = () => (
   <>
@@ -167,7 +159,6 @@ export function Landing() {
             </div>
           </div>
 
-
           <div className="border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm p-6 md:p-12 relative overflow-hidden group hover:border-brand-orange/50 transition-colors shadow-2xl">
             <CornerAccents />
             <div className="absolute top-0 right-0 w-1 h-full bg-brand-orange" />
@@ -231,7 +222,6 @@ export function Landing() {
               <DatabendPreview />
             </div>
           </div>
-
 
           </div>
         </ScrollReveal>

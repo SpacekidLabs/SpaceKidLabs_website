@@ -5,7 +5,7 @@ import { Readable } from "stream";
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   // API route for proxying audio
   app.get("/api/proxy-audio", async (req, res) => {

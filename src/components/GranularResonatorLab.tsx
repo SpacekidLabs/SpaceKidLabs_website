@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Upload, Play, Square, Volume2, VolumeX, Info, Sliders, Disc, Sparkles, Activity } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { Upload, Play, Square, Volume2, VolumeX, Info, Sliders, Sparkles, Activity } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface ResonatorFreq {
   freq: number;

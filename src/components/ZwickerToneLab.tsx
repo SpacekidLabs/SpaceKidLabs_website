@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Volume2, VolumeX, Play, Square, Settings, RefreshCw, ZapOff } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Volume2, VolumeX, Play, ZapOff } from 'lucide-react';
 
 export function ZwickerToneLab() {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);

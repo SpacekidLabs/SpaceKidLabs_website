@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Upload, Play, Square, Volume2, VolumeX, Eye, Info, Sparkles, RefreshCw, Layers } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Upload, Play, Square, Volume2, VolumeX, Info, Sparkles, RefreshCw, Layers } from 'lucide-react';
+import { motion } from 'motion/react';
 
 const FREQ_BANDS = [
   { label: 'Sub-Bass', freq: 120, range: '20-200Hz' },

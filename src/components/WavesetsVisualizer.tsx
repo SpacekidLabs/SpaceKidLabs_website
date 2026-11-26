@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Square, RotateCcw, HelpCircle, Shuffle, ChevronRight, CheckSquare, Square as SquareIcon, Sparkles } from 'lucide-react';
+import { Play, Square, RotateCcw, HelpCircle, Shuffle, ChevronRight, Square as SquareIcon, Sparkles } from 'lucide-react';
 
 interface Waveset {
   id: string;

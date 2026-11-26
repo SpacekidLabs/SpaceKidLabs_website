@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { motion } from 'motion/react';
-import { Upload, Play, Square, Settings, Download as DownloadIcon, RefreshCw, Layers } from 'lucide-react';
+import { Upload, Play, Square, Settings, Download as DownloadIcon, Layers } from 'lucide-react';
 
 export function WavesetQuantizer() {
   usePageTitle('Waveset Quantizer');

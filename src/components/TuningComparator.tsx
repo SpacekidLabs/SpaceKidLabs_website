@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Volume2, Play, Square, Sparkles, RefreshCw } from 'lucide-react';
+import { Play, Square, Sparkles } from 'lucide-react';
 
 interface SystemData {
   name: string;

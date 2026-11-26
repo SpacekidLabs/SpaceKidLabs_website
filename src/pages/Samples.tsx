@@ -1,7 +1,7 @@
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { ScrollReveal } from '../components/ScrollReveal';
-import { Archive, Download, Play, Pause, FileAudio, ChevronDown, ChevronRight, Folder } from 'lucide-react';
+import { Archive, Download, Play, Pause, ChevronDown, ChevronRight, Folder } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { SAMPLES } from '../data/samples';

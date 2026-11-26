@@ -1,16 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Zap, 
-  HelpCircle, 
-  Settings, 
-  Sliders, 
-  Activity, 
-  FolderSync, 
-  Maximize2, 
-  Sparkles,
-  Play,
-  Volume2
-} from 'lucide-react';
+import { Zap, Sliders, Activity, FolderSync, Volume2 } from 'lucide-react';
 
 interface DiagramNode {
   id: string;

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Upload, Play, Square, Volume2, VolumeX, Info, ListFilter, Activity, RefreshCw, Zap } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Upload, Play, Square, Volume2, VolumeX, Info, Activity, RefreshCw, Zap } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface BandConfig {
   freq: number;

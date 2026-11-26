@@ -1,7 +1,7 @@
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { ScrollReveal } from '../components/ScrollReveal';
-import { Mic, Disc, SlidersHorizontal, Activity } from 'lucide-react';
+import { Disc, SlidersHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CornerAccentsOrange = () => (
@@ -62,8 +62,6 @@ export function ServicesPage() {
                 My job is to make sure as little gets lost as possible.
               </p>
             </div>
-
-
 
             <div className="mt-8 border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm p-6 md:p-12 relative overflow-hidden group hover:border-brand-orange/50 transition-colors shadow-2xl">
               <CornerAccentsOrange />
@@ -147,8 +145,6 @@ export function ServicesPage() {
                 <p>Mastering is preparing it for the outside world.</p>
               </div>
             </div>
-
-
 
             <div className="mt-8 border border-zinc-800 bg-zinc-900/40 backdrop-blur-sm p-6 md:p-12 relative overflow-hidden group hover:border-[#1DB954]/50 transition-colors shadow-2xl">
               <CornerAccentsGreen />

@@ -42,7 +42,7 @@ export function Footer() {
              <a href="https://github.com/spacekid7000" target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-brand-orange transition-colors">
               <Github className="w-5 h-5" />
             </a>
-            <a href="https://www.instagram.com/spacekid_music?igsh=MWJ0d2MyNXA0NmU3bg%3D%3D&utm_source=qr" target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-brand-orange transition-colors">
+            <a href="https://www.instagram.com/spacekid_music/" target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-brand-orange transition-colors">
               <Instagram className="w-5 h-5" />
             </a>
             <a href="https://www.youtube.com/@spacekid2705" target="_blank" rel="noreferrer" className="text-zinc-400 hover:text-brand-orange transition-colors">
