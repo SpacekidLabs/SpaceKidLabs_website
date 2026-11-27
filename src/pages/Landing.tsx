@@ -239,7 +239,7 @@ export function Landing() {
                   Experimental Software
                 </h2>
                 <div className="text-xs font-mono text-zinc-500 uppercase tracking-widest mt-1">
-                  [ SYSTEM NODES: 7 ACTIVE LOGS FOUND ]
+                  [ SYSTEM NODES: 8 ACTIVE LOGS FOUND ]
                 </div>
               </div>
             </div>
