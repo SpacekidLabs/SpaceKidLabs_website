@@ -1,12 +1,13 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Code2, Disc, Mail, Music2, SlidersHorizontal, Waves } from 'lucide-react';
+import { ArrowRight, Code2, Disc, Music2, SlidersHorizontal, Waves } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { YoutubeFacade } from '../components/YoutubeFacade';
 import { SpotifyFacade } from '../components/SpotifyFacade';
 import { usePageTitle } from '../lib/usePageTitle';
-import { CONTACT_EMAIL, CONTACT_HREF } from '../data/contact';
+import { ContactForm } from '../components/ContactForm';
+import type { Service } from '../data/contact';
 
 const ORANGE = 'text-brand-orange';
 const GREEN = 'text-[#1DB954]';
@@ -69,10 +70,11 @@ function Panel({ children, accent = 'hover:border-brand-orange/50' }: { children
 }
 
 /** Small "get in touch" line at the end of each service. */
-function AskAbout({ what }: { what: string }) {
+function AskAbout({ what, onAsk }: { what: string; onAsk: () => void }) {
   return (
     <a
       href="#contact"
+      onClick={onAsk}
       className="group/ask mt-8 inline-flex items-center gap-2 font-mono text-sm text-zinc-300 hover:text-brand-orange transition-colors"
     >
       Ask about {what}
@@ -86,6 +88,7 @@ const prose = 'font-sans font-light text-zinc-300 text-lg leading-relaxed';
 
 export function ServicesPage() {
   usePageTitle('Services');
+  const [service, setService] = useState<Service | ''>('');
   return (
     <Layout>
       <div className="pt-24 pb-16">
@@ -181,7 +184,7 @@ export function ServicesPage() {
                 caption="Tracks I produced"
               />
             </div>
-            <AskAbout what="production" />
+            <AskAbout what="production" onAsk={() => setService('production')} />
           </ScrollReveal>
         </section>
 
@@ -207,7 +210,7 @@ export function ServicesPage() {
               title="Mixing and mastering playlist"
               caption="Tracks I mixed and/or mastered"
             />
-            <AskAbout what="mixing or mastering" />
+            <AskAbout what="mixing or mastering" onAsk={() => setService('mixing')} />
           </ScrollReveal>
         </section>
 
@@ -230,7 +233,7 @@ export function ServicesPage() {
               </p>
               <Link to="/samples" className="font-mono text-sm text-brand-orange hover:underline">Browse the samples →</Link>
             </Panel>
-            <AskAbout what="sound design" />
+            <AskAbout what="sound design" onAsk={() => setService('sound-design')} />
           </ScrollReveal>
         </section>
 
@@ -261,7 +264,7 @@ export function ServicesPage() {
                 </Link>
               ))}
             </div>
-            <AskAbout what="a software project" />
+            <AskAbout what="a software project" onAsk={() => setService('software')} />
           </ScrollReveal>
         </section>
 
@@ -317,22 +320,18 @@ export function ServicesPage() {
         </section>
 
         {/* Contact */}
-        <section id="contact" className={`${sectionClass} text-center`}>
+        <section id="contact" className={sectionClass}>
           <ScrollReveal>
-            <h2 className="text-3xl md:text-4xl font-display font-black tracking-widest text-white uppercase mb-6">
+            <h2 className="text-3xl md:text-4xl font-display font-black tracking-widest text-white uppercase mb-6 text-center">
               Start a Project
             </h2>
-            <p className="font-sans font-light text-zinc-400 max-w-xl mx-auto mb-10 text-lg leading-relaxed">
-              Email me with what you're working on, which service you need, a link to a demo or references, and your
-              deadline.
+            <p className="font-sans font-light text-zinc-400 max-w-xl mx-auto mb-10 text-lg leading-relaxed text-center">
+              Tell me what you're working on, which service you need, a link to a demo or references, and your
+              deadline. I'll reply by email with a price and a timeline.
             </p>
-            <a
-              href={CONTACT_HREF}
-              className="inline-flex items-center gap-3 px-6 sm:px-8 py-5 border border-brand-orange text-brand-orange font-bold tracking-widest hover:bg-brand-orange hover:text-black transition-colors text-sm break-all"
-            >
-              <Mail className="w-4 h-4" aria-hidden />
-              Email {CONTACT_EMAIL}
-            </a>
+            <div className="max-w-2xl mx-auto">
+              <ContactForm service={service} onServiceChange={setService} />
+            </div>
           </ScrollReveal>
         </section>
       </div>

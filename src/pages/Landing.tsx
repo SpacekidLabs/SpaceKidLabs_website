@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { CONTACT_HREF } from '../data/contact';
+import { ContactForm } from '../components/ContactForm';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { ProjectList } from '../components/ProjectList';
@@ -276,11 +276,11 @@ export function Landing() {
             Initiate Connection
           </h2>
           <p className="text-zinc-400 font-sans font-light max-w-2xl mx-auto mb-12 text-lg">
-            Whether you need a crushing mix, custom sound design, or have a strange software project in mind—my comms are open.
+            Whether you need a crushing mix, custom sound design, or have a strange software project in mind—my comms are open. Tell me about it below.
           </p>
-          <a href={CONTACT_HREF} className="inline-flex items-center gap-3 px-8 py-5 border border-brand-orange text-brand-orange font-bold uppercase tracking-widest hover:bg-brand-orange hover:text-black transition-colors box-glow hover:box-glow-intense text-sm">
-            [+] Send Transmission
-          </a>
+          <div className="max-w-2xl mx-auto">
+            <ContactForm />
+          </div>
         </ScrollReveal>
       </section>
 
