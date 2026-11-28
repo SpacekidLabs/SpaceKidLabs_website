@@ -284,10 +284,10 @@ export function SamplesPage() {
     return () => observer.disconnect();
   }, [visible, prefetch]);
 
-  // And the few after the selected one, for arrow-key auditioning.
+  // And the ones around the selected one, for arrow-key auditioning.
   useEffect(() => {
     const i = visible.findIndex(s => s.id === selectedId);
-    if (i >= 0) prefetch(visible.slice(i, i + 6));
+    if (i >= 0) prefetch([...visible.slice(i, i + 6), ...visible.slice(Math.max(0, i - 3), i)]);
   }, [selectedId, visible, prefetch]);
 
   // "/" jumps to the search box from anywhere on the page.
@@ -326,11 +326,14 @@ export function SamplesPage() {
     const step = (delta: number) => visible[Math.min(visible.length - 1, Math.max(0, (index < 0 ? -1 : index) + delta))];
 
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      // ↑↓ move between samples without playing them.
+      // ↑↓ move to the next/previous sample and play it once.
       e.preventDefault();
-      select(step(e.key === 'ArrowDown' ? 1 : -1).id);
+      const next = step(e.key === 'ArrowDown' ? 1 : -1);
+      if (next.id === selectedId) return; // already at the top/bottom of the list
+      select(next.id);
+      play(next);
     } else if (e.key === 'ArrowRight') {
-      // → plays the selected sample (again, from the start, if it's already playing).
+      // → plays the selected sample again, from the start.
       e.preventDefault();
       const sample = current ?? visible[0];
       select(sample.id);
@@ -477,7 +480,7 @@ export function SamplesPage() {
 
             <div className="bg-zinc-900/50 px-4 py-3 flex flex-col md:flex-row gap-2 justify-between border-t border-zinc-800 font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
               <span>Previews are compressed, and some long ones are shortened. Downloads are the original files.</span>
-              <span className="hidden md:inline">/ search · ↑↓ move · → play · ← stop · Space play/stop</span>
+              <span className="hidden md:inline">/ search · ↑↓ play next/previous · → play again · ← stop · Space play/stop</span>
             </div>
           </div>
         </div>
