@@ -4,6 +4,7 @@ import { usePageTitle } from '../lib/usePageTitle';
 import { Terminal, Copy, AlertOctagon, Download, CheckCircle, Apple, ExternalLink, HardDrive, ListChecks } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { ScrollReveal } from '../components/ScrollReveal';
+import { track } from '../lib/track';
 import {
   ARCH_LABEL,
   DATABEND_RELEASE as RELEASE,
@@ -157,6 +158,7 @@ export function DownloadPage() {
                   <div key={asset.name} className="space-y-1.5">
                     <a
                       href={asset.url}
+                      onClick={() => track('databend_download', asset.name)}
                       rel="noreferrer"
                       className={
                         i === 0

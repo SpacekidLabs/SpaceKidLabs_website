@@ -18,6 +18,7 @@ import {
 } from './content';
 import { githubStats, projects } from './stats';
 import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
+import { eventCounts } from './events';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue } from './issues';
 
 export interface DevEnv extends AnalyticsEnv {
@@ -486,6 +487,7 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
       const days = Number(new URL(request.url).searchParams.get('days')) === 30 ? 30 : 7;
       return json(200, await cloudflareAnalytics(env, days));
     }
+    if (action === 'events' && method === 'GET') return json(200, await eventCounts(env));
     // Reading across projects and handling issues use the projects token when there is one.
     const pg = new GitHub({ GITHUB_TOKEN: env.GITHUB_PROJECTS_TOKEN || env.GITHUB_TOKEN, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API });
     const owner = env.GITHUB_REPO.split('/')[0];

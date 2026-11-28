@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
+import { LabUse } from '../lib/lazyNamed';
 import { motion } from 'motion/react';
 import { Upload, Play, Square, Settings, Download as DownloadIcon, Layers } from 'lucide-react';
 
@@ -268,6 +269,7 @@ export function WavesetQuantizer() {
           </svg>
         </div>
 
+        <LabUse name="WavesetQuantizer">
         <div className="max-w-4xl mx-auto px-6 relative z-10">
           <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.6}}>
             
@@ -407,6 +409,7 @@ export function WavesetQuantizer() {
             </div>
           </motion.div>
         </div>
+        </LabUse>
       </section>
     </Layout>
   );

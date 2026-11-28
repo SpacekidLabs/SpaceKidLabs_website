@@ -74,7 +74,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 | --- | --- | --- |
 | All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
 | All projects | Issues | GitHub issues of one project or all of them: list, create, edit title/text/labels, comment, close (done or not planned), reopen (`worker/issues.ts`). Changes issues, not files |
-| Website | Overview | Cloudflare traffic (`worker/analytics.ts`), live version vs main, counts of sketches, samples and posts, DATABEND downloads, and the website repo's GitHub activity. Reads only |
+| Website | Overview | Cloudflare traffic (`worker/analytics.ts`), plays and downloads (`worker/events.ts`), live version vs main, counts of sketches, samples and posts, DATABEND downloads, and the website repo's GitHub activity. Reads only |
 | Website | Sketches | add, edit (all fields; replace or remove audio) and delete. `src/data/sketches.json`, demo audio in `public/audio/sketches/` (a replaced file gets a new name, since browsers cache /audio for a week) |
 | Website | Samples | add (rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`; originals stay on your computer), and edit: rename, change category or pack, set the Drive file ID (download button), delete with the preview |
 | Website | Archive | list, write, edit and delete posts (`src/posts/<slug>.tsx`). Title, date, tags, order, colour, summary and highlight can be changed on any post; the text only on posts written in the dashboard (they keep their plain text in a comment at the end of the file). Hand-written posts with labs are code: change their text in the code. The URL (slug) never changes |
@@ -127,6 +127,19 @@ repository's files.
 To try the dashboard locally: `npm run preview:cf` with `DEV_PASSWORD` (and a `GITHUB_TOKEN` if you want saves to
 really commit) in `.dev.vars`. Saving from there commits to the real `main`.
 
+## Plays and downloads (#19)
+
+The site counts sample plays and downloads, full-pack downloads, DATABEND downloads, labs started and contact
+messages sent. The page calls `track()` (`src/lib/track.ts`), which sends `POST /api/event` with `sendBeacon`;
+`worker/events.ts` checks it came from the site's own pages, drops bots, and writes one data point to **Workers
+Analytics Engine** (the `EVENTS` binding, dataset `spacekidlabs_events`, in `wrangler.jsonc`). A point holds the
+event name and which thing (sample, pack, lab or file), nothing about the visitor. The contact form is counted by the
+Worker after the email is sent. Nothing is counted from `npm run dev`.
+
+Reading uses Analytics Engine's SQL API with the same `CF_API_TOKEN` as the traffic numbers (Account Analytics:
+Read covers it). Cloudflare keeps the points for 3 months; the dashboard shows the last 7 or 30 days. Free plan:
+100,000 points a day. If you add an event, add it to `EVENTS` in `worker/events.ts` and to `src/pages/Privacy.tsx`.
+
 ## MCP connector (/mcp)
 
 **https://spacekidlabs.com/mcp** gives Claude (or any MCP client) the dashboard as tools. It runs in the same Worker,
@@ -137,7 +150,7 @@ on the free plan, with no extra secrets.
 | `list_projects`, `project_activity` | your repositories; one project's pushes, commits, issues, PRs, Actions, releases |
 | `list_issues`, `get_issue` | issues of one project or all of them; one issue with comments |
 | `create_issue`, `update_issue`, `comment_on_issue` | open, edit, label, close/reopen, comment |
-| `site_traffic` | Cloudflare analytics for the site (7 or 30 days) |
+| `site_traffic` | Cloudflare analytics for the site (7 or 30 days), plus plays and downloads |
 | `list_sketches`, `add_sketch`, `update_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; new audio still goes through /dev) |
 | `list_posts`, `get_post`, `publish_archive_post`, `update_post`, `delete_post` | archive posts, with the same limits as /dev |
 | `list_samples`, `update_samples`, `delete_samples` | samples: rename, category, pack, Drive ID, delete |

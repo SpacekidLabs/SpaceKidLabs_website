@@ -45,6 +45,10 @@
   // MCP connector sign-ins (worker/oauth.ts): registered apps and grants, tokens stored only as hashes.
   "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "8adf736d49ab448199a025f87afa075e" }],
 
+  // Event counts (worker/events.ts): plays, downloads, labs started. Workers Analytics Engine, free plan.
+  // Each point holds only the event name and which thing; no IP, cookie or user agent.
+  "analytics_engine_datasets": [{ "binding": "EVENTS", "dataset": "spacekidlabs_events" }],
+
   "routes": [{ "pattern": "spacekidlabs.com", "custom_domain": true }],
   "workers_dev": true,
   "observability": { "enabled": true }

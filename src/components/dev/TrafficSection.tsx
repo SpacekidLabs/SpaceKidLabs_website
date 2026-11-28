@@ -37,7 +37,7 @@ function bytes(n: number): string {
 const heading = 'font-mono text-[11px] uppercase tracking-widest text-zinc-500 mb-3';
 const card = 'border border-zinc-800 bg-zinc-900/40 p-5';
 
-function Stat({ label, value, detail }: { label: string; value: ReactNode; detail?: ReactNode }) {
+function Stat({ label, value, detail }: { key?: string; label: string; value: ReactNode; detail?: ReactNode }) {
   return (
     <div className={card}>
       <div className={heading}>{label}</div>
@@ -70,6 +70,50 @@ function TopList({ title, items, note, empty = 'No data yet.' }: { title: string
       )}
       {note && <p className="mt-3 text-[11px] text-zinc-500">{note}</p>}
     </section>
+  );
+}
+
+type EventCounts =
+  | { configured: false }
+  | { configured: true; ok: false; error: string }
+  | { configured: true; ok: true; events: Array<{ event: string; label: string; week: number; month: number; top: Array<{ key: string; week: number; month: number }> }> };
+
+/** Plays, downloads and labs started (#19, worker/events.ts), for the chosen range. */
+function Activity({ days }: { days: 7 | 30 }) {
+  const [data, setData] = useState<EventCounts | null>(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api<EventCounts>('events').then(setData).catch(e => setError(e instanceof Error ? e.message : String(e)));
+  }, []);
+
+  const title = <h2 className="font-display font-bold text-xl text-white tracking-wide pt-4">Plays and downloads</h2>;
+  if (error) return <>{title}<Problem text={error} /></>;
+  if (!data) return <>{title}<p className="text-sm text-zinc-500">Loading…</p></>;
+  if (!data.configured) return <>{title}<p className="text-sm text-zinc-400">Needs the CF_API_TOKEN secret, like traffic.</p></>;
+  if (!data.ok) return <>{title}<Problem text={data.error} /></>;
+
+  const n = (x: { week: number; month: number }) => (days === 7 ? x.week : x.month);
+  const by = Object.fromEntries(data.events.map(e => [e.event, e]));
+  const list = (...events: string[]): Top =>
+    events.flatMap(ev => by[ev]?.top ?? []).map(r => ({ name: r.key, count: n(r) })).filter(r => r.count > 0).sort((a, b) => b.count - a.count).slice(0, 10);
+
+  return (
+    <div className="space-y-4">
+      {title}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {data.events.map(e => <Stat key={e.event} label={e.label} value={nf.format(n(e))} detail={`Last ${days} days`} />)}
+      </div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <TopList title="Most played samples" items={list('sample_play')} empty="No plays yet." />
+        <TopList title="Most downloaded samples" items={list('sample_download')} empty="No downloads yet." />
+        <TopList title="Packs and DATABEND" items={list('pack_download', 'databend_download')} empty="No downloads yet." />
+        <TopList title="Labs started" items={list('lab_start')} empty="No labs started yet." />
+      </div>
+      <p className="text-[11px] text-zinc-500">
+        Counted by the site itself with no cookie or visitor id, so one person playing a sample five times counts five.
+        Bots are left out. Download counts are clicks on the download button.
+      </p>
+    </div>
   );
 }
 
@@ -162,6 +206,7 @@ export function TrafficSection() {
           </div>
         </>
       )}
+      <Activity days={days} />
     </div>
   );
 }

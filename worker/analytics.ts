@@ -14,6 +14,8 @@ export interface AnalyticsEnv {
   CF_ACCOUNT_ID?: string;
   /** Only for local tests against a mock. */
   CF_GRAPHQL_URL?: string;
+  /** Only for local tests against a mock: Analytics Engine's SQL API (worker/events.ts). */
+  CF_SQL_URL?: string;
 }
 
 const WORKER_NAME = 'spacekidlabs';

@@ -6,6 +6,7 @@ import React, { useState, useRef, useMemo, useCallback, useEffect, memo } from '
 import { useSamplePlayer } from '../components/samples/useSamplePlayer';
 import { Waveform } from '../components/samples/Waveform';
 import { PACKS, SAMPLES, type Sample, type SamplePack } from '../data/samples';
+import { track } from '../lib/track';
 
 const CornerAccents = () => (
   <>
@@ -106,7 +107,7 @@ const SampleRow = memo(function SampleRow({ sample, showPack, isPlaying, isSelec
 
       {sample.driveId ? <a
         href={driveDownloadUrl(sample)}
-        onClick={e => e.stopPropagation()}
+        onClick={e => { e.stopPropagation(); track('sample_download', `${sample.id} ${sample.name}`); }}
         target="_blank"
         rel="noreferrer"
         aria-label={`Download ${label} (${sample.format}, ${formatBytes(sample.sizeBytes)})`}
@@ -174,7 +175,7 @@ function PackDetails({ pack }: { pack: SamplePack }) {
       <div className="w-full sm:w-52 shrink-0 flex flex-col justify-center gap-2">
         {pack.driveFolder ? (
           <>
-            <a href={pack.driveFolder} target="_blank" rel="noreferrer" className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-orange text-black hover:bg-white transition-colors font-mono font-bold text-xs uppercase tracking-widest">
+            <a href={pack.driveFolder} onClick={() => track('pack_download', pack.id)} target="_blank" rel="noreferrer" className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-orange text-black hover:bg-white transition-colors font-mono font-bold text-xs uppercase tracking-widest">
               <Archive className="w-4 h-4" /> Download pack
             </a>
             <span className="font-mono text-[10px] text-zinc-500 text-center">{formatBytes(totalBytes)} · via Google Drive</span>

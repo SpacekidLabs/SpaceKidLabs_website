@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { track } from '../../lib/track';
 
 export interface Playable {
   id: number;
@@ -160,6 +161,8 @@ export function useSamplePlayer(onEnded?: (id: number) => void) {
 
   /** Plays a sample from the start, or from a position between 0 and 1. */
   const play = useCallback((sample: Playable, from = 0) => {
+    // A seek inside the sample that's already playing isn't another play.
+    if (playingIdRef.current !== sample.id) track('sample_play', `${sample.id} ${sample.name}`);
     halt();
     playingIdRef.current = sample.id;
     setPlayingId(sample.id);

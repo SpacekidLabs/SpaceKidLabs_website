@@ -6,6 +6,7 @@
  *   - the contact form: POST /api/contact emails the message to the CONTACT_TO secret through Cloudflare Email
  *     Routing (send_email binding in wrangler.jsonc);
  *   - the /dev dashboard's API (worker/dev.ts);
+ *   - event counts: POST /api/event (worker/events.ts) counts plays, downloads and labs started;
  *   - the MCP connector at /mcp (worker/mcp.ts), behind OAuth (worker/oauth.ts and Cloudflare's OAuthProvider,
  *     which serves /token, /register and the /.well-known metadata).
  * See docs/HOSTING.md.
@@ -15,8 +16,9 @@ import { OAuthProvider, type OAuthHelpers } from '@cloudflare/workers-oauth-prov
 import { handleDev, type DevEnv } from './dev';
 import { handleMcp } from './mcp';
 import { handleAuthorize, SCOPE } from './oauth';
+import { handleEvent, record, type EventsEnv } from './events';
 
-interface Env extends DevEnv {
+interface Env extends DevEnv, EventsEnv {
   /** MCP connector sign-ins (worker/oauth.ts): registered apps and grants. */
   OAUTH_KV: KVNamespace;
   /** Set by OAuthProvider for the /authorize page. */
@@ -123,6 +125,7 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
     console.error('Contact form: sending failed', err);
     return json(502, { error: 'Could not send' });
   }
+  record(env, 'contact_sent');
   return json(200, { ok: true });
 }
 
@@ -134,6 +137,7 @@ const site: ExportedHandler<Env> = {
       if (request.method !== 'POST') return json(405, { error: 'Use POST' });
       return handleContact(request, env);
     }
+    if (pathname === '/api/event') return handleEvent(request, env);
     if (pathname.startsWith('/api/dev/')) return handleDev(request, env, pathname);
     if (pathname === '/authorize') return handleAuthorize(request, env);
     return json(404, { error: 'Not found' });

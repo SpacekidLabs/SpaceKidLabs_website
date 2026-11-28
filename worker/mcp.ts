@@ -17,6 +17,7 @@ import {
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue, type Rest } from './issues';
 import { githubStats, projects } from './stats';
 import { cloudflareAnalytics } from './analytics';
+import { eventCounts } from './events';
 import { slugify } from './content';
 
 const SITE = 'https://spacekidlabs.com';
@@ -173,10 +174,13 @@ export function buildServer(rawEnv: DevEnv): McpServer {
 
   server.registerTool('site_traffic', {
     title: 'Website traffic',
-    description: `Cloudflare analytics for ${SITE}: visitors, page views, cache rate, bytes, daily page views, top pages (last 24 h), countries, browsers, status codes, and /api Worker calls.`,
+    description: `Cloudflare analytics for ${SITE}: visitors, page views, cache rate, bytes, daily page views, top pages (last 24 h), countries, browsers, status codes, /api Worker calls, and \`events\`: counts for the last 7 and 30 days of sample plays and downloads (by sample id), full-pack downloads (by pack), DATABEND downloads (by file), labs started (by lab) and contact messages sent.`,
     inputSchema: { days: z.union([z.literal(7), z.literal(30)]).optional().describe('Default: 7') },
     annotations: READ,
-  }, ({ days }) => run(() => cloudflareAnalytics(env, days ?? 7)));
+  }, ({ days }) => run(async () => {
+    const [traffic, events] = await Promise.all([cloudflareAnalytics(env, days ?? 7), eventCounts(env)]);
+    return { ...traffic, events };
+  }));
 
   server.registerTool('list_sketches', {
     title: 'List sketches',

@@ -5,7 +5,7 @@ import { usePageTitle } from '../lib/usePageTitle';
 
 /**
  * /privacy: what the site collects and what it doesn't. Keep it true to the code: if the site starts storing,
- * counting or loading something new (e.g. event counts, #19), update this page and LAST_UPDATED.
+ * counting or loading something new, update this page and LAST_UPDATED. Event counts (#19) are worker/events.ts.
  */
 
 const LAST_UPDATED = '28 November 2026';
@@ -45,6 +45,19 @@ export function PrivacyPage() {
             <p>
               Cloudflare handles the connection itself under its own{' '}
               <a className={ext} href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer">privacy policy</a>.
+            </p>
+          </Section>
+
+          <Section title="Plays and downloads">
+            <p>
+              The site counts a few actions: playing or downloading a sample, downloading a pack or DATABEND, starting a
+              lab, and sending the contact form. Each one adds one to a counter, together with which sample, pack, lab
+              or file it was. Nothing else is stored with it: no cookie, no IP address, no browser details and no id, so
+              a count can't be traced back to you or linked to your other visits.
+            </p>
+            <p>
+              The counters live in Cloudflare (Workers Analytics Engine) and are kept for three months. I see totals,
+              like "this sample was played 40 times this week".
             </p>
           </Section>
 
