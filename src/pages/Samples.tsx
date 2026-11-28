@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { useSamplePlayer } from '../components/samples/useSamplePlayer';
 import { Waveform } from '../components/samples/Waveform';
-import { SAMPLES } from '../data/samples';
+import { PACKS, SAMPLES, type Sample, type SamplePack } from '../data/samples';
 
 const CornerAccents = () => (
   <>
@@ -17,18 +17,21 @@ const CornerAccents = () => (
   </>
 );
 
-const SAMPLE_PACK_URL = "https://drive.google.com/drive/folders/1uAqmv1l-XULJGZ-rrCTjoo_WMNmGxPWI?usp=sharing";
-
-type Sample = typeof SAMPLES[number];
-
 /** 72080 -> "72 KB", 2_400_000 -> "2.4 MB" (decimal units, like Finder) */
 function formatBytes(bytes: number): string {
   if (bytes < 1_000_000) return `${Math.round(bytes / 1000)} KB`;
   return `${(bytes / 1_000_000).toFixed(bytes < 10_000_000 ? 1 : 0)} MB`;
 }
 
-const CATEGORIES = [...new Set(SAMPLES.map(s => s.category))];
-const TOTAL_BYTES = SAMPLES.reduce((sum, s) => sum + s.sizeBytes, 0);
+/** Each pack's samples, categories (in first-seen order) and total size. */
+const PACK_DATA = Object.fromEntries(PACKS.map(pack => {
+  const samples = SAMPLES.filter(s => s.pack === pack.id);
+  return [pack.id, {
+    samples,
+    categories: [...new Set(samples.map(s => s.category))],
+    totalBytes: samples.reduce((sum, s) => sum + s.sizeBytes, 0),
+  }];
+}));
 
 const driveDownloadUrl = (s: Sample) => `https://drive.google.com/uc?export=download&id=${s.driveId}`;
 
@@ -81,7 +84,7 @@ function SampleRow({ sample, isPlaying, isSelected, progress, onToggle, onSeek, 
         className="col-span-3 row-start-2 md:col-span-1 md:row-start-auto"
       />
 
-      <a
+      {sample.driveId ? <a
         href={driveDownloadUrl(sample)}
         onClick={e => e.stopPropagation()}
         target="_blank"
@@ -91,13 +94,95 @@ function SampleRow({ sample, isPlaying, isSelected, progress, onToggle, onSeek, 
         className="col-start-3 row-start-1 md:col-start-auto md:row-start-auto w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors rounded-sm"
       >
         <Download className="w-4 h-4" />
-      </a>
+      </a> : <span className="col-start-3 row-start-1 md:col-start-auto md:row-start-auto w-11 h-11" />}
+    </div>
+  );
+}
+
+interface PackCardProps {
+  key?: string;
+  pack: SamplePack;
+  latest: boolean;
+  selected: boolean;
+  onSelect: () => void;
+}
+
+function PackCard({ pack, latest, selected, onSelect }: PackCardProps) {
+  const { samples, categories, totalBytes } = PACK_DATA[pack.id];
+  return (
+    <div
+      className={`border bg-black flex flex-col group transition-colors shadow-2xl relative ${
+        selected ? 'border-brand-orange box-glow' : 'border-zinc-800 hover:border-brand-orange/50'
+      }`}
+    >
+      <CornerAccents />
+      {latest && (
+        <div className="absolute top-0 right-0 bg-brand-orange text-black font-mono text-[10px] font-bold px-3 py-1 uppercase z-20 shadow-lg">LATEST RELEASE</div>
+      )}
+
+      <button
+        onClick={onSelect}
+        role="radio"
+        aria-checked={selected}
+        aria-label={`Browse ${pack.title}`}
+        className="relative aspect-square overflow-hidden border-b border-zinc-800 bg-zinc-950 block w-full"
+      >
+        <img
+          src={pack.cover}
+          alt=""
+          width={800}
+          height={800}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${selected ? 'opacity-100' : 'opacity-70 group-hover:opacity-90'}`}
+        />
+        <span className={`absolute top-3 left-3 font-mono text-[10px] uppercase tracking-widest px-2 py-1 border ${
+          selected ? 'bg-brand-orange text-black border-brand-orange' : 'bg-black/90 text-zinc-300 border-zinc-700'
+        }`}>
+          {selected ? 'Browsing ↓' : 'Browse'}
+        </span>
+      </button>
+
+      <div className="p-6 flex-1 flex flex-col">
+        <h2 className="font-display font-bold text-2xl text-white mb-2 uppercase tracking-wide">{pack.title}</h2>
+        <p className="text-sm text-zinc-400 font-sans leading-relaxed mb-6">{pack.tagline}</p>
+
+        <dl className="grid grid-cols-3 gap-px bg-zinc-800 border border-zinc-800 mb-4 font-mono">
+          {[
+            ['Samples', String(samples.length)],
+            ['Size', formatBytes(totalBytes)],
+            ['Format', '48 kHz WAV'],
+          ].map(([k, v]) => (
+            <div key={k} className="bg-black px-3 py-2">
+              <dt className="text-[9px] text-zinc-500 uppercase tracking-widest">{k}</dt>
+              <dd className="text-sm text-white">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest leading-relaxed mb-6">
+          {categories.map(c => `${c} ${samples.filter(s => s.category === c).length}`).join(' · ')}
+        </p>
+
+        <div className="mt-auto pt-4 border-t border-zinc-800 flex flex-col gap-2">
+          {pack.driveFolder ? (
+            <>
+              <a href={pack.driveFolder} target="_blank" rel="noreferrer" className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-orange text-black hover:bg-white transition-colors font-mono font-bold text-xs uppercase tracking-widest shadow-lg">
+                <Archive className="w-4 h-4" /> Download Full Pack
+              </a>
+              <span className="font-mono text-[10px] text-zinc-500 text-center">{formatBytes(totalBytes)} · via Google Drive</span>
+            </>
+          ) : (
+            <span className="w-full px-4 py-3 border border-zinc-800 text-zinc-500 font-mono text-xs uppercase tracking-widest text-center">Download coming soon</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
 export function SamplesPage() {
   usePageTitle('Samples');
+  const [packId, setPackId] = useState(PACKS[0].id);
+  const pack = PACKS.find(p => p.id === packId)!;
+  const { samples: SAMPLES, categories: CATEGORIES } = PACK_DATA[packId];
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -114,12 +199,20 @@ export function SamplesPage() {
       CATEGORIES.indexOf(a.category) - CATEGORIES.indexOf(b.category) ||
       a.name.localeCompare(b.name, 'en', { numeric: true }),
     );
-  }, [query, category]);
+  }, [query, category, SAMPLES, CATEGORIES]);
 
   const groups = useMemo(
     () => CATEGORIES.map(c => [c, visible.filter(s => s.category === c)] as const).filter(([, list]) => list.length > 0),
-    [visible],
+    [visible, CATEGORIES],
   );
+
+  const choosePack = (id: string) => {
+    if (id === packId) return;
+    player.stop();
+    setPackId(id);
+    setCategory(null);
+    setSelectedId(null);
+  };
 
   // Auto-play: when a sample ends, play the next visible one.
   const visibleRef = useRef(visible);
@@ -197,53 +290,13 @@ export function SamplesPage() {
             </h1>
           </div>
 
-          <div className="max-w-4xl mx-auto space-y-12">
+          <div className="max-w-5xl mx-auto space-y-12">
 
-            {/* Main Pack Header */}
-            <div className="border border-brand-orange/30 bg-black flex flex-col md:flex-row group hover:border-brand-orange transition-colors shadow-2xl relative box-glow">
-              <CornerAccents />
-              <div className="absolute top-0 right-0 bg-brand-orange text-black font-mono text-[10px] font-bold px-3 py-1 uppercase z-20 shadow-lg">LATEST RELEASE</div>
-              
-              <div className="md:w-1/3 bg-zinc-900 border-b md:border-b-0 md:border-r border-brand-orange/30 relative overflow-hidden flex items-center justify-center min-h-[250px]">
-                 <img src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=1000&auto=format&fit=crop" alt="DataBend Process Pack Cover" className="absolute inset-0 w-full h-full object-cover opacity-45 group-hover:opacity-70 contrast-125 saturate-75 brightness-75 transition-all duration-500 z-0" crossOrigin="anonymous" referrerPolicy="no-referrer" />
-                 {/* Scanner line glitch effect overlay */}
-                 <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none z-10" />
-                 <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/95 via-black/40 to-transparent z-10 pointer-events-none" />
-                 <div className="absolute bottom-4 left-4 font-mono text-[10px] text-brand-orange border border-brand-orange/30 bg-black/90 px-2 py-1 z-20">48_KHZ // 24_BIT_WAV</div>
-              </div>
-              
-              <div className="p-8 flex-1 flex flex-col">
-                <h2 className="font-display font-bold text-2xl text-white mb-2 uppercase tracking-wide">DataBend Process Pack</h2>
-                <p className="text-sm text-zinc-400 font-sans leading-relaxed mb-6">
-                  Not pristine. Not genre-correct. Just useful chaos.
-                </p>
-
-                {/* Pack facts */}
-                <dl className="grid grid-cols-3 gap-px bg-zinc-800 border border-zinc-800 mb-6 font-mono">
-                  {[
-                    ['Samples', String(SAMPLES.length)],
-                    ['Size', formatBytes(TOTAL_BYTES)],
-                    ['Format', '48 kHz WAV'],
-                  ].map(([k, v]) => (
-                    <div key={k} className="bg-black px-3 py-2">
-                      <dt className="text-[9px] text-zinc-500 uppercase tracking-widest">{k}</dt>
-                      <dd className="text-sm text-white">{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest leading-relaxed mb-6">
-                  {CATEGORIES.map(c => `${c} ${SAMPLES.filter(s => s.category === c).length}`).join(' · ')}
-                </p>
-                <div className="mt-auto pt-4 border-t border-zinc-800 space-y-4">
-                  <div className="flex flex-col gap-2">
-                    <span className="font-mono text-[10px] text-zinc-500 uppercase tracking-widest">Full Pack Access</span>
-                    <a href={SAMPLE_PACK_URL} target="_blank" rel="noreferrer" className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-brand-orange text-black hover:bg-white transition-colors font-mono font-bold text-xs uppercase tracking-widest shadow-lg">
-                      <Archive className="w-4 h-4" /> Download Full Pack
-                    </a>
-                    <span className="font-mono text-[10px] text-zinc-600 text-center">.zip · {formatBytes(TOTAL_BYTES)} · via Google Drive</span>
-                  </div>
-                </div>
-              </div>
+            {/* Packs: pick one to browse it below */}
+            <div className="grid md:grid-cols-2 gap-6" role="radiogroup" aria-label="Sample pack">
+              {PACKS.map((p, i) => (
+                <PackCard key={p.id} pack={p} latest={i === 0} selected={p.id === packId} onSelect={() => choosePack(p.id)} />
+              ))}
             </div>
 
             {/* Sample browser */}
@@ -258,7 +311,7 @@ export function SamplesPage() {
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-mono text-sm text-white uppercase tracking-widest flex items-center gap-2">
                     <Play className="w-4 h-4 text-brand-orange" />
-                    Sample Preview
+                    {pack.title}
                   </h3>
                   <label className="flex items-center gap-2 font-mono text-[10px] text-zinc-400 uppercase tracking-widest cursor-pointer select-none">
                     <input

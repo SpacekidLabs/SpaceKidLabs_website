@@ -12,6 +12,10 @@
  *   npx tsx scripts/make-sample-previews.ts
  * Already-downloaded originals are reused; set SAMPLE_CACHE to choose the cache folder,
  * and pass --force to re-encode existing previews.
+ *
+ * Only one pack:      --pack weird-breaks   (other packs' rows are kept as they are)
+ * Originals on disk:  LOCAL_SAMPLES="/path/to/folder" (files named exactly like `name`; used
+ *                     instead of Drive, so this works before the pack is uploaded)
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -24,6 +28,8 @@ const OUT_DIR = join(ROOT, 'public', 'audio');
 const DATA_FILE = join(ROOT, 'src', 'data', 'samples.ts');
 const CACHE = process.env.SAMPLE_CACHE || join(tmpdir(), 'spacekid-sample-originals');
 const FORCE = process.argv.includes('--force');
+const ONLY_PACK = process.argv.includes('--pack') ? process.argv[process.argv.indexOf('--pack') + 1] : null;
+const LOCAL = process.env.LOCAL_SAMPLES;
 
 /** "SP26 Kick 1+.wav" -> "sp26-kick-1" */
 export function previewName(name: string): string {
@@ -99,10 +105,12 @@ for (const sample of SAMPLES) {
   const base = previewName(sample.name);
   if (names.has(base)) throw new Error(`Two samples map to the same preview name: ${base}`);
   names.add(base);
+  if (ONLY_PACK && sample.pack !== ONLY_PACK) { updated.push(sample); continue; }
 
-  const original = join(CACHE, `${sample.driveId}`);
+  const local = LOCAL && join(LOCAL, sample.name);
+  const original = local && existsSync(local) ? local : join(CACHE, `${sample.driveId}`);
   const preview = join(OUT_DIR, `${base}.mp3`);
-  await download(sample.driveId, original);
+  if (original !== local) await download(sample.driveId, original);
 
   if (FORCE || !existsSync(preview)) {
     // VBR MP3 around 190 kbps: transparent for previews, about a tenth of the 24-bit WAV size.
@@ -125,9 +133,9 @@ for (const sample of SAMPLES) {
 const header = readFileSync(DATA_FILE, 'utf8').split('export const SAMPLES')[0];
 const rows = updated.map(
   s =>
-    `  { id: ${s.id}, name: ${JSON.stringify(s.name)}, category: ${JSON.stringify(s.category)}, ` +
+    `  { id: ${s.id}, pack: ${JSON.stringify(s.pack)}, name: ${JSON.stringify(s.name)}, category: ${JSON.stringify(s.category)}, ` +
     `duration: ${JSON.stringify(s.duration)}, format: ${JSON.stringify(s.format)}, sizeBytes: ${s.sizeBytes}, ` +
     `preview: ${JSON.stringify(s.preview)}, driveId: ${JSON.stringify(s.driveId)},\n    peaks: ${JSON.stringify(s.peaks)} },`,
 );
-writeFileSync(DATA_FILE, `${header}export const SAMPLES = [\n${rows.join('\n')}\n];\n`);
+writeFileSync(DATA_FILE, `${header}export const SAMPLES: Sample[] = [\n${rows.join('\n')}\n];\n`);
 console.log(`\n${updated.length} previews in public/audio, durations, sizes and waveforms written to src/data/samples.ts`);
