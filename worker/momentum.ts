@@ -2,14 +2,15 @@
  * Momentum for the /dev Launchpad: everything you shipped in the last year, as dated events, plus what's going stale.
  *
  * What counts (decided with the owner): anything public (sketches, samples and archive posts added to the website,
- * releases in any repository), issues closed as done, and ideas captured. Promo comes later.
+ * releases in any repository), issues closed as done, ideas captured, and promo ticked off (worker/ship.ts).
  * GitHub parts come from one GraphQL query with the projects token; ideas from the D1 inbox (worker/ideas.ts).
  * The browser buckets events into days in its own time zone, so streaks follow your local midnight.
  */
 import type { IdeasEnv } from './ideas';
-import { ideasDb } from './ideas';
+import { dbReady, ideasDb } from './ideas';
+import { promoEvents, promoQueue } from './ship';
 
-export type MomentumKind = 'idea' | 'sketch' | 'samples' | 'post' | 'release' | 'issue';
+export type MomentumKind = 'idea' | 'sketch' | 'samples' | 'post' | 'release' | 'issue' | 'promo';
 export interface MomentumEvent { t: number; kind: MomentumKind; label: string; url?: string }
 export interface StaleIssue { repo: string; number: number; title: string; url: string; updated: string }
 
@@ -66,8 +67,10 @@ export async function momentum(env: IdeasEnv, graphql: GraphQL | null, owner: st
 
   try {
     const db = ideasDb(env);
+    await dbReady();
     const rows = (await db.prepare('SELECT created, text FROM ideas WHERE created >= ? ORDER BY created').bind(since).all<{ created: number; text: string }>()).results;
     for (const r of rows) events.push({ t: r.created, kind: 'idea', label: r.text.split('\n')[0].slice(0, 80) || 'Idea with files' });
+    events.push(...(await promoEvents(env, since)));
   } catch (err) {
     errors.push(`Ideas: ${err instanceof Error ? err.message : String(err)}`);
   }
@@ -109,5 +112,11 @@ export async function momentum(env: IdeasEnv, graphql: GraphQL | null, owner: st
   }
 
   events.sort((a, b) => a.t - b.t);
-  return { events, stale, staleCount, staleDays: STALE_DAYS, errors };
+  let promo: Awaited<ReturnType<typeof promoQueue>> | null = null;
+  try {
+    promo = await promoQueue(env, events);
+  } catch (err) {
+    errors.push(`Promo: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  return { events, stale, staleCount, staleDays: STALE_DAYS, promo, errors };
 }

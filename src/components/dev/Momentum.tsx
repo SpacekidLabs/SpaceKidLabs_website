@@ -9,17 +9,21 @@ import { SAMPLES } from '../../data/samples';
  * Data from worker/momentum.ts. Days are counted in your own time zone.
  */
 
-export type Kind = 'idea' | 'sketch' | 'samples' | 'post' | 'release' | 'issue';
+export type Kind = 'idea' | 'sketch' | 'samples' | 'post' | 'release' | 'issue' | 'promo';
 export interface MomentumEvent { t: number; kind: Kind; label: string; url?: string }
 export interface MomentumData {
   events: MomentumEvent[];
   stale: Array<{ repo: string; number: number; title: string; url: string; updated: string }>;
   staleCount: number; staleDays: number; errors: string[];
+  promo: { channels: string[]; since: number; items: PromoItem[] } | null;
+}
+export interface PromoItem {
+  ref: string; kind: Kind; label: string; url: string; t: number; ticks: Record<string, number>; skipped: boolean; done: boolean;
 }
 
 const PUBLIC: Kind[] = ['sketch', 'samples', 'post', 'release'];
 export const KIND_LABEL: Record<Kind, string> = {
-  idea: 'Idea', sketch: 'Sketch', samples: 'Samples', post: 'Post', release: 'Release', issue: 'Issue closed',
+  idea: 'Idea', sketch: 'Sketch', samples: 'Samples', post: 'Post', release: 'Release', issue: 'Issue closed', promo: 'Promo',
 };
 const DAY = 86_400_000;
 const dayKey = (d: Date) => d.toLocaleDateString('en-CA');
@@ -35,6 +39,7 @@ export interface Stats {
   weekPublic: number;
   weekIdeas: number;
   weekIssues: number;
+  weekPromo: number;
   daysSincePublic: number | null;
 }
 
@@ -63,6 +68,7 @@ export function stats(events: MomentumEvent[]): Stats {
     weekPublic: week.filter(e => PUBLIC.includes(e.kind)).length,
     weekIdeas: week.filter(e => e.kind === 'idea').length,
     weekIssues: week.filter(e => e.kind === 'issue').length,
+    weekPromo: week.filter(e => e.kind === 'promo').length,
     daysSincePublic: lastPublic ? Math.floor((Date.now() - lastPublic.t) / DAY) : null,
   };
 }
@@ -111,14 +117,24 @@ export function useMomentum(onStreak: (streak: number) => void) {
 
 // ---------- Nudge strip (top of the Launchpad) ----------
 
-export function NudgeStrip({ data, s, sound, cheer, onIssues }: {
-  data: MomentumData | null; s: Stats | null; sound: ReturnType<typeof useSound>; cheer: string; onIssues: () => void;
+export function NudgeStrip({ data, s, sound, cheer, onIssues, onShip }: {
+  data: MomentumData | null; s: Stats | null; sound: ReturnType<typeof useSound>; cheer: string; onIssues: () => void; onShip: () => void;
 }) {
-  const nudges: Array<{ text: ReactNode; href?: string }> = [];
+  const nudges: Array<{ text: ReactNode; href?: string; onClick?: () => void }> = [];
   if (s && data) {
     if (s.streak > 0 && s.today === 0) nudges.push({ text: <>Your {s.streak}-day streak ends at midnight. Capture or ship something.</> });
     if (s.daysSincePublic === null) nudges.push({ text: 'Nothing public in the last year. Put a sketch up.' });
     else if (s.daysSincePublic >= 7) nudges.push({ text: <>Nothing public in {s.daysSincePublic} days. Promote an idea to a sketch?</> });
+    const pending = data.promo?.items.filter(i => !i.done) ?? [];
+    if (pending.length) {
+      const p = pending[0];
+      const n = data.promo!.channels.filter(c => c in p.ticks).length;
+      const days = Math.floor((Date.now() - p.t) / DAY);
+      nudges.push({
+        text: <>“{p.label}” is out{days ? ` (${days} day${days > 1 ? 's' : ''})` : ''}, promo {n}/{data.promo!.channels.length}{pending.length > 1 ? `, and ${pending.length - 1} more to tell people about` : ''}</>,
+        onClick: onShip,
+      });
+    }
     for (const i of data.stale.slice(0, 2)) {
       const days = Math.floor((Date.now() - Date.parse(i.updated)) / DAY);
       nudges.push({ text: <>{i.repo}#{i.number} “{i.title}” untouched for {days} days</>, href: i.url });
@@ -140,7 +156,9 @@ export function NudgeStrip({ data, s, sound, cheer, onIssues }: {
         {nudges.map((n, i) => (
           <li key={i} className="flex items-start gap-2 font-mono text-xs text-amber-400">
             <AlertTriangle className="w-3.5 h-3.5 mt-px shrink-0" aria-hidden />
-            {n.href ? <a href={n.href} target="_blank" rel="noreferrer" className="hover:text-amber-200 truncate">{n.text}</a> : <span>{n.text}</span>}
+            {n.href ? <a href={n.href} target="_blank" rel="noreferrer" className="hover:text-amber-200 truncate">{n.text}</a>
+              : n.onClick ? <button type="button" onClick={n.onClick} className="text-left hover:text-amber-200">{n.text} →</button>
+              : <span>{n.text}</span>}
           </li>
         ))}
         {moreStale > 0 && (
@@ -199,6 +217,7 @@ export function Heatmap({ s, data, error }: { s: Stats | null; data: MomentumDat
             <div><dt className="inline">Public this week </dt><dd className="inline text-white">{s.weekPublic}</dd></div>
             <div><dt className="inline">Issues closed </dt><dd className="inline text-white">{s.weekIssues}</dd></div>
             <div><dt className="inline">Ideas </dt><dd className="inline text-white">{s.weekIdeas}</dd></div>
+            <div><dt className="inline">Promo </dt><dd className="inline text-white">{s.weekPromo}</dd></div>
             <div><dt className="inline">Best streak </dt><dd className="inline text-white">{s.best} d</dd></div>
           </dl>
         )}
@@ -237,7 +256,7 @@ export function Heatmap({ s, data, error }: { s: Stats | null; data: MomentumDat
       </div>
       <div className="flex items-center gap-1.5 mt-1 font-mono text-[10px] text-zinc-500">
         Less {LEVELS.map(c => <span key={c} className="inline-block w-[11px] h-[11px] rounded-[2px]" style={{ background: c }} />)} More
-        <span className="ml-3">Counts: anything public, issues closed as done, ideas captured.</span>
+        <span className="ml-3">Counts: anything public, issues closed as done, ideas captured, promo done.</span>
       </div>
 
       <div className="mt-5">

@@ -73,6 +73,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 | Group | Tab | What it does |
 | --- | --- | --- |
 | Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Above it: your **streak** and nudges; below it: a year **heatmap** of what you shipped (see Momentum below). Ideas are stored in Cloudflare D1, not in the repo (see below) |
+| Lab | Ship | **Tell people:** every public ship (sketch, samples, post, release) gets a promo checklist of your channels by itself; tick each one off, or mark "No promo needed". **Releases:** every repository with releases, its latest version, days since, and downloads per release and per file; open one for a changelog draft (issues closed as done and pull requests merged since the last release) to copy, or to open GitHub's new-release page with the next version and the notes filled in (`worker/ship.ts`) |
 | All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
 | All projects | Issues | GitHub issues of one project or all of them: list, create, edit title/text/labels, comment, close (done or not planned), reopen (`worker/issues.ts`). Changes issues, not files |
 | Website | Overview | Cloudflare traffic (`worker/analytics.ts`), plays and downloads (`worker/events.ts`), live version vs main, counts of sketches, samples and posts, DATABEND downloads, and the website repo's GitHub activity. Reads only |
@@ -145,7 +146,7 @@ Ideas are private, so they are **not** committed to this repo (everything in it 
 ### Momentum (Launchpad)
 
 `GET /api/dev/momentum` (`worker/momentum.ts`) lists everything shipped in the last 53 weeks as dated events. What
-counts: **anything public** (commits that add to `src/data/sketches.json`, `src/data/samples.ts` or `src/posts/`;
+counts: **promo ticked off** on the Ship tab, **anything public** (commits that add to `src/data/sketches.json`, `src/data/samples.ts` or `src/posts/`;
 removals and edits don't count) and **releases** in any of your repositories, **issues closed as done** in any
 repository, and **ideas captured**. It's one GitHub GraphQL query with the projects token (the first 100 of each kind
 a year) plus the D1 inbox; without a token only ideas count.
@@ -154,6 +155,10 @@ a year) plus the D1 inbox; without a token only ideas count.
   a streak that hasn't been fed today still shows, with a "not yet today" nudge.
 - **Nudges** (above the capture box): the streak ending tonight, nothing public for 7+ days, and open issues untouched
   for 21+ days (the two oldest, with a link to the rest).
+- **Promo** (Ship tab): checklists are made from the public events above, for ships since the first time the
+  momentum endpoint ran (a week back from then, kept in the D1 `settings` table as `promo_since`). Only ticks are
+  stored (D1 `promo_ticks`, keyed by the ship's GitHub URL). Channels default to Instagram, YouTube, Newsletter and
+  Bandcamp; change them under the list. The Launchpad nudges about the newest ship whose promo isn't done.
 - When something you do makes today count for the first time, a random hit from your **VRAC** snares, claps and perc
   plays. The speaker button turns it off (remembered in this browser).
 

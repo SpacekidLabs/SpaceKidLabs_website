@@ -21,6 +21,7 @@ import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
 import { eventCounts } from './events';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue } from './issues';
 import { momentum } from './momentum';
+import { releaseNotes, releases, setChannels, ShipError, tickPromo } from './ship';
 import { addIdea, deleteIdea, getIdea, IdeaError, ideaFileResponse, listIdeas, readIdeaFile, updateIdea, type IdeasEnv } from './ideas';
 
 export interface DevEnv extends AnalyticsEnv, IdeasEnv {
@@ -552,6 +553,17 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
     return json(200, await momentum(env, pg ? (q, v) => pg.graphql(q, v) : null, owner, site));
   }
 
+  if ((action === 'promo-tick' || action === 'promo-channels') && method === 'POST') {
+    try {
+      const input = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+      return json(200, action === 'promo-tick' ? await tickPromo(env, input) : await setChannels(env, input.channels));
+    } catch (err) {
+      if (err instanceof ShipError || err instanceof IdeaError) return json(err.status, { error: err.message });
+      console.error('Promo:', err instanceof Error ? err.message : String(err));
+      return json(500, { error: 'Saving failed. See the Worker logs.' });
+    }
+  }
+
   if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) return json(503, { error: 'GITHUB_TOKEN or GITHUB_REPO is not set (see docs/HOSTING.md)' });
 
   const gh = new GitHub({ GITHUB_TOKEN: env.GITHUB_TOKEN, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API });
@@ -589,6 +601,10 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
         const repo = ownRepo(input.repo, owner);
         return json(200, action === 'issue-save' ? await saveIssue(rest, repo, input) : await commentIssue(rest, repo, input));
       }
+    }
+    if (action === 'releases' && method === 'GET') return json(200, await releases((q, v) => pg.graphql(q, v), owner));
+    if (action === 'release-notes' && method === 'GET') {
+      return json(200, await releaseNotes((q, v) => pg.graphql(q, v), ownRepo(url.searchParams.get('repo'), owner), url.searchParams.get('since')));
     }
     if (action === 'idea-promote' && method === 'POST') {
       return json(200, await promoteIdea(env, gh, (m, p, b) => pg.rest(m, p, b), owner, (await request.json()) as Record<string, unknown>));

@@ -45,10 +45,17 @@ const SCHEMA = [
     id TEXT PRIMARY KEY, idea_id TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL, created INTEGER NOT NULL)`,
   'CREATE INDEX IF NOT EXISTS idea_files_idea ON idea_files (idea_id)',
   'CREATE TABLE IF NOT EXISTS idea_chunks (file_id TEXT NOT NULL, n INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY (file_id, n))',
+  // Promo checklists (worker/ship.ts): one row per ticked channel of a shipped thing ("skip" = no promo needed).
+  `CREATE TABLE IF NOT EXISTS promo_ticks (
+    ref TEXT NOT NULL, channel TEXT NOT NULL, label TEXT NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (ref, channel))`,
+  'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
 ];
 
 /** Tables are created on first use in each Worker instance (cheap: IF NOT EXISTS), so no migration step is needed. */
 let ready: Promise<unknown> | null = null;
+
+/** Waits for the tables (call before the first query in a request). */
+export const dbReady = () => ready;
 
 export function ideasDb(env: IdeasEnv): D1Database {
   const db = env.IDEAS_DB;
