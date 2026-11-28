@@ -1,5 +1,4 @@
 import React, { useState, ReactElement, ReactNode } from 'react';
-import { motion } from 'motion/react';
 import { Link, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
@@ -270,11 +269,7 @@ export function Archive() {
         </div>
 
         <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
-          <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.8 }}
-          >
+          <div className="enter-up">
             <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 border border-brand-orange/30 bg-brand-orange/10 font-mono text-xs text-brand-orange tracking-[0.2em] rounded-sm">
               <ArchiveIcon className="w-3 h-3" />
               SYSTEM.ARCHIVE // LOGS
@@ -296,7 +291,7 @@ export function Archive() {
               <Rss className="w-3 h-3" aria-hidden="true" />
               Subscribe via RSS
             </a>
-          </motion.div>
+          </div>
         </div>
       </section>
 

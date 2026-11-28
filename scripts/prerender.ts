@@ -122,7 +122,11 @@ if (!template.includes('<div id="root"></div>')) {
 // Cloudflare serves 404.html with a 404 status (not_found_handling in wrangler.jsonc).
 writeFileSync(resolve(DIST, '404.html'), template);
 
+// Production, so import.meta.env.DEV is false here as it is in the built site. Otherwise dev-only markup
+// (the navbar's DEV link) ends up in the HTML, hydration fails, and React re-renders every page.
+process.env.NODE_ENV = 'production';
 const vite = await createServer({
+  mode: 'production',
   server: { middlewareMode: true, hmr: false, watch: null },
   appType: 'custom',
   logLevel: 'error',

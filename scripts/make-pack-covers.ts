@@ -241,3 +241,6 @@ writeFileSync(join(OUT, 'shlims.svg'), shlims(pack('shlims')));
 writeFileSync(join(OUT, 'vrac.svg'), vrac(pack('vrac')));
 console.log('Wrote the pack covers in public/packs/');
 writeFileSync(join(OUT, 'raw-sessions.svg'), rawSessions(pack('raw-sessions')));
+
+// Small WebP thumbnails of the covers for the samples page.
+await import('./make-pack-thumbs');

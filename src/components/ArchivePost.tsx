@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ReducedMotion } from './ReducedMotion';
 import { Calendar, Tag, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ScrollReveal } from './ScrollReveal';
@@ -88,6 +89,7 @@ export function ArchivePost({
   };
 
   return (
+    <ReducedMotion>
     <ScrollReveal>
       <article 
         id={`post-${index}`}
@@ -233,5 +235,6 @@ export function ArchivePost({
         </AnimatePresence>
       </article>
     </ScrollReveal>
+    </ReducedMotion>
   );
 }

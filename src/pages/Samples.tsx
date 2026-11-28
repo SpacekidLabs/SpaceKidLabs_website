@@ -23,6 +23,12 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1_000_000).toFixed(bytes < 10_000_000 ? 1 : 0)} MB`;
 }
 
+/**
+ * Rows rendered at first, and added each time the end of the list comes near the screen. Rendering a
+ * whole pack at once (Raw Sessions has 457 rows, each with a waveform) made the page's HTML 2.3 MB.
+ */
+const BATCH = 50;
+
 /** "All packs" in the picker and in the URL (?pack=all). */
 const ALL = 'all';
 
@@ -38,6 +44,9 @@ const PACK_DATA = Object.fromEntries(PACKS.map(pack => {
 const PACK_BY_ID = Object.fromEntries(PACKS.map(p => [p.id, p]));
 const PACK_ORDER = PACKS.map(p => p.id);
 const SAMPLE_BY_ID = new Map(SAMPLES.map(s => [s.id, s]));
+
+/** Small WebP copy of a pack's SVG cover (made by scripts/make-pack-thumbs.ts): /packs/x.svg -> /packs/x-96.webp */
+const thumb = (cover: string, size: 96 | 288) => cover.replace(/\.svg$/, `-${size}.webp`);
 
 const driveDownloadUrl = (s: Sample) => `https://drive.google.com/uc?export=download&id=${s.driveId}`;
 
@@ -144,7 +153,7 @@ function PackTile({ id, title, count, cover, latest, selected, onSelect }: PackT
     >
       <span className="w-12 h-12 shrink-0 bg-zinc-950 border border-zinc-800 overflow-hidden flex items-center justify-center">
         {cover
-          ? <img src={cover} alt="" width={48} height={48} className="w-full h-full object-cover" />
+          ? <img src={thumb(cover, 96)} alt="" width={48} height={48} loading="lazy" decoding="async" className="w-full h-full object-cover" />
           : <Layers className="w-5 h-5 text-brand-orange" aria-hidden="true" />}
       </span>
       <span className="min-w-0">
@@ -163,7 +172,7 @@ function PackDetails({ pack }: { pack: SamplePack }) {
   return (
     <div className="border border-brand-orange/30 bg-black relative flex flex-wrap sm:flex-nowrap gap-4 sm:gap-5 p-4 sm:p-5">
       <CornerAccents />
-      <img src={pack.cover} alt="" width={800} height={800} className="w-16 h-16 sm:w-36 sm:h-36 object-cover border border-zinc-800 shrink-0" />
+      <img src={thumb(pack.cover, 288)} alt="" width={144} height={144} decoding="async" className="w-16 h-16 sm:w-36 sm:h-36 object-cover border border-zinc-800 shrink-0" />
       <div className="flex-1 min-w-0 flex flex-col">
         <h2 className="font-display font-bold text-xl sm:text-2xl text-white uppercase tracking-wide">{pack.title}</h2>
         <p className="text-sm text-zinc-400 font-sans leading-relaxed mt-1">{pack.tagline}</p>
@@ -235,15 +244,58 @@ export function SamplesPage() {
       a.name.localeCompare(b.name, 'en', { numeric: true }),
     ), [searched, filter, keyOf, allPacks]);
 
+  // Only the first `limit` rows are rendered (see BATCH); a new pack, filter or search starts over.
+  const [limit, setLimit] = useState(BATCH);
+  const [limitFor, setLimitFor] = useState(visible);
+  if (limitFor !== visible) {
+    setLimitFor(visible);
+    setLimit(BATCH);
+  }
+  const shown = useMemo(() => visible.slice(0, limit), [visible, limit]);
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
+  const limitRef = useRef(limit);
+  limitRef.current = limit;
+
+  /** Group headings show the full count, including rows not rendered yet. */
+  const groupSizes = useMemo(() => {
+    const sizes = new Map<string, number>();
+    for (const s of visible) sizes.set(keyOf(s), (sizes.get(keyOf(s)) ?? 0) + 1);
+    return sizes;
+  }, [visible, keyOf]);
+
   const groups = useMemo(() => {
     const out: [string, Sample[]][] = [];
-    for (const s of visible) {
+    for (const s of shown) {
       const key = keyOf(s);
       if (out.at(-1)?.[0] === key) out.at(-1)![1].push(s);
       else out.push([key, [s]]);
     }
     return out;
-  }, [visible, keyOf]);
+  }, [shown, keyOf]);
+
+  // Render the next batch when the end of the list is within a few screens.
+  const moreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) setLimit(l => l + BATCH);
+    }, { rootMargin: '1500px 0px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [shown]);
+
+  // Preview audio is preloaded only after the visitor does something on the page (scroll, click, key),
+  // so just opening it doesn't download any audio.
+  const [engaged, setEngaged] = useState(false);
+  useEffect(() => {
+    if (engaged) return;
+    const events = ['pointerdown', 'keydown', 'scroll', 'touchstart'] as const;
+    const on = () => setEngaged(true);
+    events.forEach(e => window.addEventListener(e, on, { once: true, passive: true }));
+    return () => events.forEach(e => window.removeEventListener(e, on));
+  }, [engaged]);
 
   const player = useSamplePlayer();
   const { play, toggle, stop, prefetch, registerProgress } = player;
@@ -260,7 +312,13 @@ export function SamplesPage() {
     setSelectedId(id);
     // Instant, not the page's smooth scrolling: with a key held down, smooth scrolls interrupt each
     // other and the selected row ends up off-screen.
-    document.getElementById(`sample-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    const scroll = () => document.getElementById(`sample-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    const index = visibleRef.current.findIndex(s => s.id === id);
+    if (index >= limitRef.current) {
+      // Not rendered yet: render up to it first, then scroll.
+      setLimit(index + BATCH);
+      requestAnimationFrame(scroll);
+    } else scroll();
   }, []);
 
   // Stable row handlers (see SampleRow).
@@ -274,7 +332,7 @@ export function SamplesPage() {
   // Preload previews as their rows come near the screen, so clicks play straight from memory.
   useEffect(() => {
     const list = listRef.current;
-    if (!list || typeof IntersectionObserver === 'undefined') return;
+    if (!engaged || !list || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver(entries => {
       const near = entries.filter(e => e.isIntersecting)
         .map(e => SAMPLE_BY_ID.get(Number((e.target as HTMLElement).dataset.sid)))
@@ -283,7 +341,7 @@ export function SamplesPage() {
     }, { rootMargin: '400px 0px' });
     list.querySelectorAll('[data-sid]').forEach(el => observer.observe(el));
     return () => observer.disconnect();
-  }, [visible, prefetch]);
+  }, [shown, prefetch, engaged]);
 
   // And the ones around the selected one, for arrow-key auditioning.
   useEffect(() => {
@@ -452,7 +510,7 @@ export function SamplesPage() {
               {groups.map(([key, list]) => (
                 <div key={key}>
                   <div className="px-4 md:px-6 py-2 bg-zinc-950 border-b border-zinc-900 font-mono text-[10px] text-zinc-500 uppercase tracking-widest">
-                    {chipLabel(key)} <span>({list.length})</span>
+                    {chipLabel(key)} <span>({groupSizes.get(key)})</span>
                   </div>
                   {list.map(sample => (
                     <SampleRow
@@ -469,6 +527,7 @@ export function SamplesPage() {
                   ))}
                 </div>
               ))}
+              {shown.length < visible.length && <div ref={moreRef} aria-hidden="true" />}
               {visible.length === 0 && (
                 <div className="px-6 py-12 text-center font-mono text-xs text-zinc-500 space-y-3">
                   <p>No samples match “{query.trim()}”{filter ? ` in ${chipLabel(filter)}` : ''}{allPacks ? '' : ` in ${scopeTitle}`}.</p>

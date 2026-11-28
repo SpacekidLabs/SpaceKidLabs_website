@@ -3,12 +3,17 @@ import { Link } from 'react-router-dom';
 import { AudioComparison } from './AudioComparison';
 import { SpectralRotatorPreview } from './SpectralRotatorPreview';
 import { NoiseForgePreview } from './NoiseForgePreview';
-import { WavesetPreview } from './WavesetPreview';
-import { DataPaintPreview } from './DataPaintPreview';
+import { Suspense } from 'react';
+import { lazyNamed } from '../lib/lazyNamed';
+import { ReducedMotion } from './ReducedMotion';
 import { LasySynthPreview } from './LasySynthPreview';
 import { PeopleVstPreview } from './PeopleVstPreview';
 import { DataMosPreview } from './DataMosPreview';
 import { GendyPreview } from './GendyPreview';
+
+// These two animate with Motion; loaded on demand so the home page doesn't need Motion up front.
+const WavesetPreview = lazyNamed(() => import('./WavesetPreview'), 'WavesetPreview');
+const DataPaintPreview = lazyNamed(() => import('./DataPaintPreview'), 'DataPaintPreview');
 
 const PROJECTS_DATA = [
   {
@@ -141,8 +146,8 @@ export function ProjectList() {
       case 'gendy': return <GendyPreview />;
       case 'spectral': return <SpectralRotatorPreview />;
       case 'noiseforge': return <NoiseForgePreview />;
-      case 'waveset': return <WavesetPreview />;
-      case 'datapaint': return <DataPaintPreview />;
+      case 'waveset': return <Suspense fallback={null}><ReducedMotion><WavesetPreview /></ReducedMotion></Suspense>;
+      case 'datapaint': return <Suspense fallback={null}><ReducedMotion><DataPaintPreview /></ReducedMotion></Suspense>;
       case 'lasy': return <LasySynthPreview />;
       case 'people': return <PeopleVstPreview />;
       case 'datamos': return <DataMosPreview />;

@@ -1,6 +1,5 @@
 import { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { MotionConfig } from 'motion/react';
 import { lazyNamed } from './lib/lazyNamed';
 
 // Each page is downloaded only when someone opens it.
@@ -41,8 +40,9 @@ function ScrollToTop() {
 /** The site's pages, without a router. Rendered by BrowserRouter in the browser and StaticRouter at build time. */
 export function AppRoutes() {
   return (
-    // reducedMotion="user": animations become instant fades for visitors whose system asks for less motion.
-    <MotionConfig reducedMotion="user">
+    // Motion's reduced-motion setting is applied where Motion is used (<ReducedMotion>), so pages
+    // without Motion animations don't download it.
+    <>
       <ScrollToTop />
       {/* Shown only on the very first page load; later navigations keep the current page up while the next one loads. */}
       <Suspense fallback={<div className="min-h-screen bg-brand-dark" />}>
@@ -60,7 +60,7 @@ export function AppRoutes() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
-    </MotionConfig>
+    </>
   );
 }
 

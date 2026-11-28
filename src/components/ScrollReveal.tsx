@@ -1,22 +1,18 @@
-import { motion, HTMLMotionProps } from 'motion/react';
-import { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 
-interface ScrollRevealProps extends HTMLMotionProps<"div"> {
+interface ScrollRevealProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
 }
 
+/**
+ * Fades its content up as it scrolls into view. Pure CSS (`.reveal` in index.css, a scroll-driven
+ * animation), so it needs no JavaScript and content already on screen is visible at first paint.
+ */
 export function ScrollReveal({ children, className, ...props }: ScrollRevealProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className={className}
-      {...props}
-    >
+    <div className={className ? `reveal ${className}` : 'reveal'} {...props}>
       {children}
-    </motion.div>
+    </div>
   );
 }

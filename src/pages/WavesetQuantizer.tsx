@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { LabUse } from '../lib/lazyNamed';
-import { motion } from 'motion/react';
 import { Upload, Play, Square, Settings, Download as DownloadIcon, Layers } from 'lucide-react';
 
 export function WavesetQuantizer() {
@@ -271,7 +270,7 @@ export function WavesetQuantizer() {
 
         <LabUse name="WavesetQuantizer">
         <div className="max-w-4xl mx-auto px-6 relative z-10">
-          <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} transition={{duration:0.6}}>
+          <div className="enter-up">
             
             <div className="flex items-center gap-4 mb-4">
                <Layers className="w-8 h-8 text-[#00ffcc]" />
@@ -407,7 +406,7 @@ export function WavesetQuantizer() {
 
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
         </LabUse>
       </section>

@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { Terminal, Copy, AlertOctagon, Download, CheckCircle, Apple, ExternalLink, HardDrive, ListChecks } from 'lucide-react';
@@ -119,10 +118,8 @@ export function DownloadPage() {
         </div>
 
         {/* Warning Toast / Banner */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-6 border-2 border-red-500/50 bg-red-500/10 rounded-sm flex items-start gap-4 mb-16 relative overflow-hidden"
+        <div
+          className="enter-up p-6 border-2 border-red-500/50 bg-red-500/10 rounded-sm flex items-start gap-4 mb-16 relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-1 h-full bg-red-500" />
           <AlertOctagon className="w-8 h-8 text-red-500 shrink-0 mt-1" />
@@ -134,7 +131,7 @@ export function DownloadPage() {
               Proceed with extreme caution.
             </p>
           </div>
-        </motion.div>
+        </div>
 
         {/* Download Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16 max-w-4xl mx-auto">

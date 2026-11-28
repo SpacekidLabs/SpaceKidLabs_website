@@ -86,6 +86,50 @@
   .scanlines {
     display: none;
   }
+  .enter-up,
+  .enter-left,
+  .enter-zoom,
+  .reveal,
+  .menu-fade,
+  .menu-item {
+    animation: none !important;
+  }
+}
+
+/* Entrance animations in plain CSS, not JavaScript, so the pre-rendered page paints its content right
+   away instead of keeping it invisible until React and Motion have loaded (that delay was most of the
+   home page's load time). */
+@keyframes enter-up {
+  from { opacity: 0; transform: translateY(20px); }
+}
+@keyframes enter-left {
+  from { opacity: 0; transform: translateX(-20px); }
+}
+@keyframes enter-zoom {
+  from { opacity: 0; transform: scale(0.9); }
+}
+/* On page load */
+.enter-up { animation: enter-up 0.8s ease-out both; }
+.enter-left { animation: enter-left 0.8s ease-out both; }
+.enter-zoom { animation: enter-zoom 1s ease-out 0.2s both; }
+/* Mobile menu (Navbar) */
+@keyframes menu-fade {
+  from { opacity: 0; }
+}
+@keyframes menu-item {
+  from { opacity: 0; transform: translateX(-10px); }
+}
+.menu-fade { animation: menu-fade 0.2s ease-out both; }
+.menu-item { animation: menu-item 0.3s ease-out both; }
+/* As a section scrolls into view (<ScrollReveal>): a scroll-driven animation, so anything already on
+   screen at load is fully visible from the first paint. Browsers without scroll-driven animations
+   just show the content. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: enter-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 160px;
+  }
 }
 
 @layer utilities {

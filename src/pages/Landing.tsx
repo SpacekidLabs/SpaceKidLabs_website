@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { ContactForm } from '../components/ContactForm';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
@@ -39,11 +38,7 @@ export function Landing() {
         </div>
 
         <div className="max-w-7xl mx-auto px-6 w-full relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-          >
+          <div className="enter-left">
             <div className="inline-block mb-4 px-3 py-1 border border-brand-orange/30 bg-brand-orange/10 font-mono text-xs text-brand-orange tracking-[0.2em] rounded-sm">
               SYS.ID: SPACEKID_LABS // ONLINE
             </div>
@@ -74,17 +69,12 @@ export function Landing() {
                 Get DATABEND App <Download className="w-4 h-4" />
               </Link>
             </div>
-          </motion.div>
+          </div>
 
           {/* Visual abstract graphic */}
-          <motion.div
-             initial={{ opacity: 0, scale: 0.9 }}
-             animate={{ opacity: 1, scale: 1 }}
-             transition={{ duration: 1, delay: 0.2 }}
-             className="relative hidden md:flex items-center justify-center p-12"
-          >
+          <div className="enter-zoom relative hidden md:flex items-center justify-center p-12">
             <HeroGraphic />
-          </motion.div>
+          </div>
         </div>
       </section>
 
