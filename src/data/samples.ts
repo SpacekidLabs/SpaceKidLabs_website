@@ -3233,4 +3233,8 @@ export const SAMPLES: Sample[] = [
     peaks: "bkpcskfsrykgLBBClpmq1pknpnnoooxoll6skwmvvlufonjoylcn_5otnl3nmmsB" },
   { id: 2157, pack: "raw-sessions", name: "RS Tape 26.wav", category: "Tape & Radio", duration: "25.6s", format: "WAV 24-bit", sizeBytes: 3679302, preview: "/audio/rs-tape-26.mp3", driveId: "17u5ZoQ64sTXuP7g_7yrLPXlIIAd3EXDL",
     peaks: "Yehuwtv2_utwrlnjsrkhkomjtmuqwuqrptxxvxrvproluu8rttoqstpsop630rnk" },
+  { id: 2158, pack: "databend", name: "SP26 Snap 1.wav", category: "Percussion", duration: "0.3s", format: "WAV 24-bit", sizeBytes: 94436, preview: "/audio/sp26-snap-1.mp3", driveId: "1yULpnP4_dabWeh_SSAuGb3yo8WalVBJR",
+    peaks: "R_99jYVKECBBH73yYQOHDBAABDBCBAAAAAAABCBBAAAAAAAABCBBAAAAAAAABCBA" },
+  { id: 2159, pack: "databend", name: "SP26 HiHat Closed 1.wav", category: "Percussion", duration: "0.1s", format: "WAV 24-bit", sizeBytes: 34796, preview: "/audio/sp26-hihat-closed-1.mp3", driveId: "1L1hHIHz_vBlUyhHePR3YLF-IUBvecJeI",
+    peaks: "AZ-_vpjtaVVOPMJGEBAAAAAAAAAAAAAAAE41knieURORLMHGECBBBAAAAAAAAAAA" },
 ];
