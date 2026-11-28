@@ -28,6 +28,14 @@
   [headers.values]
     Content-Type = "application/rss+xml; charset=utf-8"
 
+# The site lives at spacekidlabs.com; send the old Netlify address there, keeping the path.
+# Must come before the catch-all below. (www → apex is handled by Netlify's domain settings.)
+[[redirects]]
+  from = "https://spacekidlabs.netlify.app/*"
+  to = "https://spacekidlabs.com/:splat"
+  status = 301
+  force = true
+
 # Pages are pre-rendered to dist/<path>.html (scripts/prerender.ts) and served directly.
 # Any other URL gets the empty app shell, which shows the 404 page, with a real 404 status
 # so search engines don't index mistyped URLs as pages.
