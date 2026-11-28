@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { ReducedMotion } from './ReducedMotion';
 import { Paintbrush } from 'lucide-react';
 
 export function DataPaintPreview() {
   return (
+    <ReducedMotion>
     <div className="w-full aspect-video border border-zinc-800 bg-[#0f1115] relative shadow-[0_0_50px_rgba(255,105,180,0.1)] overflow-hidden group">
       {/* Background Grid */}
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
@@ -69,5 +71,6 @@ export function DataPaintPreview() {
           <Paintbrush className="text-[#ff69b4] w-12 h-12 mb-4 drop-shadow-[0_0_15px_rgba(255,105,180,0.5)]" />
       </div>
     </div>
+    </ReducedMotion>
   );
 }

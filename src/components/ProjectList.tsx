@@ -5,7 +5,6 @@ import { SpectralRotatorPreview } from './SpectralRotatorPreview';
 import { NoiseForgePreview } from './NoiseForgePreview';
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { lazyNamed } from '../lib/lazyNamed';
-import { ReducedMotion } from './ReducedMotion';
 import { LasySynthPreview } from './LasySynthPreview';
 import { PeopleVstPreview } from './PeopleVstPreview';
 import { DataMosPreview } from './DataMosPreview';
@@ -166,8 +165,8 @@ export function ProjectList() {
       case 'gendy': return <GendyPreview />;
       case 'spectral': return <SpectralRotatorPreview />;
       case 'noiseforge': return <NoiseForgePreview />;
-      case 'waveset': return <WhenNear><Suspense fallback={null}><ReducedMotion><WavesetPreview /></ReducedMotion></Suspense></WhenNear>;
-      case 'datapaint': return <WhenNear><Suspense fallback={null}><ReducedMotion><DataPaintPreview /></ReducedMotion></Suspense></WhenNear>;
+      case 'waveset': return <WhenNear><Suspense fallback={null}><WavesetPreview /></Suspense></WhenNear>;
+      case 'datapaint': return <WhenNear><Suspense fallback={null}><DataPaintPreview /></Suspense></WhenNear>;
       case 'lasy': return <LasySynthPreview />;
       case 'people': return <PeopleVstPreview />;
       case 'datamos': return <DataMosPreview />;

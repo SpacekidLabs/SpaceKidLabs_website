@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { ReducedMotion } from './ReducedMotion';
 import { Layers } from 'lucide-react';
 
 export function WavesetPreview() {
   return (
+    <ReducedMotion>
     <div className="w-full aspect-video border border-zinc-800 bg-black relative shadow-[0_0_50px_rgba(0,255,204,0.1)] overflow-hidden group">
       {/* Background Grid */}
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
@@ -55,5 +57,6 @@ export function WavesetPreview() {
           <Layers className="text-[#00ffcc] w-12 h-12 mb-4 drop-shadow-[0_0_15px_rgba(0,255,204,0.5)]" />
       </div>
     </div>
+    </ReducedMotion>
   );
 }
