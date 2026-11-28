@@ -144,6 +144,8 @@ export function appendSamples(ts: string, pack: string, category: string, items:
 export interface SampleRow {
   id: number; pack: string; name: string; category: string; duration: string; format: string;
   sizeBytes: number; preview: string; driveId: string;
+  /** Waveform outline (64 characters), for the dashboard's player. */
+  peaks: string;
 }
 
 const STR = '("(?:[^"\\\\]|\\\\.)*")';
@@ -158,6 +160,7 @@ function rowOf(m: RegExpMatchArray): SampleRow {
   return {
     id: Number(m[1]), pack: JSON.parse(m[2]), name: JSON.parse(m[3]), category: JSON.parse(m[4]),
     duration: JSON.parse(m[5]), format: JSON.parse(m[6]), sizeBytes: Number(m[7]), preview: JSON.parse(m[8]), driveId: JSON.parse(m[9]),
+    peaks: JSON.parse(m[10]),
   };
 }
 

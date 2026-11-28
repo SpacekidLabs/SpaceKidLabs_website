@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, EyeOff, ExternalLink, Lightbulb, LogOut, Mic, Pencil, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, ExternalLink, Lightbulb, LogOut, Mic, Pencil, Play, Square, Trash2 } from 'lucide-react';
+import { useSamplePlayer } from '../components/samples/useSamplePlayer';
+import { Waveform } from '../components/samples/Waveform';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { cn } from '../lib/utils';
@@ -292,7 +294,7 @@ function SamplesTab({ sub }: { sub: string }) {
   );
 }
 
-interface SampleRow { id: number; pack: string; name: string; category: string; duration: string; format: string; sizeBytes: number; preview: string; driveId: string }
+interface SampleRow { id: number; pack: string; name: string; category: string; duration: string; format: string; sizeBytes: number; preview: string; driveId: string; peaks: string }
 type SampleEdit = { name?: string; category?: string; driveId?: string; pack?: string };
 const PAGE = 100;
 
@@ -341,6 +343,11 @@ function SampleEditor() {
   const categories = useMemo(() => [...new Set((rows ?? []).map(r => r.category))], [rows]);
   const q = query.trim().toLowerCase();
   const shown = (rows ?? []).filter(r => (!category || r.category === category) && (!q || r.name.toLowerCase().includes(q)) && (!onlyHidden || hiddenIds.has(r.id)));
+  // The same player as /samples (hidden samples' previews are on the site, just not listed). Plays here don't count in the stats.
+  const player = useSamplePlayer(undefined, { analytics: false });
+  const visibleRows = shown.slice(0, limit);
+  useEffect(() => { player.prefetch(visibleRows.slice(0, 40)); }, [rows, query, category, onlyHidden, limit]);
+  useEffect(() => { player.stop(); }, [pack]);
   const hiddenCount = (rows ?? []).filter(r => hiddenIds.has(r.id)).length;
   const value = (r: SampleRow, k: keyof SampleEdit) => edits.get(r.id)?.[k] ?? r[k];
 
@@ -452,11 +459,12 @@ function SampleEditor() {
                   <th className="p-2 w-8"><input type="checkbox" aria-label="Select all shown" checked={allShown} className="accent-brand-orange"
                     onChange={() => setSelected(allShown ? new Set() : new Set(shown.map(r => r.id)))} /></th>
                   <th className="p-2 w-10"><span className="sr-only">On the site</span></th>
-                  <th className="p-2">Name</th><th className="p-2">Category</th><th className="p-2">Drive file ID</th><th className="p-2 w-20">Length</th>
+                  <th className="p-2 w-10"><span className="sr-only">Play</span></th>
+                  <th className="p-2">Name</th><th className="p-2">Category</th><th className="p-2">Drive file ID</th><th className="p-2 w-44">Sound</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-900">
-                {shown.slice(0, limit).map(r => {
+                {visibleRows.map(r => {
                   const moved = edits.get(r.id)?.pack;
                   const off = hiddenIds.has(r.id);
                   return (
@@ -470,6 +478,14 @@ function SampleEditor() {
                           {off ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="w-4 h-4" aria-hidden />}
                         </button>
                       </td>
+                      <td className="p-1">
+                        <button type="button" onClick={() => player.toggle(r)}
+                          aria-label={player.playingId === r.id ? `Stop ${r.name}` : `Play ${r.name}`}
+                          className={cn('w-8 h-8 rounded-full border flex items-center justify-center transition-colors',
+                            player.playingId === r.id ? 'border-brand-orange text-brand-orange' : 'border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600')}>
+                          {player.playingId === r.id ? <Square className="w-3 h-3 fill-current" aria-hidden /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" aria-hidden />}
+                        </button>
+                      </td>
                       <td className="p-1 min-w-[14rem]">
                         <input className={cell} value={value(r, 'name')} onChange={e => edit(r, 'name', e.target.value)} aria-label={`Name of ${r.name}`} />
                         {off && <span className="px-2 font-mono text-[10px] uppercase tracking-widest text-amber-400">Hidden</span>}
@@ -477,8 +493,9 @@ function SampleEditor() {
                       </td>
                       <td className="p-1 min-w-[9rem]"><input className={cell} list="dev-sample-categories" value={value(r, 'category')} onChange={e => edit(r, 'category', e.target.value)} aria-label={`Category of ${r.name}`} /></td>
                       <td className="p-1 min-w-[12rem]"><input className={cn(cell, 'font-mono text-xs')} value={value(r, 'driveId')} placeholder="none" onChange={e => edit(r, 'driveId', e.target.value)} aria-label={`Drive ID of ${r.name}`} /></td>
-                      <td className="p-2 font-mono text-[11px] text-zinc-500">
-                        <a href={r.preview} target="_blank" rel="noreferrer" className="hover:text-white">{r.duration}</a>
+                      <td className="p-2 min-w-[11rem]">
+                        <Waveform peaks={r.peaks} progressRef={el => player.registerProgress(r.id, el)} onSeek={f => player.play(r, f)} className="h-6" />
+                        <a href={r.preview} target="_blank" rel="noreferrer" className="font-mono text-[10px] text-zinc-500 hover:text-white">{r.duration}</a>
                       </td>
                     </tr>
                   );
@@ -498,7 +515,7 @@ function SampleEditor() {
               <Trash2 className="w-4 h-4" aria-hidden /> Delete {selected.size || ''} selected
             </button>
           </div>
-          <p className="text-xs text-zinc-500">The list comes from GitHub, so it includes changes that aren't live yet. The eye hides a sample from the site (or the whole pack with Hide this pack) without deleting it; click again to show it. Deleting removes the sample and its preview from the site; the original in Google Drive stays.</p>
+          <p className="text-xs text-zinc-500">The list comes from GitHub, so it includes changes that aren't live yet. Play any sample (hidden ones too) with ▶ or click its waveform. Previews added in the last couple of minutes play once the site has updated. The eye hides a sample from the site (or the whole pack with Hide this pack) without deleting it; click again to show it. Deleting removes the sample and its preview from the site; the original in Google Drive stays.</p>
         </>
       )}
       <StatusLine status={status} />

@@ -299,7 +299,7 @@ export function buildServer(rawEnv: DevEnv): McpServer {
     const hiddenIds = new Set(hidden.samples);
     return {
       total: found.length, packs: pack ? undefined : packs, hiddenPacks: hidden.packs,
-      samples: found.slice(0, limit ?? 100).map(s => ({ ...s, hidden: hiddenIds.has(s.id) || hidden.packs.includes(s.pack) })),
+      samples: found.slice(0, limit ?? 100).map(({ peaks: _peaks, ...s }) => ({ ...s, hidden: hiddenIds.has(s.id) || hidden.packs.includes(s.pack) })),
     };
   }));
 

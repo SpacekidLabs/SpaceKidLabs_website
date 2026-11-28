@@ -34,7 +34,7 @@ const isLong = (s: Playable) => durationSeconds(s.duration) > STREAM_OVER_SECOND
  * The playing row's progress bar is moved directly (see `registerProgress`), not through React state,
  * so playback doesn't re-render the page on every animation frame.
  */
-export function useSamplePlayer(onEnded?: (id: number) => void) {
+export function useSamplePlayer(onEnded?: (id: number) => void, { analytics = true }: { analytics?: boolean } = {}) {
   const [playingId, setPlayingId] = useState<number | null>(null);
   const playingIdRef = useRef<number | null>(null);
   const onEndedRef = useRef(onEnded);
@@ -162,7 +162,7 @@ export function useSamplePlayer(onEnded?: (id: number) => void) {
   /** Plays a sample from the start, or from a position between 0 and 1. */
   const play = useCallback((sample: Playable, from = 0) => {
     // A seek inside the sample that's already playing isn't another play.
-    if (playingIdRef.current !== sample.id) track('sample_play', `${sample.id} ${sample.name}`);
+    if (analytics && playingIdRef.current !== sample.id) track('sample_play', `${sample.id} ${sample.name}`);
     halt();
     playingIdRef.current = sample.id;
     setPlayingId(sample.id);
@@ -220,7 +220,7 @@ export function useSamplePlayer(onEnded?: (id: number) => void) {
     const ready = buffers.current.get(sample.preview);
     if (ready) begin(ready);
     else void load(sample.preview).then(begin);
-  }, [finish, load, stop, tick]);
+  }, [analytics, finish, load, stop, tick]);
 
   const toggle = useCallback((sample: Playable) => {
     if (playingIdRef.current === sample.id) stop();
