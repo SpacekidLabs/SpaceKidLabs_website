@@ -9,6 +9,7 @@
 import type { IdeasEnv } from './ideas';
 import { dbReady, ideasDb } from './ideas';
 import { promoEvents, promoQueue } from './ship';
+import { messageCounts } from './messages';
 
 export type MomentumKind = 'idea' | 'sketch' | 'samples' | 'post' | 'release' | 'issue' | 'promo';
 export interface MomentumEvent { t: number; kind: MomentumKind; label: string; url?: string }
@@ -118,5 +119,11 @@ export async function momentum(env: IdeasEnv, graphql: GraphQL | null, owner: st
   } catch (err) {
     errors.push(`Promo: ${err instanceof Error ? err.message : String(err)}`);
   }
-  return { events, stale, staleCount, staleDays: STALE_DAYS, promo, errors };
+  let messages: Awaited<ReturnType<typeof messageCounts>> | null = null;
+  try {
+    messages = await messageCounts(env);
+  } catch (err) {
+    errors.push(`Messages: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  return { events, stale, staleCount, staleDays: STALE_DAYS, promo, messages, errors };
 }

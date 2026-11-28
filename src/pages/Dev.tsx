@@ -13,6 +13,7 @@ import { OverviewTab } from '../components/dev/OverviewTab';
 import { IssuesTab } from '../components/dev/IssuesTab';
 import { ProjectsTab } from '../components/dev/ProjectsTab';
 import { ShipTab } from '../components/dev/ShipTab';
+import { MessagesTab } from '../components/dev/MessagesTab';
 import { LaunchpadTab, POST_HANDOFF, type PostHandoff } from '../components/dev/LaunchpadTab';
 import { button, errorText, Field, ghostButton, input, label } from '../components/dev/ui';
 
@@ -651,7 +652,7 @@ function ArchiveTab() {
 
 /** Tabs in two groups. The address holds the open one (#projects/xen, #issues/data-bend, #sketches…). */
 const GROUPS = [
-  { name: 'Lab', tabs: [{ id: 'launchpad', label: 'Launchpad' }, { id: 'ship', label: 'Ship' }] },
+  { name: 'Lab', tabs: [{ id: 'launchpad', label: 'Launchpad' }, { id: 'ship', label: 'Ship' }, { id: 'messages', label: 'Messages' }] },
   { name: 'All projects', tabs: [{ id: 'projects', label: 'Projects' }, { id: 'issues', label: 'Issues' }] },
   {
     name: 'Website',
@@ -684,8 +685,9 @@ function useHashRoute() {
 
 function ActiveTab({ tab, sub, go }: { tab: TabId; sub: string; go: (tab: TabId, sub?: string) => void }) {
   switch (tab) {
-    case 'launchpad': return <LaunchpadTab onPost={h => { sessionStorage.setItem(POST_HANDOFF, JSON.stringify(h)); go('archive'); }} onIssues={() => go('issues')} onShip={() => go('ship')} />;
+    case 'launchpad': return <LaunchpadTab onPost={h => { sessionStorage.setItem(POST_HANDOFF, JSON.stringify(h)); go('archive'); }} onIssues={() => go('issues')} onShip={() => go('ship')} onMessages={() => go('messages')} />;
     case 'ship': return <ShipTab />;
+    case 'messages': return <MessagesTab />;
     case 'projects': return <ProjectsTab open={sub} onOpen={name => go('projects', name)} onIssues={repo => go('issues', repo)} />;
     case 'issues': return <IssuesTab repo={sub || '*'} onRepo={repo => go('issues', repo === '*' ? '' : repo)} />;
     case 'overview': return <OverviewTab onIssues={() => go('issues', REPO_URL.split('/').pop())} />;

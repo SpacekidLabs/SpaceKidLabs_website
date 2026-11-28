@@ -3,8 +3,8 @@
  *
  * Static files in dist/ are served by Cloudflare directly (see "assets" in wrangler.jsonc); this code only runs
  * for /api/*, the MCP connector and its sign-in. It handles:
- *   - the contact form: POST /api/contact emails the message to the CONTACT_TO secret through Cloudflare Email
- *     Routing (send_email binding in wrangler.jsonc);
+ *   - the contact form: POST /api/contact keeps a copy for the /dev Messages tab (worker/messages.ts) and emails the
+ *     message to the CONTACT_TO secret through Cloudflare Email Routing (send_email binding in wrangler.jsonc);
  *   - the /dev dashboard's API (worker/dev.ts);
  *   - event counts: POST /api/event (worker/events.ts) counts plays, downloads and labs started;
  *   - the MCP connector at /mcp (worker/mcp.ts), behind OAuth (worker/oauth.ts and Cloudflare's OAuthProvider,
@@ -17,6 +17,7 @@ import { handleDev, type DevEnv } from './dev';
 import { handleMcp } from './mcp';
 import { handleAuthorize, SCOPE } from './oauth';
 import { handleEvent, record, type EventsEnv } from './events';
+import { saveMessage } from './messages';
 
 interface Env extends DevEnv, EventsEnv {
   /** MCP connector sign-ins (worker/oauth.ts): registered apps and grants. */
@@ -85,8 +86,18 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
     return json(400, { error: 'Missing or invalid fields' });
   }
 
+  // A copy for the /dev Messages tab first: if the email fails below, the message is still safe.
+  let saved = false;
+  try {
+    await saveMessage(env, { name, email, service, links, page, message });
+    saved = true;
+  } catch (err) {
+    console.error('Contact form: saving a copy failed', err instanceof Error ? err.message : String(err));
+  }
+
   if (!env.CONTACT_TO) {
     console.error('Contact form: the CONTACT_TO secret is not set (see docs/HOSTING.md)');
+    if (saved) { record(env, 'contact_sent'); return json(200, { ok: true }); }
     return json(500, { error: 'Not configured' });
   }
 
@@ -123,7 +134,8 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
     await env.CONTACT_EMAIL.send(new EmailMessage(env.CONTACT_FROM, env.CONTACT_TO, raw));
   } catch (err) {
     console.error('Contact form: sending failed', err);
-    return json(502, { error: 'Could not send' });
+    // Saved in /dev, so the visitor's message isn't lost; only the email notification is.
+    if (!saved) return json(502, { error: 'Could not send' });
   }
   record(env, 'contact_sent');
   return json(200, { ok: true });

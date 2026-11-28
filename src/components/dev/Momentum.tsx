@@ -16,6 +16,7 @@ export interface MomentumData {
   stale: Array<{ repo: string; number: number; title: string; url: string; updated: string }>;
   staleCount: number; staleDays: number; errors: string[];
   promo: { channels: string[]; since: number; items: PromoItem[] } | null;
+  messages: { unanswered: number; answered: number; oldestUnanswered: number | null } | null;
 }
 export interface PromoItem {
   ref: string; kind: Kind; label: string; url: string; t: number; ticks: Record<string, number>; skipped: boolean; done: boolean;
@@ -117,14 +118,23 @@ export function useMomentum(onStreak: (streak: number) => void) {
 
 // ---------- Nudge strip (top of the Launchpad) ----------
 
-export function NudgeStrip({ data, s, sound, cheer, onIssues, onShip }: {
-  data: MomentumData | null; s: Stats | null; sound: ReturnType<typeof useSound>; cheer: string; onIssues: () => void; onShip: () => void;
+export function NudgeStrip({ data, s, sound, cheer, onIssues, onShip, onMessages }: {
+  data: MomentumData | null; s: Stats | null; sound: ReturnType<typeof useSound>; cheer: string;
+  onIssues: () => void; onShip: () => void; onMessages: () => void;
 }) {
   const nudges: Array<{ text: ReactNode; href?: string; onClick?: () => void }> = [];
   if (s && data) {
     if (s.streak > 0 && s.today === 0) nudges.push({ text: <>Your {s.streak}-day streak ends at midnight. Capture or ship something.</> });
     if (s.daysSincePublic === null) nudges.push({ text: 'Nothing public in the last year. Put a sketch up.' });
     else if (s.daysSincePublic >= 7) nudges.push({ text: <>Nothing public in {s.daysSincePublic} days. Promote an idea to a sketch?</> });
+    const msg = data.messages;
+    if (msg?.unanswered && msg.oldestUnanswered) {
+      const days = Math.floor((Date.now() - msg.oldestUnanswered) / DAY);
+      nudges.push({
+        text: <>{msg.unanswered} message{msg.unanswered > 1 ? 's' : ''} to answer{days ? `, oldest ${days} day${days > 1 ? 's' : ''}` : ''}</>,
+        onClick: onMessages,
+      });
+    }
     const pending = data.promo?.items.filter(i => !i.done) ?? [];
     if (pending.length) {
       const p = pending[0];

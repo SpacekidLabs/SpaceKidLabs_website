@@ -42,7 +42,12 @@ How URLs are served (`assets` in `wrangler.jsonc`):
 ## Contact form
 
 The form (`src/components/ContactForm.tsx`) posts to `/api/contact`. The Worker checks the fields, drops
-submissions that fill in the hidden honeypot field, and emails the message through **Cloudflare Email Routing**:
+submissions that fill in the hidden honeypot field, **keeps a copy** in the D1 database for the /dev Messages tab
+(table `messages`, deleted after 12 months, as `/privacy` says; `KEEP_DAYS` in `worker/messages.ts`), and emails
+the message through **Cloudflare Email Routing**. Saving comes first: if the email then fails, the visitor still
+sees "sent" and the message waits in /dev.
+
+Email details:
 
 - **From:** `contact-form@spacekidlabs.com` (`CONTACT_FROM` in `wrangler.jsonc`)
 - **To:** the `CONTACT_TO` secret. It's kept in Cloudflare, not in this repo, and must be a **verified destination
@@ -55,7 +60,7 @@ To change where messages go:
    and click the link in the verification email.
 2. **Workers & Pages → spacekidlabs → Settings → Variables and Secrets**: edit `CONTACT_TO`.
 
-If sending fails, the form shows an error with the email address as a fallback. Worker logs:
+If both saving and sending fail, the form shows an error with the email address as a fallback. Worker logs:
 **Workers & Pages → spacekidlabs → Logs**.
 
 ## Dev dashboard (/dev)
@@ -74,6 +79,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 | --- | --- | --- |
 | Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Above it: your **streak** and nudges; below it: a year **heatmap** of what you shipped (see Momentum below). Ideas are stored in Cloudflare D1, not in the repo (see below) |
 | Lab | Ship | **Tell people:** every public ship (sketch, samples, post, release) gets a promo checklist of your channels by itself; tick each one off, or mark "No promo needed". **Releases:** every repository with releases, its latest version, days since, and downloads per release and per file; open one for a changelog draft (issues closed as done and pull requests merged since the last release) to copy, or to open GitHub's new-release page with the next version and the notes filled in (`worker/ship.ts`) |
+| Lab | Messages | contact form messages, oldest unanswered first: **Reply** opens your mail app with the message quoted, then **Mark answered**; delete when done. The Launchpad nudges about unanswered ones (`worker/messages.ts`) |
 | All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
 | All projects | Issues | GitHub issues of one project or all of them: list, create, edit title/text/labels, comment, close (done or not planned), reopen (`worker/issues.ts`). Changes issues, not files |
 | Website | Overview | Cloudflare traffic (`worker/analytics.ts`), plays and downloads (`worker/events.ts`), live version vs main, counts of sketches, samples and posts, DATABEND downloads, and the website repo's GitHub activity. Reads only |
@@ -192,6 +198,7 @@ on the free plan, with no extra secrets.
 | `list_sketches`, `add_sketch`, `update_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; new audio still goes through /dev) |
 | `list_posts`, `get_post`, `publish_archive_post`, `update_post`, `delete_post` | archive posts, with the same limits as /dev |
 | `list_samples`, `update_samples`, `delete_samples` | samples: rename, category, pack, Drive ID, delete |
+| `list_messages` | contact form messages, unanswered or answered (read only) |
 | `capture_idea`, `list_ideas`, `promote_idea` | the private idea inbox: save an idea ("save idea: …"), list them, turn one into an issue or a sketch |
 
 **Connecting.** In Claude: **Settings → Connectors → Add custom connector**, URL `https://spacekidlabs.com/mcp`. Claude

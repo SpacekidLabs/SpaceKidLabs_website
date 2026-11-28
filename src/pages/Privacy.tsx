@@ -5,7 +5,8 @@ import { usePageTitle } from '../lib/usePageTitle';
 
 /**
  * /privacy: what the site collects and what it doesn't. Keep it true to the code: if the site starts storing,
- * counting or loading something new, update this page and LAST_UPDATED. Event counts (#19) are worker/events.ts.
+ * counting or loading something new, update this page and LAST_UPDATED. Event counts (#19) are worker/events.ts;
+ * the stored copy of contact messages is worker/messages.ts (KEEP_DAYS).
  */
 
 const LAST_UPDATED = '28 November 2026';
@@ -64,8 +65,9 @@ export function PrivacyPage() {
           <Section title="The contact form">
             <p>
               When you send a message, what you typed (name, email, what it's about, message and any links) and the page
-              you sent it from are emailed to me. The site doesn't keep a copy. I use it only to reply, and I'll delete
-              our emails if you ask.
+              you sent it from are emailed to me. A copy is also kept in the site's private database (Cloudflare D1), so a
+              message can't get lost in my inbox; only I can see it, in the owner dashboard. That copy is deleted after 12
+              months at the latest. I use your message only to reply, and I'll delete it and our emails if you ask.
             </p>
           </Section>
 

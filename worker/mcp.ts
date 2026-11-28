@@ -15,6 +15,7 @@ import {
   listPosts, listSamples, promoteIdea, publishPost, removeSketchById, BRANCH, type DevEnv,
 } from './dev';
 import { addIdea, IdeaError, listIdeas } from './ideas';
+import { listMessages } from './messages';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue, type Rest } from './issues';
 import { githubStats, projects } from './stats';
 import { cloudflareAnalytics } from './analytics';
@@ -396,6 +397,24 @@ export function buildServer(rawEnv: DevEnv): McpServer {
     const ideas = await listIdeas(env, 'inbox', 500);
     const idea = ideas.ideas.find(i => i.id === id);
     return promoteIdea(env, gh, rest, owner, { id, target, title, text: text ?? idea?.text ?? '', repo });
+  }));
+
+  // ---------- Contact messages ----------
+
+  server.registerTool('list_messages', {
+    title: 'List contact messages',
+    description: 'Messages sent through the contact form on the site: not answered yet (default, oldest first) or answered. Reply by email; the owner marks them answered in /dev.',
+    inputSchema: { status: z.enum(['unanswered', 'answered']).optional() },
+    annotations: READ,
+  }, ({ status }) => run(async () => {
+    const r = await listMessages(env, status ?? 'unanswered');
+    return {
+      count: r.count,
+      messages: r.messages.map(m => ({
+        received: new Date(m.created).toISOString(), name: m.name, email: m.email, about: m.service, message: m.message,
+        links: m.links || undefined, answered: m.answered ? new Date(m.answered).toISOString() : undefined,
+      })),
+    };
   }));
 
   return server;

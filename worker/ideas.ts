@@ -49,6 +49,11 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS promo_ticks (
     ref TEXT NOT NULL, channel TEXT NOT NULL, label TEXT NOT NULL, t INTEGER NOT NULL, PRIMARY KEY (ref, channel))`,
   'CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
+  // Contact form messages (worker/messages.ts). `answered` is when it was marked answered, or NULL.
+  `CREATE TABLE IF NOT EXISTS messages (
+    id TEXT PRIMARY KEY, created INTEGER NOT NULL, name TEXT NOT NULL, email TEXT NOT NULL, service TEXT NOT NULL,
+    links TEXT NOT NULL, page TEXT NOT NULL, message TEXT NOT NULL, answered INTEGER)`,
+  'CREATE INDEX IF NOT EXISTS messages_open ON messages (answered, created)',
 ];
 
 /** Tables are created on first use in each Worker instance (cheap: IF NOT EXISTS), so no migration step is needed. */

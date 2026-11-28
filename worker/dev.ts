@@ -21,6 +21,7 @@ import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
 import { eventCounts } from './events';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue } from './issues';
 import { momentum } from './momentum';
+import { deleteMessage, listMessages, markMessage, MessageError } from './messages';
 import { releaseNotes, releases, setChannels, ShipError, tickPromo } from './ship';
 import { addIdea, deleteIdea, getIdea, IdeaError, ideaFileResponse, listIdeas, readIdeaFile, updateIdea, type IdeasEnv } from './ideas';
 
@@ -551,6 +552,20 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
     const pg = token && env.GITHUB_REPO ? new GitHub({ GITHUB_TOKEN: token, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API }) : null;
     const [owner = '', site = ''] = (env.GITHUB_REPO ?? '').split('/');
     return json(200, await momentum(env, pg ? (q, v) => pg.graphql(q, v) : null, owner, site));
+  }
+
+  if (action.startsWith('message')) {
+    try {
+      if (action === 'messages' && method === 'GET') return json(200, await listMessages(env, new URL(request.url).searchParams.get('status')));
+      const input = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+      if (action === 'message-mark' && method === 'POST') return json(200, await markMessage(env, input));
+      if (action === 'message-delete' && method === 'POST') return json(200, await deleteMessage(env, input.id));
+    } catch (err) {
+      if (err instanceof MessageError || err instanceof IdeaError) return json(err.status, { error: err.message });
+      console.error('Messages:', err instanceof Error ? err.message : String(err));
+      return json(500, { error: 'Messages failed. See the Worker logs.' });
+    }
+    return json(404, { error: 'Not found' });
   }
 
   if ((action === 'promo-tick' || action === 'promo-channels') && method === 'POST') {
