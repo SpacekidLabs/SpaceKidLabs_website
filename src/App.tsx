@@ -11,6 +11,7 @@ const DownloadPage = lazyNamed(() => import('./pages/Download'), 'DownloadPage')
 const ServicesPage = lazyNamed(() => import('./pages/Services'), 'ServicesPage');
 const SamplesPage = lazyNamed(() => import('./pages/Samples'), 'SamplesPage');
 const SketchesPage = lazyNamed(() => import('./pages/Sketches'), 'SketchesPage');
+const PrivacyPage = lazyNamed(() => import('./pages/Privacy'), 'PrivacyPage');
 const DevPage = lazyNamed(() => import('./pages/Dev'), 'DevPage');
 const NotFoundPage = lazyNamed(() => import('./pages/NotFound'), 'NotFoundPage');
 
@@ -23,6 +24,7 @@ export const ROUTE_PRELOADERS: Array<[RegExp, () => Promise<unknown>]> = [
   [/^\/services$/, () => import('./pages/Services')],
   [/^\/samples$/, () => import('./pages/Samples')],
   [/^\/sketches$/, () => import('./pages/Sketches')],
+  [/^\/privacy$/, () => import('./pages/Privacy')],
   [/^\/dev$/, () => import('./pages/Dev')],
 ];
 
@@ -53,6 +55,7 @@ export function AppRoutes() {
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/samples" element={<SamplesPage />} />
           <Route path="/sketches" element={<SketchesPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/dev" element={<DevPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

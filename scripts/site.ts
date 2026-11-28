@@ -37,6 +37,11 @@ export const STATIC_PAGES: Array<{ path: string; title?: string; description: st
       'Download DATABEND, an offline experimental audio destroyer for glitch, noise and sound design.',
   },
   {
+    path: '/privacy',
+    title: 'Privacy',
+    description: 'What spacekidlabs.com collects and what it doesn\'t: no cookies, no ads, no trackers, nothing sold or shared.',
+  },
+  {
     path: '/waveset-quantizer',
     title: 'Waveset Quantizer',
     description:
