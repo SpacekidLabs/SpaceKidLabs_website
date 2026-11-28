@@ -10,7 +10,8 @@ allows 3,000 build minutes a month and a build takes about a minute.
 
 ## How a deploy works
 
-Every push to `main` deploys automatically (Cloudflare **Workers Builds**, connected to this GitHub repo):
+Every push to `main` deploys automatically (Cloudflare **Workers Builds**, connected to this GitHub repo; Worker name
+`spacekidlabs`, also at https://spacekidlabs.spacekid700.workers.dev):
 
 1. Cloudflare runs `npm run build:site`: fetches the latest DATABEND release, builds with Vite, pre-renders every
    page and writes `sitemap.xml`, `robots.txt` and `rss.xml` into `dist/`.
@@ -66,14 +67,17 @@ up Gmail's "Send mail as" with an SMTP service, or use a paid mailbox.
 ## Domain and DNS
 
 - **Registrar:** GoDaddy (renewals and the nameserver setting are there).
-- **Nameservers:** GoDaddy points the domain at Cloudflare's two nameservers, shown in the Cloudflare dashboard under
-  **spacekidlabs.com → DNS → Records** (top of the page). Change DNS records in Cloudflare, not GoDaddy.
+- **Nameservers:** GoDaddy points the domain at Cloudflare: `craig.ns.cloudflare.com` and `kimora.ns.cloudflare.com`
+  (GoDaddy → spacekidlabs.com → DNS → Nameservers). Change DNS records in Cloudflare, not GoDaddy.
 - **Records:**
   - `spacekidlabs.com` is the Worker's custom domain (Cloudflare creates and manages this record).
-  - `www` is a proxied record with a redirect rule (**Rules → Redirect Rules**) that sends
-    `www.spacekidlabs.com/*` to `https://spacekidlabs.com/*` (301).
-  - MX and TXT records for Email Routing (added by Cloudflare when Email Routing was turned on).
-- **HTTPS:** automatic (Cloudflare Universal SSL). SSL/TLS mode is **Full (strict)**.
+  - `www` is a proxied CNAME. A redirect rule (**Rules → Redirect Rules → "Redirect from WWW to root"**) sends
+    `https://www.spacekidlabs.com/*` to `https://spacekidlabs.com/*` (301, keeps the query string) before the
+    request goes anywhere, so the CNAME's target doesn't matter.
+  - MX, SPF and DKIM records for Email Routing (added by Cloudflare when Email Routing was turned on).
+  - `_dmarc` TXT, carried over from GoDaddy.
+- **HTTPS:** automatic (Cloudflare Universal SSL). **Always Use HTTPS** is on (**SSL/TLS → Edge Certificates**), so
+  `http://` redirects to `https://`.
 
 ## Running it locally
 
