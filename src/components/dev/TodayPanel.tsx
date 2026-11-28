@@ -51,7 +51,13 @@ export function TodayPanel({ onChange }: { onChange: () => void }) {
 
   const load = () => api<{ pick: Pick[]; open: number }>(`today?exclude=${encodeURIComponent(readSkips().join(','))}`)
     .then(r => { setPick(r.pick); setOpen(r.open); setError(''); }).catch(e => setError(errorText(e)));
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // Claude may add drafts or close issues while this tab is open: reload when you come back to it.
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   const key = (p: Pick) => `${p.repo}#${p.number}`;
   function skip(p: Pick) { writeSkips([...readSkips(), key(p)]); load(); }

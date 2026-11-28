@@ -58,7 +58,8 @@ const QUERY = `query ($owner: String!, $site: String!, $since: GitTimestamp!, $c
  * they count when they're published ("Sketches: publish …", "Archive: publish …").
  */
 const isAdd = (message: string) =>
-  !/\b(remove|removed|delete|deleted|edit|edited|fix|fixes|rename|revert|draft|hidden|hide|unpublish)\b/i.test(message);
+  // Only the verb part: a title in quotes ("Hidden track", "Draft 2") says nothing about what the commit did.
+  !/\b(remove|removed|delete|deleted|edit|edited|fix|fixes|rename|revert|draft|hidden|hide|unpublish)\b/i.test(message.replace(/".*"/, ''));
 
 /** "Sketches: add "Foo"" → "Foo"; anything else stays as it is. */
 const what = (message: string) => /"(.+)"/.exec(message)?.[1] ?? message.replace(/^[^:]{1,30}:\s*/, '');

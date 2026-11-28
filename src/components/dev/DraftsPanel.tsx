@@ -26,7 +26,13 @@ export function DraftsPanel({ onPublished, onEditPost }: { onPublished: () => vo
   const [note, setNote] = useState('');
 
   const load = () => api<Drafts>('drafts').then(r => { setData(r); setError(''); }).catch(e => setError(errorText(e)));
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // Claude may add drafts or close issues while this tab is open: reload when you come back to it.
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   async function publish(posts: string[], sketches: string[]) {
     const n = posts.length + sketches.length;
