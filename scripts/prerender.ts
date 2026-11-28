@@ -61,7 +61,7 @@ function fillTemplate(template: string, page: PageInfo, appHtml: string): string
   let html = template
     .replace(/<title>[^<]*<\/title>/, `<title>${escapeAttr(page.title)}</title>`)
     .replace(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="${url}"`)
-    .replace(/https:\/\/spacekidlabs\.netlify\.app\/og-image\.png/g, `${SITE_URL}/og-image.png`)
+    .replace(/https:\/\/[^"]*\/og-image\.png/g, `${SITE_URL}/og-image.png`)
     .replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
   html = setMeta(html, 'name', 'description', page.description);
   html = setMeta(html, 'property', 'og:type', page.type);
