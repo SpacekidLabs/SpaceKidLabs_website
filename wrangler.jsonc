@@ -23,7 +23,11 @@
     "CONTACT_FROM": "contact-form@spacekidlabs.com",
     // The /dev dashboard commits here. Its secrets (DEV_PASSWORD, GITHUB_TOKEN) are set in the Cloudflare
     // dashboard, never in this file. See docs/HOSTING.md.
-    "GITHUB_REPO": "SpacekidLabs/SpaceKidLabs_website"
+    "GITHUB_REPO": "SpacekidLabs/SpaceKidLabs_website",
+    // Traffic numbers on /dev (worker/analytics.ts). These are identifiers, not credentials: reading anything
+    // needs the CF_API_TOKEN secret (analytics read-only), which is set in Cloudflare, never here.
+    "CF_ZONE_ID": "4b13163242261480a3f6acfdc865f248",
+    "CF_ACCOUNT_ID": "a33a51651bcfc4f9dbad002c944bb8e7"
   },
 
   "routes": [{ "pattern": "spacekidlabs.com", "custom_domain": true }],

@@ -6,6 +6,8 @@ import { PACKS, SAMPLES } from '../../data/samples';
 import { POSTS } from '../../posts';
 import { DATABEND_RELEASE } from '../../data/databend';
 import type { Sketch } from '../../data/sketches';
+import { TrafficSection } from './TrafficSection';
+import { BarChart } from './BarChart';
 
 /**
  * /dev Overview: what's on the site, whether the live site is up to date, and the GitHub side
@@ -81,51 +83,19 @@ function ExtLink({ href, children, className }: { href: string; children: ReactN
   );
 }
 
-/** Commits per week, one series: bars on a shared baseline, hover (or focus) shows the exact count. */
 function ActivityChart({ weeks }: { weeks: Array<{ start: string; count: number }> }) {
-  const [hover, setHover] = useState<number | null>(null);
-  const max = Math.max(1, ...weeks.map(w => w.count));
-  const H = 120;
-  const shown = hover ?? weeks.length - 1;
   return (
-    <div>
-      <p className="text-sm text-zinc-300 mb-3 h-5" aria-live="polite">
-        <span className="font-mono tabular-nums text-white">{weeks[shown]?.count ?? 0}</span>{' '}
-        commit{weeks[shown]?.count === 1 ? '' : 's'} in the week of {weeks[shown] && weekLabel(weeks[shown].start)}
-        {hover === null && <span className="text-zinc-500"> (this week)</span>}
-      </p>
-      <div className="relative" style={{ height: H }}>
-        {/* Recessive grid: baseline and the max line only. */}
-        <div className="absolute inset-x-0 bottom-0 border-t border-zinc-700" aria-hidden />
-        <div className="absolute inset-x-0 top-0 border-t border-dashed border-zinc-800" aria-hidden />
-        <span className="absolute -top-2 right-0 bg-[#0d0d0d] pl-1 font-mono text-[10px] text-zinc-500" aria-hidden>{max}</span>
-        <div className="absolute inset-0 flex items-end gap-[2px] pr-6" onMouseLeave={() => setHover(null)}>
-          {weeks.map((w, i) => (
-            <button
-              key={w.start}
-              type="button"
-              onMouseEnter={() => setHover(i)}
-              onFocus={() => setHover(i)}
-              onBlur={() => setHover(null)}
-              aria-label={`Week of ${weekLabel(w.start)}: ${w.count} commits`}
-              className="relative flex-1 h-full flex items-end group outline-none"
-            >
-              <span
-                className={cn(
-                  'block w-full rounded-t-[4px] transition-colors',
-                  w.count ? (hover === i ? 'bg-brand-gold' : 'bg-brand-orange') : 'bg-transparent',
-                )}
-                style={{ height: w.count ? Math.max(3, (w.count / max) * (H - 4)) : 0 }}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex justify-between pr-6 mt-2 font-mono text-[10px] text-zinc-500">
-        <span>{weekLabel(weeks[0].start)}</span>
-        <span>this week</span>
-      </div>
-    </div>
+    <BarChart
+      points={weeks.map(w => ({ key: `Week of ${weekLabel(w.start)}`, value: w.count }))}
+      describe={i => (
+        <>
+          <span className="font-mono tabular-nums text-white">{weeks[i].count}</span> commit{weeks[i].count === 1 ? '' : 's'} in the week of {weekLabel(weeks[i].start)}
+          {i === weeks.length - 1 && <span className="text-zinc-500"> (this week)</span>}
+        </>
+      )}
+      firstLabel={weekLabel(weeks[0].start)}
+      lastLabel="this week"
+    />
   );
 }
 
@@ -232,6 +202,9 @@ export function OverviewTab() {
         />
       </div>
 
+      <TrafficSection />
+
+      <h2 className="font-display font-bold text-xl text-white tracking-wide pt-4">GitHub</h2>
       <div className="grid lg:grid-cols-[3fr_2fr] gap-4">
         <Panel title={`Pushes to main · last 12 weeks${stats?.commits.ok ? ` · ${stats.commits.total}` : ''}`}>
           {!stats ? <Empty text="Loading…" /> : stats.commits.ok ? <ActivityChart weeks={stats.commits.weeks} /> : <Problem text={stats.commits.error} />}

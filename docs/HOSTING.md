@@ -71,7 +71,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 
 | Tab | Writes |
 | --- | --- |
-| Overview | nothing: live version vs main (deploying or up to date), counts of sketches, samples and posts, DATABEND downloads, pushes per week, recent commits, issues, pull requests, Actions runs and releases (`worker/stats.ts`) |
+| Overview | nothing: Cloudflare traffic (visitors, page views, cache, top pages, countries, browsers, status codes, Worker calls; 7 or 30 days, `worker/analytics.ts`), live version vs main (deploying or up to date), counts of sketches, samples and posts, DATABEND downloads, pushes per week, recent commits, issues, pull requests, Actions runs and releases (`worker/stats.ts`) |
 | Sketches | `src/data/sketches.json`, demo audio in `public/audio/sketches/`. Deleting a sketch removes both |
 | Samples | rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`. Originals stay on your computer; add Drive IDs later for download buttons |
 | Archive post | `src/posts/<slug>.tsx` from plain text (paragraphs, `## headings`, `- lists`, `[links](https://...)`, `**bold**`). Labs and images still need code |
@@ -97,6 +97,12 @@ or in chat. The Worker never sends them back in a response or writes them to its
    Or from this folder: `npx wrangler secret put GITHUB_TOKEN` and `npx wrangler secret put DEV_PASSWORD`, which ask
    for the value without echoing it.
 3. Open spacekidlabs.com/dev and log in.
+4. **Traffic numbers (optional).** Cloudflare dashboard → **My Profile → API Tokens → Create Token → Create Custom
+   Token**. Name it `spacekidlabs-dev-analytics`. Permissions: **Zone → Analytics → Read** and **Account → Account
+   Analytics → Read**. Zone Resources: **Include → Specific zone → spacekidlabs.com**. Account Resources: your account.
+   Create it, then add it to the Worker as the secret `CF_API_TOKEN` (same place as step 2). It can only read
+   statistics. `CF_ZONE_ID` and `CF_ACCOUNT_ID` are plain variables in `wrangler.jsonc`: they identify the site and
+   account but can't be used without a token.
 
 `GITHUB_REPO` (which repository it commits to) is a plain variable in `wrangler.jsonc`.
 

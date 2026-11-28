@@ -14,8 +14,9 @@ import {
   type PostInput, type SampleInput, type SketchInput,
 } from './content';
 import { githubStats } from './stats';
+import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
 
-export interface DevEnv {
+export interface DevEnv extends AnalyticsEnv {
   DEV_PASSWORD?: string;
   GITHUB_TOKEN?: string;
   GITHUB_REPO?: string;
@@ -285,6 +286,10 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
   const gh = new GitHub({ GITHUB_TOKEN: env.GITHUB_TOKEN, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API });
   try {
     if (action === 'content' && method === 'GET') return json(200, await content(gh));
+    if (action === 'analytics' && method === 'GET') {
+      const days = Number(new URL(request.url).searchParams.get('days')) === 30 ? 30 : 7;
+      return json(200, await cloudflareAnalytics(env, days));
+    }
     if (action === 'github' && method === 'GET') return json(200, await githubStats(p => gh.get(p), gh.repo));
     if (action === 'sketch' && method === 'POST') return json(200, await saveSketch(request, gh));
     if (action === 'sketch-delete' && method === 'POST') return json(200, await deleteSketch(request, gh));
