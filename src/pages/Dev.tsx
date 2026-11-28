@@ -16,6 +16,7 @@ import { ShipTab } from '../components/dev/ShipTab';
 import { MessagesTab } from '../components/dev/MessagesTab';
 import { DriveConnection, DriveFolder, publishSamples, QueuedReleases, uploadOriginal, useDrive, type FolderStatus } from '../components/dev/DriveSamples';
 import { LaunchpadTab, POST_HANDOFF, type PostHandoff } from '../components/dev/LaunchpadTab';
+import { PostPreview } from '../components/dev/PostPreview';
 import { button, errorText, Field, ghostButton, input, label } from '../components/dev/ui';
 
 /**
@@ -539,6 +540,8 @@ function ArchiveTab() {
   const [special, setSpecial] = useState(false);
   const [draft, setDraft] = useState(false);
   const [body, setBody] = useState('');
+  /** The text box, or how the post will look on the site. */
+  const [view, setView] = useState<'write' | 'preview'>('write');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   /** Narrow screens show the list or the form, not both. */
   const [formOpen, setFormOpen] = useState(false);
@@ -563,7 +566,7 @@ function ArchiveTab() {
 
   function startNew() {
     setFromIdea(null); setEditing(null); setSource(null); setTitle(''); setSlug(''); setSlugEdited(false); setDate(today()); setTags('');
-    setAccent('#ffaa00'); setDescription(''); setBody(''); setSpecial(false); setDraft(false); setStatus({ kind: 'idle' });
+    setAccent('#ffaa00'); setDescription(''); setBody(''); setSpecial(false); setDraft(false); setView('write'); setStatus({ kind: 'idle' });
     setFormOpen(true);
     window.scrollTo({ top: 0 });
   }
@@ -575,7 +578,7 @@ function ArchiveTab() {
     setEditing(p); setStatus({ kind: 'idle' }); setLoadingPost(true);
     const m = p.meta;
     setTitle(m.title ?? ''); setDate(m.date ?? today()); setTags((m.tags ?? []).join(', ')); setAccent(m.accentColor ?? '#ffaa00');
-    setDescription(m.description ?? ''); setOrder(Number(m.index ?? 0)); setSpecial(Boolean(m.isSpecial)); setDraft(p.draft); setBody(''); setSource(null);
+    setDescription(m.description ?? ''); setOrder(Number(m.index ?? 0)); setSpecial(Boolean(m.isSpecial)); setDraft(p.draft); setView(p.draft ? 'preview' : 'write'); setBody(''); setSource(null);
     setFormOpen(true);
     window.scrollTo({ top: 0 });
     try {
@@ -734,9 +737,31 @@ function ArchiveTab() {
               without breaking it. Everything above can. To change the text, ask Claude to edit <code className="text-zinc-200">src/posts/{editing.slug}.tsx</code>.
             </p>
           ) : (
-            <Field name="Text" hint={<>Blank line = new paragraph. <code>## Heading</code>, <code>- list item</code>, <code>[link](https://…)</code>, <code>**bold**</code>. Labs and images still need code: write the text here and ask Claude to add them.</>}>
-              <textarea className={cn(input, 'min-h-80 font-mono text-[13px] leading-relaxed')} value={body} onChange={e => setBody(e.target.value)} required />
-            </Field>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className={label}>Text</span>
+                <div role="tablist" aria-label="Text view" className="flex font-mono text-[11px] uppercase tracking-widest border border-zinc-800">
+                  {(['write', 'preview'] as const).map(v => (
+                    <button key={v} type="button" role="tab" aria-selected={view === v} onClick={() => setView(v)}
+                      className={cn('px-3 py-1.5 inline-flex items-center gap-1.5 transition-colors', view === v ? 'bg-brand-orange/15 text-brand-orange' : 'text-zinc-400 hover:text-white')}>
+                      {v === 'write' ? <Pencil className="w-3 h-3" aria-hidden /> : <Eye className="w-3 h-3" aria-hidden />} {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {view === 'write' ? (
+                <>
+                  <textarea className={cn(input, 'min-h-80 font-mono text-[13px] leading-relaxed')} value={body} onChange={e => setBody(e.target.value)} required aria-label="Text" />
+                  <p className="text-xs text-zinc-500">Blank line = new paragraph. <code>## Heading</code>, <code>- list item</code>, <code>[link](https://…)</code>, <code>**bold**</code>. Labs and images still need code: write the text here and ask Claude to add them.</p>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <p className="font-mono text-[11px] text-zinc-500">As it will look at /archive/{finalSlug || '…'}{draft ? ' once published' : ''}. Nothing is saved until you press the button below.</p>
+                  <PostPreview title={title} date={date} tags={tags.split(',').map(t => t.trim().toUpperCase()).filter(Boolean)}
+                    index={editing ? order : nextIndex} accentColor={accent} isSpecial={special} body={body} />
+                </div>
+              )}
+            </div>
           )}
         <label className={cn('flex items-center gap-2 text-sm cursor-pointer', draft ? 'text-amber-300' : 'text-zinc-400')}>
           <input type="checkbox" checked={draft} onChange={e => setDraft(e.target.checked)} className="accent-brand-orange" />

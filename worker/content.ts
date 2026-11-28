@@ -2,6 +2,7 @@
  * Pure text helpers for the /dev dashboard: they take a repo file's current text and return the new text.
  * No network or Worker APIs here, so they can be tested with `npx tsx` (see scripts/test-dev-content.ts).
  */
+import { listMarker, parseBody, POST_CLASSES, type Inline } from '../src/lib/postText';
 
 /** "Night Drive (v2)" -> "night-drive-v2" */
 export function slugify(s: string): string {
@@ -246,21 +247,12 @@ export interface PostInput {
 const jsxText = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/[{}]/g, c => `{'${c}'}`);
 
-/** Inline formatting: [text](url) and **bold**. */
-function inline(s: string): string {
-  let out = '';
-  let last = 0;
-  for (const m of s.matchAll(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)|\*\*([^*]+)\*\*/g)) {
-    out += jsxText(s.slice(last, m.index));
-    if (m[1] !== undefined) {
-      const external = m[2].startsWith('http');
-      out += `<a href=${JSON.stringify(m[2])}${external ? ' target="_blank" rel="noreferrer"' : ''} className="text-brand-orange hover:underline">${jsxText(m[1])}</a>`;
-    } else {
-      out += `<span className="text-zinc-200">${jsxText(m[3])}</span>`;
-    }
-    last = m.index! + m[0].length;
-  }
-  return out + jsxText(s.slice(last));
+/** A run of text, a link or bold, as JSX. */
+function inline(t: Inline): string {
+  if (t.kind === 'text') return jsxText(t.text);
+  if (t.kind === 'bold') return `<span className="${POST_CLASSES.bold}">${jsxText(t.text)}</span>`;
+  const external = t.href.startsWith('http');
+  return `<a href=${JSON.stringify(t.href)}${external ? ' target="_blank" rel="noreferrer"' : ''} className="${POST_CLASSES.link}">${jsxText(t.text)}</a>`;
 }
 
 export function postFile(input: PostInput): string {
@@ -277,18 +269,15 @@ export function postFile(input: PostInput): string {
   const body = String(input.body ?? '').replace(/\r\n/g, '\n').trim();
   if (!body) throw new Error('Body is required');
 
-  const blocks = body.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
-  const marker = accent ? `marker:text-[${accent}]/60` : 'marker:text-brand-orange/60';
-  const jsx = blocks.map(block => {
-    const lines = block.split('\n').map(l => l.trim());
-    if (lines.length === 1 && /^#{2,3}\s+/.test(lines[0])) {
-      return `      <h3 className="text-white font-display font-medium text-lg pt-2">${inline(lines[0].replace(/^#+\s+/, ''))}</h3>`;
+  const marker = listMarker(accent);
+  const html = (c: Inline[]) => c.map(inline).join('');
+  const jsx = parseBody(body).map(block => {
+    if (block.kind === 'heading') return `      <h3 className="${POST_CLASSES.heading}">${html(block.content)}</h3>`;
+    if (block.kind === 'list') {
+      const items = block.items.map(it => `        <li>${html(it)}</li>`).join('\n');
+      return `      <ul className="${POST_CLASSES.list} ${marker}">\n${items}\n      </ul>`;
     }
-    if (lines.every(l => /^[-*]\s+/.test(l))) {
-      const items = lines.map(l => `        <li>${inline(l.replace(/^[-*]\s+/, ''))}</li>`).join('\n');
-      return `      <ul className="list-disc pl-6 space-y-1.5 text-zinc-400 ${marker}">\n${items}\n      </ul>`;
-    }
-    return `      <p>\n        ${inline(lines.join(' '))}\n      </p>`;
+    return `      <p>\n        ${html(block.content)}\n      </p>`;
   });
 
   const meta = [
@@ -309,7 +298,7 @@ ${meta.join('\n')}
 
 export default function Post() {
   return (
-    <div className="space-y-5 text-zinc-300 font-sans font-light leading-relaxed">
+    <div className="${POST_CLASSES.body}">
 ${jsx.join('\n\n')}
     </div>
   );
