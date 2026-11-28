@@ -77,7 +77,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 
 | Group | Tab | What it does |
 | --- | --- | --- |
-| Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Under the box: **Drafts**, everything saved but not on the site yet (what Claude adds lands there), to preview and publish. Above it: your **streak** and nudges; below it: a year **heatmap** of what you shipped (see Momentum below). Ideas are stored in Cloudflare D1, not in the repo (see below) |
+| Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Under the box: **Drafts**, everything saved but not on the site yet (what Claude adds lands there), to preview and publish. Ideas have **tags** (what kind of idea: sound, plugin, post…; set them under the pencil, click one to filter the inbox) and can be **merged** (the merge button: the text goes under the other idea's, with its files and tags). Above it: your **streak** and nudges; below it: a year **heatmap** of what you shipped (see Momentum below). Ideas are stored in Cloudflare D1, not in the repo (see below) |
 | Lab | Ship | **Tell people:** every public ship (sketch, samples, post, release) gets a promo checklist of your channels by itself; tick each one off, or mark "No promo needed". **Releases:** every repository with releases, its latest version, days since, and downloads per release and per file; open one for a changelog draft (issues closed as done and pull requests merged since the last release) to copy, or to open GitHub's new-release page with the next version and the notes filled in (`worker/ship.ts`) |
 | Lab | Messages | contact form messages, oldest unanswered first: **Reply** opens your mail app with the message quoted, then **Mark answered**; delete when done. The Launchpad nudges about unanswered ones (`worker/messages.ts`) |
 | All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
@@ -145,6 +145,8 @@ Ideas are private, so they are **not** committed to this repo (everything in it 
   converted to MP3 in the browser first, if the browser can read it. Free plan: 5 GB of storage.
 - Files are only served to the logged-in dashboard. Anything that isn't audio or a plain image downloads instead of
   opening, so an uploaded HTML or SVG file can't run on the site.
+- Tags are a JSON list in the `tags` column, added to existing databases by the Worker the first time it runs
+  (`COLUMNS` in `worker/ideas.ts`).
 - **Bin** keeps an idea (Binned filter); **Delete forever** removes it and its files. To look at the data directly:
   **Storage & databases → D1 → spacekidlabs-ideas → Console**.
 - Locally (`npm run preview:cf`) wrangler uses a separate local database under `.wrangler/`, never the live one.
@@ -239,7 +241,10 @@ on the free plan, with no extra secrets.
 | `list_samples`, `update_samples`, `delete_samples` | samples: rename, category, pack, Drive ID, delete |
 | `drive_folder_status`, `link_drive_ids`, `start_release`, `list_queued_releases` | a pack's Drive folder vs the site; fill in missing download IDs by file name; queue the new files in a folder for release (then press Release in /dev → Samples) |
 | `list_messages`, `mark_message_answered` | contact form messages, unanswered or answered; mark one answered after you replied |
-| `capture_idea`, `list_ideas`, `promote_idea` | the private idea inbox: save an idea ("save idea: …"), list them, turn one into an issue or a hidden sketch draft |
+| `capture_idea`, `list_ideas`, `update_idea`, `merge_ideas` | the private idea inbox: save an idea ("save idea: …") with tags, list (by tag), edit text/project/tags, bin, merge duplicates |
+| `read_idea_file` | an idea's attached file for Claude to look at or listen to: images (up to 5 MB), audio such as voice memos (up to 15 MB), text |
+| `promote_idea` | an idea becomes an issue, a hidden sketch draft, or a draft archive post that Claude writes |
+| `triage_inbox`, `apply_triage` | "go through my ideas": Claude reads the inbox (oldest first, with likely duplicates and your projects), shows one table proposing what to do with each idea, and applies it after you approve |
 | `momentum` | the Launchpad: streak (in your time zone), the last 7 days, days since something public, and the nudges (stale issues, unanswered messages, queued samples, promo not done, ideas waiting) |
 | `promo_checklist`, `tick_promo` | the Ship tab's promo checklists; tick channels off after you posted |
 | `play_stats` | plays and downloads for 7 and 30 days, top samples and totals per pack |

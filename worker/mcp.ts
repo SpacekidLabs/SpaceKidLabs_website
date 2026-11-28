@@ -12,10 +12,10 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { z } from 'zod';
 import {
   addTextSketch, changeSketch, cleanEnv, content, deletePost, deleteSamples, editPost, editSamples, getPost, GitHub, HttpError,
-  driveFolderStatus, linkDriveIds, listDrafts, listPosts, listSamples, postFiles, promoteIdea, publishDrafts, publishPost, setVisibility,
+  driveFolderStatus, linkDriveIds, listDrafts, listPosts, listSamples, nextPostIndex, promoteIdea, publishDrafts, publishPost, setVisibility,
   startRelease, removeSketchById, BRANCH, type DevEnv,
 } from './dev';
-import { addIdea, IdeaError, listIdeas } from './ideas';
+import { addIdea, getIdea, IdeaError, listIdeas, mergeIdeas, readIdeaFile, updateIdea, type Idea } from './ideas';
 import { listMessages, markMessage, MessageError } from './messages';
 import { momentum, type MomentumEvent } from './momentum';
 import { releaseNotes, releases, SKIP, ShipError, tickPromo } from './ship';
@@ -70,11 +70,6 @@ function streakOf(events: MomentumEvent[], timeZone: string) {
   return { streak, today, alive: today > 0 };
 }
 
-/** The next archive post number: the highest `index:` in src/posts and its drafts. */
-async function nextPostIndex(gh: GitHub): Promise<number> {
-  const indexes = (await postFiles(gh)).map(f => Number(/^\s*index:\s*(\d+)/m.exec(f.text)?.[1] ?? 0));
-  return Math.max(0, ...indexes) + 1;
-}
 
 export function buildServer(rawEnv: DevEnv): McpServer {
   const env = cleanEnv(rawEnv);
@@ -94,6 +89,8 @@ export function buildServer(rawEnv: DevEnv): McpServer {
         `Repository names are short names under ${owner} (e.g. "${siteName}", "data-bend"); call list_projects to see them. ` +
         'capture_idea saves a private note to the idea inbox on /dev (nothing public); use it whenever the user says ' +
         '"save idea", "note this", "remember this idea" or similar. ' +
+        'To sort the inbox ("go through my ideas"), call triage_inbox, read files you need with read_idea_file, show the user ' +
+        'ONE table with your proposal for every idea, and call apply_triage only after they approve it (with their changes). ' +
         'New sketches and archive posts you add are saved as hidden drafts: show the user what you made (list_drafts), and ' +
         'call publish_drafts only after they say yes in this chat. They can also publish them from /dev (Launchpad → Drafts). ' +
         'Edits to things already on the site commit straight to the website, which goes live about 2 minutes later. ' +
@@ -421,50 +418,196 @@ export function buildServer(rawEnv: DevEnv): McpServer {
 
   // ---------- Idea inbox (private) ----------
 
+  const ideaOut = (i: Idea) => ({
+    id: i.id, text: i.text, project: i.project ?? undefined, tags: i.tags, created: new Date(i.created).toISOString(),
+    ageDays: Math.floor((Date.now() - i.created) / DAY), via: i.source === 'mcp' ? 'claude' : undefined,
+    files: i.files.map(f => ({ id: f.id, name: f.name, type: f.type, kb: Math.round(f.size / 1000) })),
+    promotedTo: i.promotedTo ?? undefined,
+  });
+
   server.registerTool('capture_idea', {
     title: 'Capture idea',
-    description: 'Saves an idea to the private inbox on /dev (Launchpad tab). Nothing is published; the owner sorts it later into an issue, a sketch or a post.',
+    description: 'Saves an idea to the private inbox on /dev (Launchpad tab). Nothing is published; it gets sorted later into an issue, a sketch or a post.',
     inputSchema: {
       text: z.string().min(1).max(20_000).describe("The idea in the user's own words; keep their wording"),
       project: z.string().optional().describe('Repository name it belongs to, if clear (e.g. "data-bend"); call list_projects if unsure'),
+      tags: z.array(z.string().max(30)).max(8).optional().describe('What kind of idea, reusing tags already in use (list_ideas returns them), e.g. "sound", "plugin", "post"'),
     },
     annotations: WRITE,
-  }, ({ text, project }) => run(async () => {
-    const idea = await addIdea(env, { text, project, source: 'mcp' });
-    return { saved: idea.id, inbox: `${SITE}/dev#launchpad` };
+  }, ({ text, project, tags }) => run(async () => {
+    const idea = await addIdea(env, { text, project, tags, source: 'mcp' });
+    return { saved: idea.id, tags: idea.tags, inbox: `${SITE}/dev#launchpad` };
   }));
 
   server.registerTool('list_ideas', {
     title: 'List ideas',
-    description: 'Ideas in the private /dev inbox (default), or the ones already promoted or binned. Files are listed by name only.',
-    inputSchema: { status: z.enum(['inbox', 'promoted', 'binned']).optional() },
+    description: 'Ideas in the private /dev inbox (default), or the ones already promoted or binned, with their tags and files (ids for read_idea_file), and every tag in use.',
+    inputSchema: {
+      status: z.enum(['inbox', 'promoted', 'binned']).optional(),
+      tag: z.string().optional().describe('Only ideas with this tag'),
+    },
     annotations: READ,
-  }, ({ status }) => run(async () => {
+  }, ({ status, tag }) => run(async () => {
     const r = await listIdeas(env, status ?? 'inbox');
-    return {
-      count: r.count,
-      ideas: r.ideas.map(i => ({
-        id: i.id, text: i.text, project: i.project, created: new Date(i.created).toISOString(),
-        files: i.files.map(f => f.name), promotedTo: i.promotedTo ?? undefined,
-      })),
-    };
+    const t = tag?.toLowerCase().replace(/^#/, '');
+    return { count: r.count, tagsInUse: r.tags, ideas: r.ideas.filter(i => !t || i.tags.includes(t)).map(ideaOut) };
   }));
+
+  server.registerTool('read_idea_file', {
+    title: 'Read an idea file',
+    description:
+      'Returns a file attached to an idea so you can look at or listen to it: images as images, audio (voice memos, demos) as audio, ' +
+      'text as text. Use it to understand a vague idea before proposing what to do with it. Images up to 5 MB, audio up to 15 MB.',
+    inputSchema: { file_id: z.string().describe('From list_ideas / triage_inbox (files[].id)') },
+    annotations: READ,
+  }, async ({ file_id }) => {
+    try {
+      const { file, bytes } = await readIdeaFile(env, file_id);
+      const head = { type: 'text' as const, text: `${file.name} (${file.type}, ${Math.round(file.size / 1000)} KB) from idea ${file.idea_id}` };
+      const b64 = () => { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(bin); };
+      if (/^image\/(png|jpeg|gif|webp)$/.test(file.type)) {
+        if (bytes.length > 5e6) return { content: [{ type: 'text' as const, text: `${head.text}: too big to send (over 5 MB). Open it in /dev.` }], isError: true };
+        return { content: [head, { type: 'image' as const, data: b64(), mimeType: file.type }] };
+      }
+      if (file.type.startsWith('audio/')) {
+        if (bytes.length > 15e6) return { content: [{ type: 'text' as const, text: `${head.text}: too big to send (over 15 MB). Listen in /dev.` }], isError: true };
+        return { content: [head, { type: 'audio' as const, data: b64(), mimeType: file.type }] };
+      }
+      if (/^text\/|json$|xml$/.test(file.type) || /\.(txt|md|csv|json)$/i.test(file.name)) {
+        return { content: [head, { type: 'text' as const, text: new TextDecoder().decode(bytes.subarray(0, 200_000)) }] };
+      }
+      return { content: [{ type: 'text' as const, text: `${head.text}: this kind of file can't be shown here. Download it from /dev.` }], isError: true };
+    } catch (err) {
+      return { content: [{ type: 'text' as const, text: (err instanceof Error ? err.message : String(err)).slice(0, 300) }], isError: true };
+    }
+  });
+
+  server.registerTool('update_idea', {
+    title: 'Edit an idea',
+    description: 'Changes an idea\'s text, project or tags (tags replace the current set), or bins it / puts it back in the inbox. Fields left out stay.',
+    inputSchema: {
+      id: z.string(),
+      text: z.string().max(20_000).optional(),
+      project: z.string().nullable().optional().describe('null removes it'),
+      tags: z.array(z.string().max(30)).max(8).optional(),
+      status: z.enum(['inbox', 'binned']).optional(),
+    },
+    annotations: { ...WRITE, idempotentHint: true },
+  }, ({ id, ...patch }) => run(async () => {
+    const input: Record<string, unknown> = { id };
+    for (const [k, v] of Object.entries(patch)) if (v !== undefined) input[k] = v;
+    return ideaOut(await updateIdea(env, input));
+  }));
+
+  server.registerTool('merge_ideas', {
+    title: 'Merge ideas',
+    description: 'Merges inbox ideas about the same thing into one (`into`): texts are added under it, files and tags move to it, the others are removed. Ask the user first.',
+    inputSchema: { into: z.string(), ids: z.array(z.string()).min(1).max(20).describe('The ideas to fold into `into`') },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  }, ({ into, ids }) => run(async () => ideaOut(await mergeIdeas(env, { into, ids }))));
 
   server.registerTool('promote_idea', {
     title: 'Promote idea',
-    description: 'Turns an inbox idea into a GitHub issue (target "issue", needs repo) or a hidden sketch draft (target "sketch"; becomes a demo if the idea has an MP3; publish it with publish_drafts after the user says yes). Marks the idea as promoted.',
+    description:
+      'Turns an inbox idea into a GitHub issue (target "issue", needs repo), a hidden sketch draft (target "sketch"; a demo if the idea has an MP3) ' +
+      'or a draft archive post (target "post": write the post from the idea in `text`, same format as publish_archive_post). ' +
+      'Sketches and posts wait in /dev → Drafts; publish them with publish_drafts after the user says yes. Marks the idea as promoted.',
     inputSchema: {
       id: z.string().describe('Idea id from list_ideas'),
-      target: z.enum(['issue', 'sketch']),
+      target: z.enum(['issue', 'sketch', 'post']),
       title: z.string().min(1).max(200),
-      text: z.string().max(20_000).optional().describe('Issue or sketch text; default: the idea text'),
+      text: z.string().max(100_000).optional().describe('Issue, sketch or post text; default: the idea text'),
       repo: z.string().optional().describe('For issues: repository name'),
+      tags: z.array(z.string()).max(12).optional().describe('For sketches and posts'),
+      slug: z.string().optional().describe('For posts: URL name; default from the title'),
     },
     annotations: WRITE,
-  }, ({ id, target, title, text, repo }) => run(async () => {
-    const ideas = await listIdeas(env, 'inbox', 500);
-    const idea = ideas.ideas.find(i => i.id === id);
-    return promoteIdea(env, gh, rest, owner, { id, target, title, text: text ?? idea?.text ?? '', repo, hidden: true });
+  }, ({ id, target, title, text, repo, tags, slug }) => run(async () => {
+    const idea = await getIdea(env, id);
+    return promoteIdea(env, gh, rest, owner, { id, target, title, text: text ?? idea.text, repo, tags, slug, hidden: true });
+  }));
+
+  server.registerTool('triage_inbox', {
+    title: 'Triage the idea inbox',
+    description:
+      'Everything needed to sort the inbox in one go: the waiting ideas (oldest first, with tags, project and files), tags in use, your ' +
+      'projects, and ideas that look like duplicates. Next: read files where an idea is unclear (read_idea_file), then show the user ONE ' +
+      'table proposing, for each idea, an action (issue in <repo> / sketch / post / bin / keep / merge into <id>) with a title and tags. ' +
+      'Call apply_triage only after the user approves, with their changes.',
+    inputSchema: { limit: z.number().int().min(1).max(100).optional().describe('Default: 30 oldest') },
+    annotations: READ,
+  }, ({ limit }) => run(async () => {
+    // Without the project list the inbox can still be sorted, so GitHub failing isn't fatal here.
+    const [r, p] = await Promise.all([
+      listIdeas(env, 'inbox', 500),
+      projects(get, owner).catch(err => ({ ok: false as const, error: err instanceof Error ? err.message : String(err) })),
+    ]);
+    const ideas = [...r.ideas].sort((a, b) => a.created - b.created).slice(0, limit ?? 30);
+    // Likely duplicates: ideas sharing three or more uncommon words.
+    const words = (t: string) => new Set(t.toLowerCase().match(/\p{L}{5,}/gu) ?? []);
+    const ws = ideas.map(i => words(i.text));
+    const similar: Array<{ a: string; b: string; shared: string[] }> = [];
+    for (let i = 0; i < ideas.length; i++) for (let j = i + 1; j < ideas.length; j++) {
+      const shared = [...ws[i]].filter(w => ws[j].has(w));
+      if (shared.length >= 3) similar.push({ a: ideas[i].id, b: ideas[j].id, shared: shared.slice(0, 6) });
+    }
+    return {
+      waiting: r.count.inbox, shown: ideas.length,
+      ideas: ideas.map(ideaOut), tagsInUse: r.tags,
+      projects: p.ok ? p.items.filter(x => !x.archived && !x.fork).map(x => ({ name: x.name, description: x.description })) : `unavailable: ${p.error}`,
+      possibleDuplicates: similar,
+      actions: 'issue (repo, title, text?) · sketch (title, text?, tags?) · post (title, text = the full post) · bin · keep (tags?, project?) · merge (into)',
+    };
+  }));
+
+  server.registerTool('apply_triage', {
+    title: 'Apply an inbox triage',
+    description:
+      'Carries out the triage the user approved, idea by idea: issue, sketch (hidden draft), post (draft), bin, keep (only sets tags/project), ' +
+      'or merge into another idea. Tags given with any action are saved on the idea first. Returns what happened to each; one failure doesn\'t stop the rest.',
+    inputSchema: {
+      decisions: z.array(z.object({
+        id: z.string(),
+        action: z.enum(['issue', 'sketch', 'post', 'bin', 'keep', 'merge']),
+        title: z.string().max(200).optional(),
+        text: z.string().max(100_000).optional(),
+        repo: z.string().optional(),
+        tags: z.array(z.string().max(30)).max(8).optional().describe('Tags for the idea (and for a sketch or post)'),
+        project: z.string().optional(),
+        into: z.string().optional().describe('For merge: the idea to merge into'),
+      })).min(1).max(100),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  }, ({ decisions }) => run(async () => {
+    const results: Array<{ id: string; action: string; ok: boolean; result?: unknown; error?: string }> = [];
+    // Merges last, so ideas merged away can still be acted on as targets before.
+    const ordered = [...decisions.filter(d => d.action !== 'merge'), ...decisions.filter(d => d.action === 'merge')];
+    for (const d of ordered) {
+      try {
+        if (d.tags || d.project) {
+          await updateIdea(env, { id: d.id, ...(d.tags && { tags: d.tags }), ...(d.project && { project: d.project }) });
+        }
+        let result: unknown;
+        if (d.action === 'bin') result = (await updateIdea(env, { id: d.id, status: 'binned' })).status;
+        else if (d.action === 'keep') result = 'kept in the inbox';
+        else if (d.action === 'merge') {
+          if (!d.into) throw new Error('merge needs `into`');
+          result = { mergedInto: (await mergeIdeas(env, { into: d.into, ids: [d.id] })).id };
+        } else {
+          if (!d.title) throw new Error(`${d.action} needs a title`);
+          const idea = await getIdea(env, d.id);
+          const r = await promoteIdea(env, gh, rest, owner, {
+            id: d.id, target: d.action, title: d.title, text: d.text ?? idea.text, repo: d.repo, tags: d.tags, hidden: true,
+          });
+          result = r.idea.promotedTo;
+        }
+        results.push({ id: d.id, action: d.action, ok: true, result });
+      } catch (err) {
+        results.push({ id: d.id, action: d.action, ok: false, error: (err instanceof Error ? err.message : String(err)).slice(0, 300) });
+      }
+    }
+    const drafts = decisions.some(d => d.action === 'sketch' || d.action === 'post');
+    return { done: results.filter(r => r.ok).length, failed: results.filter(r => !r.ok).length, results, ...(drafts && { drafts: `${SITE}/dev#launchpad` }) };
   }));
 
   // ---------- Google Drive: releasing samples ----------

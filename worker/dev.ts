@@ -14,7 +14,7 @@
  */
 import {
   addSketch, appendSamples, parseSamples, postFile, readHidden, readPost, rebaseImports, readPacks, removeSamples, removeSketch, setHidden,
-  setSketchHidden, updatePost, updateSamples, updateSketch,
+  setSketchHidden, slugify, updatePost, updateSamples, updateSketch,
   type SketchEntry,
   type PostInfo, type PostInput, type PostMetaPatch, type SampleChange, type SampleInput, type SketchInput,
 } from './content';
@@ -29,7 +29,7 @@ import {
 } from './drive';
 import { deleteMessage, listMessages, markMessage, MessageError } from './messages';
 import { releaseNotes, releases, setChannels, ShipError, tickPromo } from './ship';
-import { addIdea, deleteIdea, getIdea, IdeaError, ideaFileResponse, listIdeas, readIdeaFile, updateIdea, type IdeasEnv } from './ideas';
+import { addIdea, deleteIdea, getIdea, IdeaError, ideaFileResponse, listIdeas, mergeIdeas, readIdeaFile, updateIdea, type IdeasEnv } from './ideas';
 
 export interface DevEnv extends AnalyticsEnv, IdeasEnv, DriveEnv {
   DEV_PASSWORD?: string;
@@ -517,6 +517,12 @@ export async function content(gh: GitHub) {
   return { head, sketches: JSON.parse((await gh.read(SKETCHES, head)) ?? '[]') };
 }
 
+/** The next archive post number: the highest `index:` in src/posts and its drafts. */
+export async function nextPostIndex(gh: GitHub): Promise<number> {
+  const indexes = (await postFiles(gh)).map(f => Number(/^\s*index:\s*(\d+)/m.exec(f.text)?.[1] ?? 0));
+  return Math.max(0, ...indexes) + 1;
+}
+
 // ---------- Drafts: saved, not on the site yet ----------
 
 /** Draft posts (src/posts/drafts) and hidden sketches: what's waiting for "Publish". */
@@ -594,8 +600,20 @@ export async function promoteIdea(
     const hidden = input.hidden === true;
     const r = await addSketchWithAudio(gh, { kind: withAudio ? 'demo' : 'idea', title, date: today, text, tags }, withAudio, hidden);
     promotedTo = { kind: 'sketch', label: hidden ? `${title} (draft)` : title, url: `/sketches#${r.id}` };
+  } else if (input.target === 'post') {
+    // Always a draft: what Claude writes from an idea waits in /dev → Launchpad → Drafts.
+    const body = text || idea.text;
+    if (!body) throw new HttpError(400, 'A post needs some text');
+    const slug = slugify(String(input.slug ?? '') || title);
+    if (!slug) throw new HttpError(400, 'Give it a title with letters or digits');
+    const tags = Array.isArray(input.tags) ? input.tags.map(String) : [];
+    await publishPost(gh, {
+      title, body, slug, date: new Date().toISOString().slice(0, 10), tags, accentColor: '#ffaa00',
+      description: typeof input.description === 'string' ? input.description : undefined, index: await nextPostIndex(gh), draft: true,
+    });
+    promotedTo = { kind: 'post', label: `${title} (draft)`, url: `/dev#archive` };
   } else {
-    throw new HttpError(400, 'Promote to "issue" or "sketch"');
+    throw new HttpError(400, 'Promote to "issue", "sketch" or "post"');
   }
   return { idea: await updateIdea(env, { id: idea.id, status: 'promoted', promotedTo }) };
 }
@@ -726,9 +744,10 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
       if (action === 'idea' && method === 'POST') {
         const form = await request.formData();
         const files = form.getAll('file').filter((f): f is File => typeof f !== 'string');
-        return json(200, { idea: await addIdea(env, { text: form.get('text'), project: form.get('project'), source: 'dev' }, files) });
+        return json(200, { idea: await addIdea(env, { text: form.get('text'), project: form.get('project'), tags: form.get('tags') ?? undefined, source: 'dev' }, files) });
       }
       if (action === 'idea-update' && method === 'POST') return json(200, { idea: await updateIdea(env, (await request.json()) as Record<string, unknown>) });
+      if (action === 'idea-merge' && method === 'POST') return json(200, { idea: await mergeIdeas(env, (await request.json()) as Record<string, unknown>) });
       if (action === 'idea-delete' && method === 'POST') return json(200, await deleteIdea(env, ((await request.json()) as { id: string }).id));
     } catch (err) {
       if (err instanceof IdeaError) return json(err.status, { error: err.message });

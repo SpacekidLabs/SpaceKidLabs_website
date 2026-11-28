@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, FileText, Github, Lightbulb, Mic, Paperclip, Pencil, RotateCcw, Square, Trash2, X } from 'lucide-react';
+import { ArrowUpRight, Combine, FileText, Github, Lightbulb, Mic, Paperclip, Pencil, RotateCcw, Square, Trash2, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { api, postJson } from '../../lib/devApi';
 import { analyse, encodeMp3 } from '../../lib/devAudio';
@@ -17,11 +17,11 @@ import { button, errorText, ghostButton, input, label } from './ui';
 
 export interface IdeaFile { id: string; name: string; type: string; size: number }
 export interface Idea {
-  id: string; text: string; project: string | null; status: 'inbox' | 'promoted' | 'binned';
+  id: string; text: string; project: string | null; tags: string[]; status: 'inbox' | 'promoted' | 'binned';
   promotedTo: { kind: string; label: string; url: string } | null; source: string; created: number; updated: number; files: IdeaFile[];
 }
 type Status = 'inbox' | 'promoted' | 'binned';
-interface ListResult { ideas: Idea[]; count: Record<Status, number>; oldestInbox: number | null }
+interface ListResult { ideas: Idea[]; count: Record<Status, number>; oldestInbox: number | null; tags: Array<{ tag: string; n: number }> }
 
 /** Handed to the Archive tab when an idea becomes a post; the Archive tab marks the idea once the post is published. */
 export const POST_HANDOFF = 'dev-idea-post';
@@ -232,11 +232,16 @@ function Capture({ projects, onSaved }: { projects: string[]; onSaved: () => voi
 
 // ---------- One idea ----------
 
-type Panel = null | 'edit' | 'issue' | 'sketch';
+type Panel = null | 'edit' | 'issue' | 'sketch' | 'merge';
 
-function IdeaCard({ idea, projects, site, onChange, onPost }: {
+const tagList = (s: string) => s.split(',').map(t => t.trim().toLowerCase().replace(/^#/, '')).filter(Boolean);
+const firstLine = (i: Idea) => (i.text.split('\n')[0] || i.files[0]?.name || 'Idea with files').slice(0, 70);
+
+function IdeaCard({ idea, projects, site, onChange, onPost, others, knownTags, onTag }: {
   key?: string;
   idea: Idea; projects: string[]; site: string; onChange: () => void; onPost: (idea: Idea) => void;
+  /** Other inbox ideas, to merge into. */
+  others: Idea[]; knownTags: string[]; onTag: (tag: string) => void;
 }) {
   const [panel, setPanel] = useState<Panel>(null);
   const [title, setTitle] = useState('');
@@ -244,6 +249,8 @@ function IdeaCard({ idea, projects, site, onChange, onPost }: {
   const [repo, setRepo] = useState('');
   const [tags, setTags] = useState('');
   const [project, setProject] = useState(idea.project ?? '');
+  const [ideaTags, setIdeaTags] = useState('');
+  const [into, setInto] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const hasMp3 = idea.files.some(f => f.type === 'audio/mpeg');
@@ -253,6 +260,7 @@ function IdeaCard({ idea, projects, site, onChange, onPost }: {
     if (p === panel) { setPanel(null); return; }
     const s = split(idea.text || idea.files[0]?.name.replace(/\.[^.]+$/, '') || '');
     setTitle(s.title); setBody(p === 'edit' ? idea.text : s.body); setRepo(idea.project ?? site); setTags(''); setProject(idea.project ?? '');
+    setIdeaTags(idea.tags.join(', ')); setInto(others[0]?.id ?? '');
     setPanel(p);
   }
 
@@ -262,6 +270,7 @@ function IdeaCard({ idea, projects, site, onChange, onPost }: {
   }
   const update = (patch: Record<string, unknown>) => run(() => postJson('idea-update', { id: idea.id, ...patch }));
   const promote = () => run(() => postJson('idea-promote', { id: idea.id, target: panel, title, text: body, repo, tags: tags.split(',').map(t => t.trim()).filter(Boolean) }));
+  const merge = () => run(() => postJson('idea-merge', { into, ids: [idea.id] }));
   const remove = () => confirm('Delete this idea and its files for good? This can\'t be undone.') && run(() => postJson('idea-delete', { id: idea.id }));
 
   const age = Date.now() - idea.created;
@@ -273,6 +282,10 @@ function IdeaCard({ idea, projects, site, onChange, onPost }: {
         <span className={cn(idea.status === 'inbox' && age > 14 * DAY && 'text-amber-400')} title={new Date(idea.created).toLocaleString()}>{ago(idea.created)}</span>
         {idea.project && <span className="px-1.5 py-0.5 border border-zinc-800 text-zinc-300 normal-case tracking-normal">{idea.project}</span>}
         {idea.source === 'mcp' && <span>via Claude</span>}
+        {idea.tags.map(t => (
+          <button key={t} type="button" onClick={() => onTag(t)} title={`Show only #${t}`}
+            className="px-1.5 py-0.5 border border-brand-orange/30 text-brand-orange/90 normal-case tracking-normal hover:border-brand-orange">#{t}</button>
+        ))}
         {idea.promotedTo && (
           idea.promotedTo.url.startsWith('/')
             ? <Link to={idea.promotedTo.url} className="ml-auto inline-flex items-center gap-1 text-emerald-400 normal-case tracking-normal hover:text-emerald-300">→ {idea.promotedTo.kind}: {idea.promotedTo.label}</Link>
@@ -308,6 +321,10 @@ function IdeaCard({ idea, projects, site, onChange, onPost }: {
             <button type="button" className={cn(action, panel === 'sketch' && 'border-brand-orange text-brand-orange')} onClick={() => open('sketch')} disabled={busy}><Lightbulb className="w-3.5 h-3.5" aria-hidden /> Sketch</button>
             <button type="button" className={action} onClick={() => onPost(idea)} disabled={busy}><FileText className="w-3.5 h-3.5" aria-hidden /> Post</button>
             <span className="flex-grow" />
+            {others.length > 0 && (
+              <button type="button" className={cn(action, panel === 'merge' && 'border-brand-orange text-brand-orange')} onClick={() => open('merge')} disabled={busy}
+                title="Merge into another idea" aria-label="Merge into another idea"><Combine className="w-3.5 h-3.5" aria-hidden /></button>
+            )}
             <button type="button" className={cn(action, panel === 'edit' && 'border-brand-orange text-brand-orange')} onClick={() => open('edit')} disabled={busy} aria-label="Edit"><Pencil className="w-3.5 h-3.5" aria-hidden /></button>
             <button type="button" className={cn(action, 'hover:text-red-400')} onClick={() => update({ status: 'binned' })} disabled={busy}><Trash2 className="w-3.5 h-3.5" aria-hidden /> Bin</button>
           </>
@@ -326,12 +343,31 @@ function IdeaCard({ idea, projects, site, onChange, onPost }: {
       {panel === 'edit' && (
         <div className="mt-4 space-y-3 border-t border-zinc-900 pt-4">
           <textarea className={cn(input, 'min-h-28')} value={body} onChange={e => setBody(e.target.value)} aria-label="Idea text" />
-          <select className={cn(input, 'w-auto text-xs font-mono')} value={project} onChange={e => setProject(e.target.value)} aria-label="Project">
-            <option value="">No project</option>
-            {projects.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
+          <div className="flex flex-wrap gap-2">
+            <select className={cn(input, 'w-auto text-xs font-mono')} value={project} onChange={e => setProject(e.target.value)} aria-label="Project">
+              <option value="">No project</option>
+              {projects.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <input className={cn(input, 'flex-1 min-w-48 text-xs font-mono')} value={ideaTags} onChange={e => setIdeaTags(e.target.value)}
+              placeholder="Tags, comma separated: sound, plugin, post…" aria-label="Tags" list={`tags-${idea.id}`} />
+            <datalist id={`tags-${idea.id}`}>{knownTags.map(t => <option key={t} value={t} />)}</datalist>
+          </div>
           <div className="flex gap-2">
-            <button type="button" className={cn(button, 'py-2')} disabled={busy} onClick={() => update({ text: body, project })}>Save</button>
+            <button type="button" className={cn(button, 'py-2')} disabled={busy} onClick={() => update({ text: body, project, tags: tagList(ideaTags) })}>Save</button>
+            <button type="button" className={cn(ghostButton, 'py-2')} onClick={() => setPanel(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {panel === 'merge' && (
+        <div className="mt-4 space-y-3 border-t border-zinc-900 pt-4">
+          <p className={label}>Merge this idea into</p>
+          <select className={cn(input, 'text-sm')} value={into} onChange={e => setInto(e.target.value)} aria-label="Idea to merge into">
+            {others.map(o => <option key={o.id} value={o.id}>{firstLine(o)}</option>)}
+          </select>
+          <p className="font-mono text-[10px] text-zinc-500">Its text goes under the other idea's text, with its files and tags. This card goes away.</p>
+          <div className="flex gap-2">
+            <button type="button" className={cn(button, 'py-2')} disabled={busy || !into} onClick={merge}>{busy ? 'Merging…' : 'Merge'}</button>
             <button type="button" className={cn(ghostButton, 'py-2')} onClick={() => setPanel(null)}>Cancel</button>
           </div>
         </div>
@@ -377,6 +413,7 @@ export function LaunchpadTab({ onPost, onIssues, onShip, onMessages, onSamples, 
   });
   const [data, setData] = useState<ListResult | null>(null);
   const [error, setError] = useState('');
+  const [tag, setTag] = useState('');
   const { data: projectData } = useProjects();
 
   const projects = useMemo(
@@ -389,7 +426,9 @@ export function LaunchpadTab({ onPost, onIssues, onShip, onMessages, onSamples, 
     api<ListResult>(`ideas?status=${s}`).then(r => { setData(r); setError(''); }).catch(e => setError(errorText(e)));
   /** After anything you do: the list, and the streak (which may cheer). */
   const changed = () => { load(); momentum.reload(); };
-  useEffect(() => { setData(null); load(status); }, [status]);
+  useEffect(() => { setData(null); setTag(''); load(status); }, [status]);
+  const shown = data ? (tag ? data.ideas.filter(i => i.tags.includes(tag)) : data.ideas) : [];
+  const knownTags = data?.tags.map(t => t.tag) ?? [];
 
   const inbox = data?.count.inbox ?? 0;
   const oldestDays = data?.oldestInbox ? Math.floor((Date.now() - data.oldestInbox) / DAY) : 0;
@@ -431,16 +470,28 @@ export function LaunchpadTab({ onPost, onIssues, onShip, onMessages, onSamples, 
           </div>
         </div>
 
+        {data && data.tags.length > 0 && (
+          <div role="group" aria-label="Filter by tag" className="flex flex-wrap gap-1.5 mb-4 font-mono text-[11px]">
+            {[{ tag: '', n: data.ideas.length }, ...data.tags].map(t => (
+              <button key={t.tag || '*'} type="button" aria-pressed={tag === t.tag} onClick={() => setTag(t.tag)}
+                className={cn('px-2 py-1 border transition-colors', tag === t.tag ? 'border-brand-orange text-brand-orange bg-brand-orange/10' : 'border-zinc-800 text-zinc-400 hover:text-white')}>
+                {t.tag ? `#${t.tag}` : 'all'} <span className="text-zinc-600">{t.n}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {error ? <p className="font-mono text-xs text-red-400">{error}</p>
           : !data ? <p className="text-sm text-zinc-500">Loading…</p>
-          : !data.ideas.length ? (
+          : !shown.length ? (
             <p className="text-sm text-zinc-500 border border-dashed border-zinc-800 px-4 py-8 text-center">
               {status === 'inbox' ? 'Nothing waiting.' : status === 'promoted' ? 'Nothing promoted yet.' : 'The bin is empty.'}
             </p>
           ) : (
             <ul className="space-y-3">
-              {data.ideas.map(i => (
+              {shown.map(i => (
                 <IdeaCard key={i.id} idea={i} projects={projects} site={site} onChange={changed}
+                  others={status === 'inbox' ? data.ideas.filter(o => o.id !== i.id) : []} knownTags={knownTags} onTag={setTag}
                   onPost={idea => {
                     const s = split(idea.text || '');
                     onPost({ id: idea.id, title: s.title, body: s.body || idea.text });

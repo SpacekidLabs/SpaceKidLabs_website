@@ -3,8 +3,9 @@
  * (binding IDEAS_DB), never in the website repository, so nothing here is public until you promote it to an
  * issue, a sketch or a post.
  *
- * An idea is some text plus any number of files (audio as MP3, images, anything else). Files are stored in D1 in
- * chunks, because one D1 row holds at most 2 MB.
+ * An idea is some text plus any number of files (audio as MP3, images, anything else), and tags (what kind of idea
+ * it is: "sound", "plugin", "post"…). Files are stored in D1 in chunks, because one D1 row holds at most 2 MB.
+ * Ideas about the same thing can be merged: texts joined, files and tags moved to one idea.
  */
 
 export interface IdeasEnv {
@@ -18,6 +19,8 @@ export interface Idea {
   id: string;
   text: string;
   project: string | null;
+  /** Lowercase, short: what kind of idea it is. */
+  tags: string[];
   status: IdeaStatus;
   /** Where it went when promoted: { kind: "issue" | "sketch" | "post", label, url }. */
   promotedTo: { kind: string; label: string; url: string } | null;
@@ -35,6 +38,7 @@ export const MAX_FILE_BYTES = 25_000_000;
 const CHUNK = 1_900_000;
 const MAX_TEXT = 20_000;
 const STATUSES: IdeaStatus[] = ['inbox', 'promoted', 'binned'];
+export const MAX_TAGS = 8;
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS ideas (
@@ -59,8 +63,22 @@ const SCHEMA = [
     id TEXT PRIMARY KEY, pack TEXT NOT NULL, category TEXT NOT NULL, max_seconds INTEGER NOT NULL, files TEXT NOT NULL, created INTEGER NOT NULL)`,
 ];
 
+/** Columns added after the table first went live. ALTER fails with "duplicate column" once it's done: that's fine. */
+const COLUMNS = ["ALTER TABLE ideas ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'"];
+
 /** Tables are created on first use in each Worker instance (cheap: IF NOT EXISTS), so no migration step is needed. */
 let ready: Promise<unknown> | null = null;
+
+async function setUp(db: D1Database) {
+  await db.batch(SCHEMA.map(s => db.prepare(s)));
+  for (const sql of COLUMNS) {
+    try {
+      await db.prepare(sql).run();
+    } catch (err) {
+      if (!/duplicate column/i.test(err instanceof Error ? err.message : String(err))) throw err;
+    }
+  }
+}
 
 /** Waits for the tables (call before the first query in a request). */
 export const dbReady = () => ready;
@@ -68,7 +86,7 @@ export const dbReady = () => ready;
 export function ideasDb(env: IdeasEnv): D1Database {
   const db = env.IDEAS_DB;
   if (!db) throw new IdeaError(503, 'The idea inbox has no database (IDEAS_DB binding missing; see docs/HOSTING.md).');
-  if (!ready) ready = db.batch(SCHEMA.map(s => db.prepare(s))).catch(err => { ready = null; throw err; });
+  if (!ready) ready = setUp(db).catch(err => { ready = null; throw err; });
   return db;
 }
 
@@ -86,16 +104,23 @@ function cleanProject(v: unknown): string | null {
   return v;
 }
 
+/** Tags: lowercase words or short phrases, no duplicates, at most MAX_TAGS. */
+export function cleanTags(v: unknown): string[] {
+  const list = Array.isArray(v) ? v : typeof v === 'string' ? v.split(',') : [];
+  const tags = list.map(t => String(t).toLowerCase().replace(/^#/, '').replace(/[^\p{L}\p{N} &+.-]+/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 30)).filter(Boolean);
+  return [...new Set(tags)].slice(0, MAX_TAGS);
+}
+
 /** File names are shown and sent back in a header: keep them plain. */
 const cleanName = (s: string) => s.replace(/[\x00-\x1f"\\/]+/g, ' ').trim().slice(0, 120) || 'file';
 const cleanType = (s: string) => (/^[a-z]+\/[a-z0-9.+-]+$/i.test(s) ? s.toLowerCase() : 'application/octet-stream');
 
-type Row = { id: string; text: string; project: string | null; status: IdeaStatus; promoted_to: string | null; source: string; created: number; updated: number };
+type Row = { id: string; text: string; project: string | null; tags: string | null; status: IdeaStatus; promoted_to: string | null; source: string; created: number; updated: number };
 type FileRow = IdeaFile & { idea_id: string };
 
 function toIdea(r: Row, files: FileRow[]): Idea {
   return {
-    id: r.id, text: r.text, project: r.project, status: r.status, source: r.source, created: r.created, updated: r.updated,
+    id: r.id, text: r.text, project: r.project, tags: JSON.parse(r.tags || '[]') as string[], status: r.status, source: r.source, created: r.created, updated: r.updated,
     promotedTo: r.promoted_to ? JSON.parse(r.promoted_to) : null,
     files: files.filter(f => f.idea_id === r.id).map(({ id, name, type, size }) => ({ id, name, type, size })),
   };
@@ -114,7 +139,12 @@ export async function listIdeas(env: IdeasEnv, status: unknown = 'inbox', limit 
   const counts = (await db.prepare('SELECT status, COUNT(*) AS n, MIN(created) AS oldest FROM ideas GROUP BY status').all<{ status: IdeaStatus; n: number; oldest: number }>()).results;
   const count = Object.fromEntries(STATUSES.map(st => [st, counts.find(c => c.status === st)?.n ?? 0])) as Record<IdeaStatus, number>;
   const oldestInbox = counts.find(c => c.status === 'inbox')?.oldest ?? null;
-  return { ideas: rows.map(r => toIdea(r, files)), count, oldestInbox };
+  const ideas = rows.map(r => toIdea(r, files));
+  /** Every tag in this list, most used first (for the filter and suggestions). */
+  const tagCounts = new Map<string, number>();
+  for (const i of ideas) for (const t of i.tags) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
+  const tags = [...tagCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([tag, n]) => ({ tag, n }));
+  return { ideas, count, oldestInbox, tags };
 }
 
 export async function getIdea(env: IdeasEnv, ideaId: unknown): Promise<Idea> {
@@ -127,11 +157,12 @@ export async function getIdea(env: IdeasEnv, ideaId: unknown): Promise<Idea> {
 }
 
 /** Saves a new idea with its files. Needs text or at least one file. */
-export async function addIdea(env: IdeasEnv, input: { text?: unknown; project?: unknown; source: string }, files: File[] = []): Promise<Idea> {
+export async function addIdea(env: IdeasEnv, input: { text?: unknown; project?: unknown; tags?: unknown; source: string }, files: File[] = []): Promise<Idea> {
   const db = ideasDb(env);
   await ready;
   const text = cleanText(input.text);
   const project = cleanProject(input.project);
+  const tags = cleanTags(input.tags);
   if (!text && !files.length) throw new IdeaError(400, 'Type something or add a file');
   if (files.length > 20) throw new IdeaError(400, 'At most 20 files per idea');
   for (const f of files) if (f.size > MAX_FILE_BYTES) throw new IdeaError(413, `${f.name} is over ${MAX_FILE_BYTES / 1e6} MB`);
@@ -139,8 +170,8 @@ export async function addIdea(env: IdeasEnv, input: { text?: unknown; project?: 
   const now = Date.now();
   const ideaId = id();
   const statements = [
-    db.prepare('INSERT INTO ideas (id, text, project, status, source, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(ideaId, text, project, 'inbox', input.source, now, now),
+    db.prepare('INSERT INTO ideas (id, text, project, tags, status, source, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(ideaId, text, project, JSON.stringify(tags), 'inbox', input.source, now, now),
   ];
   for (const [i, f] of files.entries()) {
     const fileId = id();
@@ -155,12 +186,13 @@ export async function addIdea(env: IdeasEnv, input: { text?: unknown; project?: 
   return getIdea(env, ideaId);
 }
 
-/** Changes text, project or status. `promotedTo` is set with status "promoted" and cleared otherwise. */
+/** Changes text, project, tags or status. `promotedTo` is set with status "promoted" and cleared otherwise. */
 export async function updateIdea(env: IdeasEnv, input: Record<string, unknown>): Promise<Idea> {
   const db = ideasDb(env);
   const current = await getIdea(env, input.id);
   const text = 'text' in input ? cleanText(input.text) : current.text;
   const project = 'project' in input ? cleanProject(input.project) : current.project;
+  const tags = 'tags' in input ? cleanTags(input.tags) : current.tags;
   const status = 'status' in input ? (STATUSES.includes(input.status as IdeaStatus) ? (input.status as IdeaStatus) : null) : current.status;
   if (!status) throw new IdeaError(400, 'Unknown status');
   if (!text && !current.files.length) throw new IdeaError(400, 'An idea without files needs some text');
@@ -169,9 +201,36 @@ export async function updateIdea(env: IdeasEnv, input: Record<string, unknown>):
     const p = input.promotedTo as Record<string, unknown>;
     promotedTo = { kind: String(p.kind ?? '').slice(0, 20), label: String(p.label ?? '').slice(0, 200), url: String(p.url ?? '').slice(0, 500) };
   }
-  await db.prepare('UPDATE ideas SET text = ?, project = ?, status = ?, promoted_to = ?, updated = ? WHERE id = ?')
-    .bind(text, project, status, promotedTo ? JSON.stringify(promotedTo) : null, Date.now(), current.id).run();
+  await db.prepare('UPDATE ideas SET text = ?, project = ?, tags = ?, status = ?, promoted_to = ?, updated = ? WHERE id = ?')
+    .bind(text, project, JSON.stringify(tags), status, promotedTo ? JSON.stringify(promotedTo) : null, Date.now(), current.id).run();
   return getIdea(env, current.id);
+}
+
+/**
+ * Merges inbox ideas into one (`into`): their texts are added under its text (oldest first, separated by a line),
+ * their files and tags move to it, it keeps the earliest date, and the merged ideas are removed. One transaction.
+ */
+export async function mergeIdeas(env: IdeasEnv, input: { into?: unknown; ids?: unknown }): Promise<Idea> {
+  const db = ideasDb(env);
+  const target = await getIdea(env, input.into);
+  const ids = [...new Set((Array.isArray(input.ids) ? input.ids : []).map(String))].filter(i => i !== target.id).slice(0, 20);
+  if (!ids.length) throw new IdeaError(400, 'Pick at least one other idea to merge');
+  const others = await Promise.all(ids.map(i => getIdea(env, i)));
+  for (const i of [target, ...others]) if (i.status !== 'inbox') throw new IdeaError(400, 'Only ideas in the inbox can be merged');
+  others.sort((a, b) => a.created - b.created);
+  const text = [target.text, ...others.map(o => o.text)].filter(Boolean).join('\n\n---\n\n');
+  if (text.length > MAX_TEXT) throw new IdeaError(400, `Together the texts are longer than ${MAX_TEXT} characters`);
+  if (target.files.length + others.reduce((n, o) => n + o.files.length, 0) > 40) throw new IdeaError(400, 'Too many files for one idea');
+  const tags = cleanTags([...target.tags, ...others.flatMap(o => o.tags)]);
+  const project = target.project ?? others.find(o => o.project)?.project ?? null;
+  const created = Math.min(target.created, ...others.map(o => o.created));
+  await db.batch([
+    db.prepare('UPDATE ideas SET text = ?, project = ?, tags = ?, created = ?, updated = ? WHERE id = ?')
+      .bind(text, project, JSON.stringify(tags), created, Date.now(), target.id),
+    ...others.map(o => db.prepare('UPDATE idea_files SET idea_id = ? WHERE idea_id = ?').bind(target.id, o.id)),
+    ...others.map(o => db.prepare('DELETE FROM ideas WHERE id = ?').bind(o.id)),
+  ]);
+  return getIdea(env, target.id);
 }
 
 /** Deletes an idea and its files for good. Only binned ideas, so nothing in the inbox goes by accident. */
