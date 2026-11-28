@@ -1,15 +1,23 @@
 {
-  "source": "fallback",
+  "source": "github",
   "version": "1.1.0",
-  "date": null,
-  "pageUrl": null,
-  "notes": "",
+  "date": "2026-11-28",
+  "pageUrl": "https://github.com/SpacekidLabs/data-bend/releases/tag/v1.1.0",
+  "notes": "- First release on GitHub, with separate downloads for Apple Silicon and Intel Macs\n- Waveform zoom, panning and a minimap\n- New DSP benders\n- Apps are ad-hoc signed: on first launch, allow DATABEND in System Settings > Privacy & Security",
   "assets": [
     {
-      "name": "DATABEND-1.1.0.dmg",
-      "url": "https://drive.google.com/uc?export=download&id=19MV8OS-jLAgpNr1-kBWwiN-gG_FzK3lN",
-      "size": null,
-      "arch": "unknown"
+      "name": "DATABEND-1.1.0-arm64.dmg",
+      "url": "https://github.com/SpacekidLabs/data-bend/releases/download/v1.1.0/DATABEND-1.1.0-arm64.dmg",
+      "size": 89249033,
+      "arch": "arm64",
+      "sha256": "8acfd5b6b8f168b0dffb2b08946c2d7af1ef3a1ad8fe3c4b98d06b1fc1ef6b57"
+    },
+    {
+      "name": "DATABEND-1.1.0-x64.dmg",
+      "url": "https://github.com/SpacekidLabs/data-bend/releases/download/v1.1.0/DATABEND-1.1.0-x64.dmg",
+      "size": 95394394,
+      "arch": "x64",
+      "sha256": "2849f96a23bd651b15a229bb002a6ed6b92bd04b53665a16bc9e9dd321071666"
     }
   ]
 }
