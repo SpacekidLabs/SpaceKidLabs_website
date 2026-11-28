@@ -12,8 +12,9 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { z } from 'zod';
 import {
   addTextSketch, changeSketch, cleanEnv, content, deletePost, deleteSamples, editPost, editSamples, getPost, GitHub, HttpError,
-  listPosts, listSamples, publishPost, removeSketchById, BRANCH, type DevEnv,
+  listPosts, listSamples, promoteIdea, publishPost, removeSketchById, BRANCH, type DevEnv,
 } from './dev';
+import { addIdea, IdeaError, listIdeas } from './ideas';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue, type Rest } from './issues';
 import { githubStats, projects } from './stats';
 import { cloudflareAnalytics } from './analytics';
@@ -30,8 +31,9 @@ async function run(fn: () => Promise<unknown>): Promise<Result> {
   try {
     return ok(await fn());
   } catch (err) {
-    const message = err instanceof HttpError || err instanceof IssueError || err instanceof Error ? err.message : String(err);
-    if (!(err instanceof HttpError || err instanceof IssueError)) console.error('MCP tool:', message);
+    const known = err instanceof HttpError || err instanceof IssueError || err instanceof IdeaError;
+    const message = err instanceof Error ? err.message : String(err);
+    if (!known) console.error('MCP tool:', message);
     return { content: [{ type: 'text', text: message.slice(0, 500) }], isError: true };
   }
 }
@@ -71,6 +73,8 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       instructions:
         `Owner tools for SPACEKID LABS: ${owner}'s GitHub projects and issues, and the website ${SITE}. ` +
         `Repository names are short names under ${owner} (e.g. "${siteName}", "data-bend"); call list_projects to see them. ` +
+        'capture_idea saves a private note to the idea inbox on /dev (nothing public); use it whenever the user says ' +
+        '"save idea", "note this", "remember this idea" or similar. ' +
         'Sketch, archive and sample tools commit to the website, which goes live about 2 minutes later. ' +
         'Deleting asks for nothing more, so confirm with the user before delete_post, delete_sketch or delete_samples.',
     },
@@ -344,6 +348,54 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       description, accentColor: accent_color ?? '#ffaa00', index: await nextPostIndex(gh),
     });
     return { ...r, url: `${SITE}/archive/${r.slug}`, live: 'in about 2 minutes' };
+  }));
+
+  // ---------- Idea inbox (private) ----------
+
+  server.registerTool('capture_idea', {
+    title: 'Capture idea',
+    description: 'Saves an idea to the private inbox on /dev (Launchpad tab). Nothing is published; the owner sorts it later into an issue, a sketch or a post.',
+    inputSchema: {
+      text: z.string().min(1).max(20_000).describe("The idea in the user's own words; keep their wording"),
+      project: z.string().optional().describe('Repository name it belongs to, if clear (e.g. "data-bend"); call list_projects if unsure'),
+    },
+    annotations: WRITE,
+  }, ({ text, project }) => run(async () => {
+    const idea = await addIdea(env, { text, project, source: 'mcp' });
+    return { saved: idea.id, inbox: `${SITE}/dev#launchpad` };
+  }));
+
+  server.registerTool('list_ideas', {
+    title: 'List ideas',
+    description: 'Ideas in the private /dev inbox (default), or the ones already promoted or binned. Files are listed by name only.',
+    inputSchema: { status: z.enum(['inbox', 'promoted', 'binned']).optional() },
+    annotations: READ,
+  }, ({ status }) => run(async () => {
+    const r = await listIdeas(env, status ?? 'inbox');
+    return {
+      count: r.count,
+      ideas: r.ideas.map(i => ({
+        id: i.id, text: i.text, project: i.project, created: new Date(i.created).toISOString(),
+        files: i.files.map(f => f.name), promotedTo: i.promotedTo ?? undefined,
+      })),
+    };
+  }));
+
+  server.registerTool('promote_idea', {
+    title: 'Promote idea',
+    description: 'Turns an inbox idea into a GitHub issue (target "issue", needs repo) or a sketch on the website (target "sketch"; becomes a demo if the idea has an MP3). Marks the idea as promoted.',
+    inputSchema: {
+      id: z.string().describe('Idea id from list_ideas'),
+      target: z.enum(['issue', 'sketch']),
+      title: z.string().min(1).max(200),
+      text: z.string().max(20_000).optional().describe('Issue or sketch text; default: the idea text'),
+      repo: z.string().optional().describe('For issues: repository name'),
+    },
+    annotations: WRITE,
+  }, ({ id, target, title, text, repo }) => run(async () => {
+    const ideas = await listIdeas(env, 'inbox', 500);
+    const idea = ideas.ideas.find(i => i.id === id);
+    return promoteIdea(env, gh, rest, owner, { id, target, title, text: text ?? idea?.text ?? '', repo });
   }));
 
   return server;

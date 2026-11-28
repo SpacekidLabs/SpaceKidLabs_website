@@ -20,8 +20,9 @@ import { githubStats, projects } from './stats';
 import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
 import { eventCounts } from './events';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue } from './issues';
+import { addIdea, deleteIdea, getIdea, IdeaError, ideaFileResponse, listIdeas, readIdeaFile, updateIdea, type IdeasEnv } from './ideas';
 
-export interface DevEnv extends AnalyticsEnv {
+export interface DevEnv extends AnalyticsEnv, IdeasEnv {
   DEV_PASSWORD?: string;
   GITHUB_TOKEN?: string;
   GITHUB_PROJECTS_TOKEN?: string;
@@ -249,16 +250,24 @@ async function mp3(form: FormData, field: string): Promise<Uint8Array | null> {
   const file = form.get(field);
   if (!file || typeof file === 'string') return null;
   const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!isMp3(bytes)) throw new HttpError(400, `${field} is not an MP3`);
+  return bytes;
+}
+
+function isMp3(bytes: Uint8Array): boolean {
   const id3 = bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33;
   const frame = bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0;
-  if (!id3 && !frame) throw new HttpError(400, `${field} is not an MP3`);
-  return bytes;
+  return id3 || frame;
 }
 
 async function saveSketch(request: Request, gh: GitHub) {
   const form = await request.formData();
   const input = JSON.parse(String(form.get('meta') ?? '{}')) as SketchInput;
-  const audio = input.kind === 'demo' ? await mp3(form, 'audio') : null;
+  return addSketchWithAudio(gh, input, input.kind === 'demo' ? await mp3(form, 'audio') : null);
+}
+
+/** Adds a sketch, with its MP3 in the same commit when there is one. */
+async function addSketchWithAudio(gh: GitHub, input: SketchInput, audio: Uint8Array | null) {
   let id = '';
   const sha = await gh.change(`Sketches: add "${String(input.title).slice(0, 60)}"`, async read => {
     const { text, entry } = addSketch(await must(read, SKETCHES), input, audio ? i => `/audio/sketches/${i}.mp3` : undefined);
@@ -443,6 +452,41 @@ export async function content(gh: GitHub) {
   return { head, sketches: JSON.parse((await gh.read(SKETCHES, head)) ?? '[]') };
 }
 
+// ---------- Ideas: promote ----------
+
+/**
+ * Turns an inbox idea into a GitHub issue or a sketch on the site, then marks it promoted with a link there.
+ * A sketch becomes a demo with audio when the idea has an MP3, otherwise an idea sketch.
+ * (Posts are written in the Archive tab, which marks the idea itself after publishing.)
+ */
+export async function promoteIdea(
+  env: DevEnv, gh: GitHub, rest: <T>(m: string, p: string, b?: object) => Promise<T>, owner: string, input: Record<string, unknown>,
+) {
+  const idea = await getIdea(env, input.id);
+  if (idea.status !== 'inbox') throw new HttpError(400, 'Only ideas in the inbox can be promoted');
+  const title = String(input.title ?? '').trim();
+  const text = String(input.text ?? '').trim();
+  if (!title) throw new HttpError(400, 'Give it a title');
+  let promotedTo: { kind: string; label: string; url: string };
+  if (input.target === 'issue') {
+    const repo = ownRepo(input.repo, owner);
+    const files = idea.files.length ? `\n\n_${idea.files.length} file${idea.files.length > 1 ? 's' : ''} in the /dev idea inbox: ${idea.files.map(f => f.name).join(', ')}_` : '';
+    const { issue } = await saveIssue(rest, repo, { title, body: `${text}${files}` });
+    promotedTo = { kind: 'issue', label: `${issue.repo}#${issue.number}`, url: issue.url };
+  } else if (input.target === 'sketch') {
+    const audioFile = idea.files.find(f => f.type === 'audio/mpeg');
+    const audio = audioFile ? (await readIdeaFile(env, audioFile.id)).bytes : null;
+    const withAudio = audio && isMp3(audio) ? audio : null;
+    const today = new Date().toISOString().slice(0, 10);
+    const tags = Array.isArray(input.tags) ? input.tags.map(String) : [];
+    const r = await addSketchWithAudio(gh, { kind: withAudio ? 'demo' : 'idea', title, date: today, text, tags }, withAudio);
+    promotedTo = { kind: 'sketch', label: title, url: `/sketches#${r.id}` };
+  } else {
+    throw new HttpError(400, 'Promote to "issue" or "sketch"');
+  }
+  return { idea: await updateIdea(env, { id: idea.id, status: 'promoted', promotedTo }) };
+}
+
 // ---------- Router ----------
 
 /** Pasted secrets often carry a stray space or line break; GitHub then answers "Bad credentials". */
@@ -478,6 +522,28 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
     return json(200, { loggedIn, configured: Boolean(env.DEV_PASSWORD && env.GITHUB_TOKEN && env.GITHUB_REPO) });
   }
   if (!loggedIn) return json(401, { error: 'Log in first' });
+
+  // The idea inbox only needs its database, so it works even before the GitHub tokens are set up.
+  if (action.startsWith('idea') && !(action === 'idea-promote')) {
+    try {
+      const url = new URL(request.url);
+      if (action === 'ideas' && method === 'GET') return json(200, await listIdeas(env, url.searchParams.get('status')));
+      if (action === 'idea-file' && method === 'GET') return await ideaFileResponse(env, url.searchParams.get('id'), request);
+      if (action === 'idea' && method === 'POST') {
+        const form = await request.formData();
+        const files = form.getAll('file').filter((f): f is File => typeof f !== 'string');
+        return json(200, { idea: await addIdea(env, { text: form.get('text'), project: form.get('project'), source: 'dev' }, files) });
+      }
+      if (action === 'idea-update' && method === 'POST') return json(200, { idea: await updateIdea(env, (await request.json()) as Record<string, unknown>) });
+      if (action === 'idea-delete' && method === 'POST') return json(200, await deleteIdea(env, ((await request.json()) as { id: string }).id));
+    } catch (err) {
+      if (err instanceof IdeaError) return json(err.status, { error: err.message });
+      console.error('Idea inbox:', err instanceof Error ? err.message : String(err));
+      return json(500, { error: 'The idea inbox failed. See the Worker logs.' });
+    }
+    return json(404, { error: 'Not found' });
+  }
+
   if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) return json(503, { error: 'GITHUB_TOKEN or GITHUB_REPO is not set (see docs/HOSTING.md)' });
 
   const gh = new GitHub({ GITHUB_TOKEN: env.GITHUB_TOKEN, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API });
@@ -516,6 +582,9 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
         return json(200, action === 'issue-save' ? await saveIssue(rest, repo, input) : await commentIssue(rest, repo, input));
       }
     }
+    if (action === 'idea-promote' && method === 'POST') {
+      return json(200, await promoteIdea(env, gh, (m, p, b) => pg.rest(m, p, b), owner, (await request.json()) as Record<string, unknown>));
+    }
     if (action === 'sketch' && method === 'POST') return json(200, await saveSketch(request, gh));
     if (action === 'sketch-delete' && method === 'POST') return json(200, await deleteSketch(request, gh));
     if (action === 'sketch-update' && method === 'POST') return json(200, await editSketch(request, gh));
@@ -532,7 +601,7 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
     if (action === 'samples' && method === 'POST') return json(200, await saveSamples(request, gh));
     if (action === 'post' && method === 'POST') return json(200, await savePost(request, gh));
   } catch (err) {
-    if (err instanceof HttpError || err instanceof IssueError) return json(err.status, { error: err.message });
+    if (err instanceof HttpError || err instanceof IssueError || err instanceof IdeaError) return json(err.status, { error: err.message });
     // Errors from content.ts are input problems with plain messages; anything else stays in the log.
     const message = err instanceof Error ? err.message : String(err);
     console.error('Dev dashboard:', message);

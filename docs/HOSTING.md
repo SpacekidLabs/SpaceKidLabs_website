@@ -72,6 +72,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 
 | Group | Tab | What it does |
 | --- | --- | --- |
+| Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Stored in Cloudflare D1, not in the repo (see below) |
 | All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
 | All projects | Issues | GitHub issues of one project or all of them: list, create, edit title/text/labels, comment, close (done or not planned), reopen (`worker/issues.ts`). Changes issues, not files |
 | Website | Overview | Cloudflare traffic (`worker/analytics.ts`), plays and downloads (`worker/events.ts`), live version vs main, counts of sketches, samples and posts, DATABEND downloads, and the website repo's GitHub activity. Reads only |
@@ -124,6 +125,23 @@ secret goes live on the older code and the new code is rolled back until the nex
 sites are refused. If the token leaks, revoke it on GitHub and create a new one. It can only touch this one
 repository's files.
 
+### Idea inbox (Launchpad)
+
+Ideas are private, so they are **not** committed to this repo (everything in it is public). They live in a Cloudflare
+**D1** database, `spacekidlabs-ideas` (binding `IDEAS_DB` in `wrangler.jsonc`), code in `worker/ideas.ts`:
+
+- `wrangler.jsonc` has no `database_id`: the first `wrangler deploy` (the Workers Build after a push) creates the
+  database, and the Worker creates its tables the first time it's used. If a build ever fails with a D1 permission
+  error, create the database by hand (**Storage & databases → D1 → Create**, name `spacekidlabs-ideas`) and add its
+  ID as `"database_id"` in `wrangler.jsonc`.
+- Files are kept in the database in 1.9 MB pieces (a D1 row holds at most 2 MB), up to 25 MB per file. Audio is
+  converted to MP3 in the browser first, if the browser can read it. Free plan: 5 GB of storage.
+- Files are only served to the logged-in dashboard. Anything that isn't audio or a plain image downloads instead of
+  opening, so an uploaded HTML or SVG file can't run on the site.
+- **Bin** keeps an idea (Binned filter); **Delete forever** removes it and its files. To look at the data directly:
+  **Storage & databases → D1 → spacekidlabs-ideas → Console**.
+- Locally (`npm run preview:cf`) wrangler uses a separate local database under `.wrangler/`, never the live one.
+
 To try the dashboard locally: `npm run preview:cf` with `DEV_PASSWORD` (and a `GITHUB_TOKEN` if you want saves to
 really commit) in `.dev.vars`. Saving from there commits to the real `main`.
 
@@ -154,6 +172,7 @@ on the free plan, with no extra secrets.
 | `list_sketches`, `add_sketch`, `update_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; new audio still goes through /dev) |
 | `list_posts`, `get_post`, `publish_archive_post`, `update_post`, `delete_post` | archive posts, with the same limits as /dev |
 | `list_samples`, `update_samples`, `delete_samples` | samples: rename, category, pack, Drive ID, delete |
+| `capture_idea`, `list_ideas`, `promote_idea` | the private idea inbox: save an idea ("save idea: …"), list them, turn one into an issue or a sketch |
 
 **Connecting.** In Claude: **Settings → Connectors → Add custom connector**, URL `https://spacekidlabs.com/mcp`. Claude
 opens a spacekidlabs.com page that shows which app is asking; enter the /dev password there. In Claude Code:

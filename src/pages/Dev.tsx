@@ -12,11 +12,12 @@ import { api, postJson } from '../lib/devApi';
 import { OverviewTab } from '../components/dev/OverviewTab';
 import { IssuesTab } from '../components/dev/IssuesTab';
 import { ProjectsTab } from '../components/dev/ProjectsTab';
+import { LaunchpadTab, POST_HANDOFF, type PostHandoff } from '../components/dev/LaunchpadTab';
 import { button, errorText, Field, ghostButton, input, label } from '../components/dev/ui';
 
 /**
- * /dev: the owner's dashboard, from any browser: all GitHub projects and their issues, plus the website's traffic
- * and adding sketches, samples and archive posts.
+ * /dev: the owner's dashboard, from any browser: the Launchpad (quick capture and the private idea inbox), all GitHub
+ * projects and their issues, plus the website's traffic and adding sketches, samples and archive posts.
  * Saving goes to the Worker (worker/dev.ts), which commits to GitHub; the push redeploys the site.
  * The password and GitHub token live only in Cloudflare; this page never sees them.
  */
@@ -457,15 +458,26 @@ function ArchiveTab() {
   /** Narrow screens show the list or the form, not both. */
   const [formOpen, setFormOpen] = useState(false);
 
+  /** An idea from the Launchpad being written up as a post; marked promoted once the post is published. */
+  const [fromIdea, setFromIdea] = useState<PostHandoff | null>(null);
+
   const load = () => api<{ posts: PostSummary[] }>('posts').then(r => setPosts(r.posts)).catch(e => setListError(errorText(e)));
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const raw = sessionStorage.getItem(POST_HANDOFF);
+    if (!raw) return;
+    sessionStorage.removeItem(POST_HANDOFF);
+    const h = JSON.parse(raw) as PostHandoff;
+    startNew();
+    setFromIdea(h); setTitle(h.title); setBody(h.body);
+  }, []);
 
   const nextIndex = Math.max(0, ...(posts ?? POSTS.map(p => ({ meta: p.meta }))).map(p => Number(p.meta.index ?? 0))) + 1;
   const finalSlug = editing ? editing.slug : slugEdited ? slug : slugify(title);
   const busy = status.kind === 'busy';
 
   function startNew() {
-    setEditing(null); setSource(null); setTitle(''); setSlug(''); setSlugEdited(false); setDate(today()); setTags('');
+    setFromIdea(null); setEditing(null); setSource(null); setTitle(''); setSlug(''); setSlugEdited(false); setDate(today()); setTags('');
     setAccent('#ffaa00'); setDescription(''); setBody(''); setSpecial(false); setStatus({ kind: 'idle' });
     setFormOpen(true);
     window.scrollTo({ top: 0 });
@@ -504,8 +516,12 @@ function ArchiveTab() {
         const r = await postJson<{ sha: string; slug: string }>('post', {
           title, slug: finalSlug, date, tags: tags.split(','), index: nextIndex, accentColor: accent, description, body,
         });
-        setStatus({ kind: 'ok', text: `Published "${title}":`, sha: r.sha, href: `/archive/${r.slug}` });
+        if (fromIdea) {
+          await postJson('idea-update', { id: fromIdea.id, status: 'promoted', promotedTo: { kind: 'post', label: title, url: `/archive/${r.slug}` } }).catch(() => {});
+          setFromIdea(null);
+        }
         startNew();
+        setStatus({ kind: 'ok', text: `Published "${title}":`, sha: r.sha, href: `/archive/${r.slug}` });
       }
       load();
     } catch (err) {
@@ -564,6 +580,7 @@ function ArchiveTab() {
         </button>
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display font-bold text-xl text-white truncate">{editing ? `Edit: ${editing.meta.title}` : 'New post'}</h2>
+          {fromIdea && !editing && <span className="font-mono text-[11px] text-brand-gold shrink-0">From the idea inbox</span>}
           {editing && <Link to={`/archive/${editing.slug}`} target="_blank" className="font-mono text-[11px] text-zinc-400 hover:text-white shrink-0 inline-flex items-center gap-1">View <ExternalLink className="w-3 h-3" aria-hidden /></Link>}
         </div>
         <div className="grid md:grid-cols-2 gap-5">
@@ -633,6 +650,7 @@ function ArchiveTab() {
 
 /** Tabs in two groups. The address holds the open one (#projects/xen, #issues/data-bend, #sketches…). */
 const GROUPS = [
+  { name: 'Lab', tabs: [{ id: 'launchpad', label: 'Launchpad' }] },
   { name: 'All projects', tabs: [{ id: 'projects', label: 'Projects' }, { id: 'issues', label: 'Issues' }] },
   {
     name: 'Website',
@@ -646,7 +664,7 @@ const SAVES = ['sketches', 'samples', 'archive'];
 
 function readHash(): { tab: TabId; sub: string } {
   const [tab, ...rest] = decodeURIComponent(location.hash.slice(1)).split('/');
-  return TAB_IDS.includes(tab) ? { tab: tab as TabId, sub: rest.join('/') } : { tab: 'projects', sub: '' };
+  return TAB_IDS.includes(tab) ? { tab: tab as TabId, sub: rest.join('/') } : { tab: 'launchpad', sub: '' };
 }
 
 function useHashRoute() {
@@ -665,6 +683,7 @@ function useHashRoute() {
 
 function ActiveTab({ tab, sub, go }: { tab: TabId; sub: string; go: (tab: TabId, sub?: string) => void }) {
   switch (tab) {
+    case 'launchpad': return <LaunchpadTab onPost={h => { sessionStorage.setItem(POST_HANDOFF, JSON.stringify(h)); go('archive'); }} />;
     case 'projects': return <ProjectsTab open={sub} onOpen={name => go('projects', name)} onIssues={repo => go('issues', repo)} />;
     case 'issues': return <IssuesTab repo={sub || '*'} onRepo={repo => go('issues', repo === '*' ? '' : repo)} />;
     case 'overview': return <OverviewTab onIssues={() => go('issues', REPO_URL.split('/').pop())} />;
@@ -709,6 +728,20 @@ export function DevPage() {
       .then(setSession)
       .catch(e => setError(errorText(e)));
   useEffect(() => { check(); }, []);
+
+  // N on any tab (outside a text field) jumps to the capture box.
+  useEffect(() => {
+    if (!session?.loggedIn) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (e.key.toLowerCase() !== 'n' || e.metaKey || e.ctrlKey || e.altKey || el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      e.preventDefault();
+      if (tab !== 'launchpad') go('launchpad');
+      setTimeout(() => document.getElementById('capture-box')?.focus(), 50);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [session?.loggedIn, tab]);
 
   async function logout() {
     await postJson('logout', {}).catch(() => {});
