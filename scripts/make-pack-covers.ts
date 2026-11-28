@@ -194,6 +194,24 @@ function shlims(samples: Sample[]) {
   return frame(out, 'SHLIMS', `${samples.length} LOOPS, EXPORTS, SMEARS + METALS // SPACEKID LABS`);
 }
 
+/** VRAC Drums: a pad controller; every hit is one pad, its waveform lit as a level meter inside it. */
+function vrac(samples: Sample[]) {
+  const cols = 10;
+  const pad = 60, gap = 10, cell = (SIZE - pad * 2 - gap * (cols - 1)) / cols;
+  const shades: Record<string, string> = { Kicks: ORANGE, 'Snares, Claps & Perc': '#ffffff', 'Hats & Cymbals': '#8a8a8a' };
+  let out = '';
+  samples.forEach((s, i) => {
+    const x = pad + (i % cols) * (cell + gap), y = 120 + Math.floor(i / cols) * (cell + gap);
+    const color = shades[s.category] ?? ORANGE;
+    out += `<rect x="${f(x)}" y="${f(y)}" width="${f(cell)}" height="${f(cell)}" rx="6" fill="none" stroke="#3f3f46" stroke-width="1.5"/>`;
+    const bars = levels(s).filter((_, k) => k % 4 === 0), bw = (cell - 12) / bars.length;
+    let d = '';
+    bars.forEach((v, k) => { const hgt = Math.max(1, v * (cell - 14)); d += `M${f(x + 6 + k * bw)} ${f(y + cell - 7)}v${f(-hgt)}h${f(bw - 1.5)}v${f(hgt)}z`; });
+    out += `<path d="${d}" fill="${color}" opacity="0.9"/>\n`;
+  });
+  return frame(out, 'VRAC DRUMS', `${samples.length} HITS // KICKS, PERC + HATS // SPACEKID LABS`);
+}
+
 mkdirSync(OUT, { recursive: true });
 const pack = (id: string) => SAMPLES.filter(s => s.pack === id && s.peaks);
 writeFileSync(join(OUT, 'weird-breaks.svg'), weirdBreaks(pack('weird-breaks')));
@@ -203,4 +221,5 @@ writeFileSync(join(OUT, 'trap-tape.svg'), trapTape(pack('trap-tape')));
 writeFileSync(join(OUT, 'cybernetics.svg'), cybernetics(pack('cybernetics')));
 writeFileSync(join(OUT, 'drum-hits-2.svg'), drumHits(pack('drum-hits-2')));
 writeFileSync(join(OUT, 'shlims.svg'), shlims(pack('shlims')));
+writeFileSync(join(OUT, 'vrac.svg'), vrac(pack('vrac')));
 console.log('Wrote the pack covers in public/packs/');
