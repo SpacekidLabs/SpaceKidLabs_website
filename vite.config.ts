@@ -1,10 +1,25 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import {execSync} from 'node:child_process';
 import {defineConfig} from 'vite';
+
+/** The commit this build is made from, shown on /dev to tell whether the live site is up to date. */
+function buildCommit(): string {
+  if (process.env.WORKERS_CI_COMMIT_SHA) return process.env.WORKERS_CI_COMMIT_SHA; // set by Cloudflare Workers Builds
+  try {
+    return execSync('git rev-parse HEAD', {stdio: ['ignore', 'pipe', 'ignore']}).toString().trim();
+  } catch {
+    return '';
+  }
+}
 
 export default defineConfig(() => {
   return {
+    define: {
+      __BUILD_COMMIT__: JSON.stringify(buildCommit()),
+      __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    },
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

@@ -71,6 +71,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 
 | Tab | Writes |
 | --- | --- |
+| Overview | nothing: live version vs main (deploying or up to date), counts of sketches, samples and posts, DATABEND downloads, pushes per week, recent commits, issues, pull requests, Actions runs and releases (`worker/stats.ts`) |
 | Sketches | `src/data/sketches.json`, demo audio in `public/audio/sketches/`. Deleting a sketch removes both |
 | Samples | rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`. Originals stay on your computer; add Drive IDs later for download buttons |
 | Archive post | `src/posts/<slug>.tsx` from plain text (paragraphs, `## headings`, `- lists`, `[links](https://...)`, `**bold**`). Labs and images still need code |
@@ -85,7 +86,7 @@ or in chat. The Worker never sends them back in a response or writes them to its
 
 1. **GitHub token.** github.com → Settings → Developer settings → **Fine-grained personal access tokens → Generate
    new token**. Resource owner: **SpacekidLabs**. Repository access: **Only select repositories →
-   SpaceKidLabs_website**. Permissions: **Contents → Read and write** (nothing else). Pick an expiry (e.g. 1 year) and
+   SpaceKidLabs_website**. Permissions: **Contents → Read and write**. For the Overview tab's issues, pull requests and Actions runs, also add **Issues**, **Pull requests** and **Actions** as **Read-only** (optional; without them those panels say what's missing). Pick an expiry (e.g. 1 year) and
    copy the token. If the organization requires approval for fine-grained tokens, approve it under the org's
    **Settings → Personal access tokens → Pending requests**.
 2. **Add both secrets.** Cloudflare dashboard → **Workers & Pages → spacekidlabs → Settings → Variables and Secrets →

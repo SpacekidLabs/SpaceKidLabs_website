@@ -8,6 +8,8 @@ import { analyse, encodeMp3 } from '../lib/devAudio';
 import { PACKS, SAMPLES } from '../data/samples';
 import { POSTS } from '../posts';
 import type { Sketch } from '../data/sketches';
+import { api, postJson } from '../lib/devApi';
+import { OverviewTab } from '../components/dev/OverviewTab';
 
 /**
  * /dev: the owner's dashboard for adding sketches, samples and archive posts from any browser.
@@ -22,20 +24,6 @@ export const DEV_FLAG = 'spacekid-dev';
 const BATCH_BYTES = 40_000_000;
 
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
-
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/api/dev/${path}`, { credentials: 'same-origin', ...init });
-  const type = res.headers.get('content-type') ?? '';
-  if (!type.includes('application/json')) {
-    throw new Error('The dashboard API is not running here. It works on the live site, or locally with `npm run preview:cf`.');
-  }
-  const body = (await res.json()) as T & { error?: string };
-  if (!res.ok) throw new Error(body.error || `Error ${res.status}`);
-  return body;
-}
-
-const postJson = <T,>(path: string, data: unknown) =>
-  api<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
 
 const input = 'w-full bg-black/40 border border-zinc-800 focus:border-brand-orange px-3 py-2 text-zinc-100 font-sans text-sm outline-none transition-colors';
 const label = 'block font-mono text-[11px] uppercase tracking-widest text-zinc-500 mb-1.5';
@@ -312,6 +300,7 @@ function ArchiveTab() {
 // ---------- Page ----------
 
 const TABS = [
+  { id: 'overview', label: 'Overview', Tab: OverviewTab },
   { id: 'sketches', label: 'Sketches', Tab: SketchesTab },
   { id: 'samples', label: 'Samples', Tab: SamplesTab },
   { id: 'archive', label: 'Archive post', Tab: ArchiveTab },
@@ -346,7 +335,7 @@ export function DevPage() {
   usePageTitle('Dev');
   const [session, setSession] = useState<{ loggedIn: boolean; configured: boolean } | null>(null);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('sketches');
+  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('overview');
 
   const check = () =>
     api<{ loggedIn: boolean; configured: boolean }>('session')

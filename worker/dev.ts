@@ -13,6 +13,7 @@ import {
   addSketch, appendSamples, postFile, removeSketch,
   type PostInput, type SampleInput, type SketchInput,
 } from './content';
+import { githubStats } from './stats';
 
 export interface DevEnv {
   DEV_PASSWORD?: string;
@@ -111,6 +112,24 @@ class GitHub {
       throw new HttpError(502, `GitHub said ${res.status}${detail ? `: ${detail.slice(0, 200)}` : ''}`);
     }
     return res;
+  }
+
+  /** GET any API path from the root (e.g. /repos/o/r/issues) for the stats. Never throws on HTTP errors. */
+  async get<T>(path: string): Promise<{ status: number; data: T | null }> {
+    const res = await fetch(`${this.env.GITHUB_API || 'https://api.github.com'}${path}`, {
+      headers: {
+        Authorization: `Bearer ${this.env.GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'spacekidlabs-dev-dashboard',
+      },
+    });
+    if (!res.ok) return { status: res.status, data: null };
+    return { status: res.status, data: (await res.json()) as T };
+  }
+
+  get repo(): string {
+    return this.env.GITHUB_REPO;
   }
 
   async head(): Promise<string> {
@@ -266,6 +285,7 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
   const gh = new GitHub({ GITHUB_TOKEN: env.GITHUB_TOKEN, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API });
   try {
     if (action === 'content' && method === 'GET') return json(200, await content(gh));
+    if (action === 'github' && method === 'GET') return json(200, await githubStats(p => gh.get(p), gh.repo));
     if (action === 'sketch' && method === 'POST') return json(200, await saveSketch(request, gh));
     if (action === 'sketch-delete' && method === 'POST') return json(200, await deleteSketch(request, gh));
     if (action === 'samples' && method === 'POST') return json(200, await saveSamples(request, gh));
