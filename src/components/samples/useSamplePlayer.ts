@@ -77,6 +77,9 @@ export function useSamplePlayer(onEnded?: (id: number) => void) {
     const start = () => {
       if (audio.duration > 0) audio.currentTime = from * audio.duration;
       audio.play().catch(err => {
+        // Switching samples quickly (holding → on the keyboard) cancels the previous play() with an
+        // AbortError. That's expected, and stopping here would cut off the sample that replaced it.
+        if (err?.name === 'AbortError' || playingIdRef.current !== sample.id) return;
         console.error(`Playback failed for ${sample.name}:`, err);
         stop();
       });

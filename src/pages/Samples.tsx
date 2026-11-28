@@ -3,7 +3,7 @@ import { usePageTitle } from '../lib/usePageTitle';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { Archive, Download, Play, Pause, Search, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, memo } from 'react';
 import { useSamplePlayer } from '../components/samples/useSamplePlayer';
 import { Waveform } from '../components/samples/Waveform';
 import { PACKS, SAMPLES, type Sample, type SamplePack } from '../data/samples';
@@ -41,23 +41,28 @@ interface SampleRowProps {
   isPlaying: boolean;
   isSelected: boolean;
   progress: number | null;
-  onToggle: () => void;
-  onSeek: (fraction: number) => void;
-  onSelect: () => void;
+  onToggle: (sample: Sample) => void;
+  onSeek: (sample: Sample, fraction: number) => void;
+  onSelect: (id: number) => void;
 }
 
-function SampleRow({ sample, isPlaying, isSelected, progress, onToggle, onSeek, onSelect }: SampleRowProps) {
+/**
+ * Memoized with stable handlers, so moving the selection or playing a sample only re-renders the
+ * rows that changed, not all of them (a pack can have hundreds).
+ */
+const SampleRow = memo(function SampleRow({ sample, isPlaying, isSelected, progress, onToggle, onSeek, onSelect }: SampleRowProps) {
   const label = sample.name.replace(/\.(wav|mp3)$/i, '');
   return (
     <div
       id={`sample-${sample.id}`}
-      onClick={onSelect}
-      className={`grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_minmax(0,14rem)_1fr_auto] items-center gap-x-4 gap-y-2 px-4 py-3 border-b border-zinc-900 transition-colors group ${
+      onClick={() => onSelect(sample.id)}
+      // scroll-margin keeps a row clear of the fixed nav bar and the sticky category header when it's scrolled into view
+      className={`scroll-mt-28 scroll-mb-4 grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_minmax(0,14rem)_1fr_auto] items-center gap-x-4 gap-y-2 px-4 py-3 border-b border-zinc-900 transition-colors group ${
         isSelected ? 'bg-brand-orange/[0.06] shadow-[inset_2px_0_0_#ffaa00]' : 'hover:bg-zinc-900/50'
       }`}
     >
       <button
-        onClick={e => { e.stopPropagation(); onSelect(); onToggle(); }}
+        onClick={e => { e.stopPropagation(); onSelect(sample.id); onToggle(sample); }}
         aria-label={`${isPlaying ? 'Stop' : 'Play'} ${label}`}
         aria-pressed={isPlaying}
         className={`w-11 h-11 flex items-center justify-center border transition-colors rounded-sm shrink-0 ${
@@ -80,7 +85,7 @@ function SampleRow({ sample, isPlaying, isSelected, progress, onToggle, onSeek, 
       <Waveform
         peaks={sample.peaks}
         progress={progress}
-        onSeek={f => { onSelect(); onSeek(f); }}
+        onSeek={f => { onSelect(sample.id); onSeek(sample, f); }}
         className="col-span-3 row-start-2 md:col-span-1 md:row-start-auto"
       />
 
@@ -97,7 +102,7 @@ function SampleRow({ sample, isPlaying, isSelected, progress, onToggle, onSeek, 
       </a> : <span className="col-start-3 row-start-1 md:col-start-auto md:row-start-auto w-11 h-11" />}
     </div>
   );
-}
+});
 
 interface PackCardProps {
   key?: string;
@@ -228,7 +233,18 @@ export function SamplesPage() {
 
   const select = useCallback((id: number) => {
     setSelectedId(id);
-    document.getElementById(`sample-${id}`)?.scrollIntoView({ block: 'nearest' });
+    // Instant, not the page's smooth scrolling: with a key held down, smooth scrolls interrupt each
+    // other and the selected row ends up off-screen.
+    document.getElementById(`sample-${id}`)?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  }, []);
+
+  // Stable row handlers (see SampleRow).
+  const { play, toggle } = player;
+  const onRowToggle = useCallback((sample: Sample) => toggle(sample), [toggle]);
+  const onRowSeek = useCallback((sample: Sample, fraction: number) => play(sample, fraction), [play]);
+  const onRowSelect = useCallback((id: number) => {
+    setSelectedId(id);
+    listRef.current?.focus({ preventScroll: true });
   }, []);
 
   // Keyboard: works while focus is anywhere inside the browser panel.
@@ -364,9 +380,9 @@ export function SamplesPage() {
                         isPlaying={player.playingId === sample.id}
                         isSelected={selectedId === sample.id}
                         progress={player.playingId === sample.id ? player.progress : null}
-                        onToggle={() => player.toggle(sample)}
-                        onSeek={f => player.play(sample, f)}
-                        onSelect={() => { setSelectedId(sample.id); listRef.current?.focus({ preventScroll: true }); }}
+                        onToggle={onRowToggle}
+                        onSeek={onRowSeek}
+                        onSelect={onRowSelect}
                       />
                     ))}
                   </div>
