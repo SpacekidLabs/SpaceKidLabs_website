@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import { api, postJson } from '../../lib/devApi';
 import { analyse, encodeMp3 } from '../../lib/devAudio';
 import { useProjects } from './useProjects';
+import { Heatmap, NudgeStrip, useMomentum, useSound } from './Momentum';
 import { button, errorText, ghostButton, input, label } from './ui';
 
 /**
@@ -362,8 +363,15 @@ function IdeaCard({ idea, projects, site, onChange, onPost }: {
 
 // ---------- Tab ----------
 
-export function LaunchpadTab({ onPost }: { onPost: (handoff: PostHandoff) => void }) {
+export function LaunchpadTab({ onPost, onIssues }: { onPost: (handoff: PostHandoff) => void; onIssues: () => void }) {
   const [status, setStatus] = useState<Status>('inbox');
+  const [cheer, setCheer] = useState('');
+  const sound = useSound();
+  const momentum = useMomentum(streak => {
+    sound.play();
+    setCheer(streak > 1 ? `Day ${streak}. Streak alive.` : 'Day 1. A new streak starts.');
+    setTimeout(() => setCheer(''), 5000);
+  });
   const [data, setData] = useState<ListResult | null>(null);
   const [error, setError] = useState('');
   const { data: projectData } = useProjects();
@@ -376,6 +384,8 @@ export function LaunchpadTab({ onPost }: { onPost: (handoff: PostHandoff) => voi
 
   const load = (s = status) =>
     api<ListResult>(`ideas?status=${s}`).then(r => { setData(r); setError(''); }).catch(e => setError(errorText(e)));
+  /** After anything you do: the list, and the streak (which may cheer). */
+  const changed = () => { load(); momentum.reload(); };
   useEffect(() => { setData(null); load(status); }, [status]);
 
   const inbox = data?.count.inbox ?? 0;
@@ -390,7 +400,12 @@ export function LaunchpadTab({ onPost }: { onPost: (handoff: PostHandoff) => voi
 
   return (
     <div className="space-y-10">
-      <Capture projects={projects} onSaved={() => (status === 'inbox' ? load() : setStatus('inbox'))} />
+      <div>
+        <NudgeStrip data={momentum.data} s={momentum.stats} sound={sound} cheer={cheer} onIssues={onIssues} />
+        <Capture projects={projects} onSaved={() => { momentum.reload(); if (status === 'inbox') load(); else setStatus('inbox'); }} />
+      </div>
+
+      <Heatmap s={momentum.stats} data={momentum.data} error={momentum.error} />
 
       <section>
         <div className="flex flex-wrap items-end justify-between gap-4 mb-4">
@@ -420,7 +435,7 @@ export function LaunchpadTab({ onPost }: { onPost: (handoff: PostHandoff) => voi
           ) : (
             <ul className="space-y-3">
               {data.ideas.map(i => (
-                <IdeaCard key={i.id} idea={i} projects={projects} site={site} onChange={() => load()}
+                <IdeaCard key={i.id} idea={i} projects={projects} site={site} onChange={changed}
                   onPost={idea => {
                     const s = split(idea.text || '');
                     onPost({ id: idea.id, title: s.title, body: s.body || idea.text });

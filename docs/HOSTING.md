@@ -72,7 +72,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 
 | Group | Tab | What it does |
 | --- | --- | --- |
-| Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Stored in Cloudflare D1, not in the repo (see below) |
+| Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Above it: your **streak** and nudges; below it: a year **heatmap** of what you shipped (see Momentum below). Ideas are stored in Cloudflare D1, not in the repo (see below) |
 | All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
 | All projects | Issues | GitHub issues of one project or all of them: list, create, edit title/text/labels, comment, close (done or not planned), reopen (`worker/issues.ts`). Changes issues, not files |
 | Website | Overview | Cloudflare traffic (`worker/analytics.ts`), plays and downloads (`worker/events.ts`), live version vs main, counts of sketches, samples and posts, DATABEND downloads, and the website repo's GitHub activity. Reads only |
@@ -141,6 +141,21 @@ Ideas are private, so they are **not** committed to this repo (everything in it 
 - **Bin** keeps an idea (Binned filter); **Delete forever** removes it and its files. To look at the data directly:
   **Storage & databases → D1 → spacekidlabs-ideas → Console**.
 - Locally (`npm run preview:cf`) wrangler uses a separate local database under `.wrangler/`, never the live one.
+
+### Momentum (Launchpad)
+
+`GET /api/dev/momentum` (`worker/momentum.ts`) lists everything shipped in the last 53 weeks as dated events. What
+counts: **anything public** (commits that add to `src/data/sketches.json`, `src/data/samples.ts` or `src/posts/`;
+removals and edits don't count) and **releases** in any of your repositories, **issues closed as done** in any
+repository, and **ideas captured**. It's one GitHub GraphQL query with the projects token (the first 100 of each kind
+a year) plus the D1 inbox; without a token only ideas count.
+
+- **Streak:** days in a row with at least one event, in your browser's time zone. It stays alive until midnight, so
+  a streak that hasn't been fed today still shows, with a "not yet today" nudge.
+- **Nudges** (above the capture box): the streak ending tonight, nothing public for 7+ days, and open issues untouched
+  for 21+ days (the two oldest, with a link to the rest).
+- When something you do makes today count for the first time, a random hit from your **VRAC** snares, claps and perc
+  plays. The speaker button turns it off (remembered in this browser).
 
 To try the dashboard locally: `npm run preview:cf` with `DEV_PASSWORD` (and a `GITHUB_TOKEN` if you want saves to
 really commit) in `.dev.vars`. Saving from there commits to the real `main`.

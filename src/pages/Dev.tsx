@@ -683,7 +683,7 @@ function useHashRoute() {
 
 function ActiveTab({ tab, sub, go }: { tab: TabId; sub: string; go: (tab: TabId, sub?: string) => void }) {
   switch (tab) {
-    case 'launchpad': return <LaunchpadTab onPost={h => { sessionStorage.setItem(POST_HANDOFF, JSON.stringify(h)); go('archive'); }} />;
+    case 'launchpad': return <LaunchpadTab onPost={h => { sessionStorage.setItem(POST_HANDOFF, JSON.stringify(h)); go('archive'); }} onIssues={() => go('issues')} />;
     case 'projects': return <ProjectsTab open={sub} onOpen={name => go('projects', name)} onIssues={repo => go('issues', repo)} />;
     case 'issues': return <IssuesTab repo={sub || '*'} onRepo={repo => go('issues', repo === '*' ? '' : repo)} />;
     case 'overview': return <OverviewTab onIssues={() => go('issues', REPO_URL.split('/').pop())} />;

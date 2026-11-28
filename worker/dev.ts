@@ -20,6 +20,7 @@ import { githubStats, projects } from './stats';
 import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
 import { eventCounts } from './events';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue } from './issues';
+import { momentum } from './momentum';
 import { addIdea, deleteIdea, getIdea, IdeaError, ideaFileResponse, listIdeas, readIdeaFile, updateIdea, type IdeasEnv } from './ideas';
 
 export interface DevEnv extends AnalyticsEnv, IdeasEnv {
@@ -542,6 +543,13 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
       return json(500, { error: 'The idea inbox failed. See the Worker logs.' });
     }
     return json(404, { error: 'Not found' });
+  }
+
+  if (action === 'momentum' && method === 'GET') {
+    const token = env.GITHUB_PROJECTS_TOKEN || env.GITHUB_TOKEN;
+    const pg = token && env.GITHUB_REPO ? new GitHub({ GITHUB_TOKEN: token, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API }) : null;
+    const [owner = '', site = ''] = (env.GITHUB_REPO ?? '').split('/');
+    return json(200, await momentum(env, pg ? (q, v) => pg.graphql(q, v) : null, owner, site));
   }
 
   if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) return json(503, { error: 'GITHUB_TOKEN or GITHUB_REPO is not set (see docs/HOSTING.md)' });
