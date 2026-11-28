@@ -77,7 +77,9 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 
 | Group | Tab | What it does |
 | --- | --- | --- |
-| Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Under the box: **Drafts**, everything saved but not on the site yet (what Claude adds lands there), to preview and publish. Ideas have **tags** (what kind of idea: sound, plugin, post…; set them under the pencil, click one to filter the inbox) and can be **merged** (the merge button: the text goes under the other idea's, with its files and tags). Above it: your **streak** and nudges; below it: a year **heatmap** of what you shipped (see Momentum below). Ideas are stored in Cloudflare D1, not in the repo (see below) |
+| Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Above it: the latest **weekly review** Claude wrote (folded). Under the box: **Today**, 1–3 open issues picked
+for today ("now" first, then small ones, then the ones waiting longest; "later" left out; one per project where
+possible), with **Done** (closes it) and **Not today** (skipped in this browser until midnight); then **Drafts**, everything saved but not on the site yet (what Claude adds lands there), to preview and publish. Ideas have **tags** (what kind of idea: sound, plugin, post…; set them under the pencil, click one to filter the inbox) and can be **merged** (the merge button: the text goes under the other idea's, with its files and tags). Above it: your **streak** and nudges; below it: a year **heatmap** of what you shipped (see Momentum below). Ideas are stored in Cloudflare D1, not in the repo (see below) |
 | Lab | Ship | **Tell people:** every public ship (sketch, samples, post, release) gets a promo checklist of your channels by itself; tick each one off, or mark "No promo needed". **Releases:** every repository with releases, its latest version, days since, and downloads per release and per file; open one for a changelog draft (issues closed as done and pull requests merged since the last release) to copy, or to open GitHub's new-release page with the next version and the notes filled in (`worker/ship.ts`) |
 | Lab | Messages | contact form messages, oldest unanswered first: **Reply** opens your mail app with the message quoted, then **Mark answered**; delete when done. The Launchpad nudges about unanswered ones (`worker/messages.ts`) |
 | All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
@@ -150,6 +152,16 @@ Ideas are private, so they are **not** committed to this repo (everything in it 
 - **Bin** keeps an idea (Binned filter); **Delete forever** removes it and its files. To look at the data directly:
   **Storage & databases → D1 → spacekidlabs-ideas → Console**.
 - Locally (`npm run preview:cf`) wrangler uses a separate local database under `.wrangler/`, never the live one.
+
+### Issue focus (Launchpad, `worker/focus.ts`)
+
+- **Labels:** `size:small` (an hour or two), `size:medium` (about a day), `size:big` (several days), `now`, `later`, the
+  same in every repository. They're created with colours the first time an issue gets one (`ensureLabels`). Claude
+  sets them when it opens issues; change them on GitHub, in the Issues tab, or with `set_issue_focus`.
+- **Today:** `GET /api/dev/today` searches open issues in all your repositories (not `later`, not archived; the 100
+  least recently touched) and ranks them: `now` +4, small +3, medium +1, big −2, plus up to +3 for time waiting.
+- **Weekly review:** a Claude scheduled task runs every Monday morning, calls `weekly_review_data` and saves a short
+  review with `save_weekly_review` (D1 table `reviews`, kept a year). It needs Claude with the spacekidlabs connector.
 
 ### Momentum (Launchpad)
 
@@ -233,7 +245,11 @@ on the free plan, with no extra secrets.
 | --- | --- |
 | `list_projects`, `project_activity` | your repositories; one project's pushes, commits, issues, PRs, Actions, releases |
 | `list_issues`, `get_issue` | issues of one project or all of them; one issue with comments |
-| `create_issue`, `update_issue`, `comment_on_issue` | open, edit, label, close/reopen, comment |
+| `create_issue`, `update_issue`, `comment_on_issue` | open (with size and priority), edit, label, close/reopen, comment |
+| `set_issue_focus` | size (`size:small/medium/big`) and priority (`now`/`later`) on many issues at once |
+| `today_pick` | 1–3 issues to do today, the same pick as the Launchpad |
+| `stale_issues`, `close_issues` | open issues untouched for 60+ days; close a list you approved, as not planned, with a comment |
+| `weekly_review_data`, `save_weekly_review` | everything for a weekly review in one call; the review Claude writes shows on the Launchpad |
 | `site_traffic` | Cloudflare analytics for the site (7 or 30 days), plus plays and downloads |
 | `list_sketches`, `add_sketch`, `update_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; new audio still goes through /dev). `add_sketch` saves a **hidden draft** |
 | `list_posts`, `get_post`, `publish_archive_post`, `update_post`, `delete_post` | archive posts, with the same limits as /dev. `publish_archive_post` saves a **draft** |

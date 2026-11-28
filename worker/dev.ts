@@ -23,6 +23,7 @@ import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
 import { eventCounts } from './events';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue } from './issues';
 import { momentum } from './momentum';
+import { ensureLabels, FocusError, latestReview, setFocusLabels, todayPick } from './focus';
 import {
   callback as driveCallback, connectUrl, disconnect as driveDisconnect, downloadFile, DriveError, driveStatus, folderIsPublic,
   listFolder, listReleases, queueRelease, removeRelease, siteOrigin, startUpload, type DriveEnv,
@@ -589,7 +590,9 @@ export async function promoteIdea(
   if (input.target === 'issue') {
     const repo = ownRepo(input.repo, owner);
     const files = idea.files.length ? `\n\n_${idea.files.length} file${idea.files.length > 1 ? 's' : ''} in the /dev idea inbox: ${idea.files.map(f => f.name).join(', ')}_` : '';
-    const { issue } = await saveIssue(rest, repo, { title, body: `${text}${files}` });
+    const labels = Array.isArray(input.labels) ? input.labels.map(String) : [];
+    await ensureLabels(rest, repo, labels);
+    const { issue } = await saveIssue(rest, repo, { title, body: `${text}${files}`, ...(labels.length && { labels }) });
     promotedTo = { kind: 'issue', label: `${issue.repo}#${issue.number}`, url: issue.url };
   } else if (input.target === 'sketch') {
     const audioFile = idea.files.find(f => f.type === 'audio/mpeg');
@@ -757,6 +760,15 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
     return json(404, { error: 'Not found' });
   }
 
+  if (action === 'review' && method === 'GET') {
+    try {
+      return json(200, { review: await latestReview(env) });
+    } catch (err) {
+      if (err instanceof FocusError || err instanceof IdeaError) return json(err.status, { error: err.message });
+      throw err;
+    }
+  }
+
   if (action === 'momentum' && method === 'GET') {
     const token = env.GITHUB_PROJECTS_TOKEN || env.GITHUB_TOKEN;
     const pg = token && env.GITHUB_REPO ? new GitHub({ GITHUB_TOKEN: token, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API }) : null;
@@ -854,8 +866,17 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
       if ((action === 'issue-save' || action === 'issue-comment') && method === 'POST') {
         const input = (await request.json().catch(() => ({}))) as Record<string, unknown>;
         const repo = ownRepo(input.repo, owner);
+        if (action === 'issue-save' && Array.isArray(input.labels)) await ensureLabels(rest, repo, input.labels.map(String));
         return json(200, action === 'issue-save' ? await saveIssue(rest, repo, input) : await commentIssue(rest, repo, input));
       }
+    }
+    if (action === 'today' && method === 'GET') {
+      const exclude = (url.searchParams.get('exclude') ?? '').split(',').filter(Boolean).slice(0, 50);
+      return json(200, await todayPick((m, p, b) => pg.rest(m, p, b), owner, 3, exclude));
+    }
+    if (action === 'focus-labels' && method === 'POST') {
+      const input = (await request.json()) as { repo: string; number: number; size?: 'small' | 'medium' | 'big' | null; priority?: 'now' | 'later' | null };
+      return json(200, await setFocusLabels((m, p, b) => pg.rest(m, p, b), ownRepo(input.repo, owner), Number(input.number), input));
     }
     if (action === 'releases' && method === 'GET') return json(200, await releases((q, v) => pg.graphql(q, v), owner));
     if (action === 'release-notes' && method === 'GET') {
@@ -883,7 +904,7 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
     if (action === 'samples' && method === 'POST') return json(200, await saveSamples(request, gh));
     if (action === 'post' && method === 'POST') return json(200, await savePost(request, gh));
   } catch (err) {
-    if (err instanceof HttpError || err instanceof IssueError || err instanceof IdeaError) return json(err.status, { error: err.message });
+    if (err instanceof HttpError || err instanceof IssueError || err instanceof IdeaError || err instanceof FocusError) return json(err.status, { error: err.message });
     // Errors from content.ts are input problems with plain messages; anything else stays in the log.
     const message = err instanceof Error ? err.message : String(err);
     console.error('Dev dashboard:', message);

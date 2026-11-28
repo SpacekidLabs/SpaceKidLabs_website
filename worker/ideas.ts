@@ -61,6 +61,8 @@ const SCHEMA = [
   // Sample releases queued by Claude from a Drive folder, waiting for /dev to make the previews (worker/drive.ts).
   `CREATE TABLE IF NOT EXISTS releases (
     id TEXT PRIMARY KEY, pack TEXT NOT NULL, category TEXT NOT NULL, max_seconds INTEGER NOT NULL, files TEXT NOT NULL, created INTEGER NOT NULL)`,
+  // Weekly reviews written by Claude (worker/focus.ts), newest shown on the Launchpad.
+  'CREATE TABLE IF NOT EXISTS reviews (id TEXT PRIMARY KEY, created INTEGER NOT NULL, markdown TEXT NOT NULL)',
 ];
 
 /** Columns added after the table first went live. ALTER fails with "duplicate column" once it's done: that's fine. */

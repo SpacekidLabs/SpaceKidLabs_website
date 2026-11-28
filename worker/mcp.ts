@@ -19,6 +19,7 @@ import { addIdea, getIdea, IdeaError, listIdeas, mergeIdeas, readIdeaFile, updat
 import { listMessages, markMessage, MessageError } from './messages';
 import { momentum, type MomentumEvent } from './momentum';
 import { releaseNotes, releases, SKIP, ShipError, tickPromo } from './ship';
+import { closeIssues, ensureLabels, focusLabels, FocusError, latestReview, saveReview, setFocusLabels, staleIssues, todayPick } from './focus';
 import { DriveError, listReleases } from './drive';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue, type Rest } from './issues';
 import { githubStats, projects } from './stats';
@@ -37,7 +38,7 @@ async function run(fn: () => Promise<unknown>): Promise<Result> {
     return ok(await fn());
   } catch (err) {
     const known = err instanceof HttpError || err instanceof IssueError || err instanceof IdeaError || err instanceof DriveError
-      || err instanceof MessageError || err instanceof ShipError;
+      || err instanceof MessageError || err instanceof ShipError || err instanceof FocusError;
     const message = err instanceof Error ? err.message : String(err);
     if (!known) console.error('MCP tool:', message);
     return { content: [{ type: 'text', text: message.slice(0, 500) }], isError: true };
@@ -49,6 +50,8 @@ const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
 
 const DAY = 86_400_000;
+const SIZE = z.enum(['small', 'medium', 'big']).describe('small: an hour or two; medium: about a day; big: several days');
+const PRIORITY = z.enum(['now', 'later']);
 const PUBLIC_KINDS = new Set(['sketch', 'samples', 'post', 'release']);
 
 /** YYYY-MM-DD of a time in a time zone (an IANA name like "Europe/Paris"); UTC if the name is unknown. */
@@ -94,6 +97,8 @@ export function buildServer(rawEnv: DevEnv): McpServer {
         'New sketches and archive posts you add are saved as hidden drafts: show the user what you made (list_drafts), and ' +
         'call publish_drafts only after they say yes in this chat. They can also publish them from /dev (Launchpad → Drafts). ' +
         'Edits to things already on the site commit straight to the website, which goes live about 2 minutes later. ' +
+        'Give every issue you create a size (small/medium/big) and priority (now/later) when you can tell. ' +
+        'Closing issues in bulk (close_issues) only after the user approved the exact list. ' +
         'Deleting asks for nothing more, so confirm with the user before delete_post, delete_sketch or delete_samples.',
     },
   );
@@ -152,15 +157,22 @@ export function buildServer(rawEnv: DevEnv): McpServer {
 
   server.registerTool('create_issue', {
     title: 'Create an issue',
-    description: 'Opens a new issue in a project. Labels that don\'t exist yet are created.',
+    description: 'Opens a new issue in a project. Labels that don\'t exist yet are created. Set size and priority when you can tell (they become the labels size:<size> and now/later, the same in every project).',
     inputSchema: {
       repo: z.string(),
       title: z.string().min(1).max(256),
       body: z.string().max(60_000).optional().describe('Markdown'),
       labels: z.array(z.string()).max(20).optional(),
+      size: SIZE.optional(),
+      priority: PRIORITY.optional(),
     },
     annotations: WRITE,
-  }, ({ repo, title, body, labels }) => run(() => saveIssue(rest, ownRepo(repo, owner), { title, body: body ?? '', labels: labels ?? [] })));
+  }, ({ repo, title, body, labels, size, priority }) => run(async () => {
+    const full = ownRepo(repo, owner);
+    const all = [...new Set([...(labels ?? []), ...focusLabels(size, priority)])];
+    await ensureLabels(rest, full, all);
+    return saveIssue(rest, full, { title, body: body ?? '', labels: all });
+  }));
 
   server.registerTool('update_issue', {
     title: 'Edit, close or reopen an issue',
@@ -175,11 +187,12 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       close_reason: z.enum(['completed', 'not_planned']).optional().describe('When closing. Default: completed'),
     },
     annotations: { ...WRITE, idempotentHint: true },
-  }, ({ repo, number, title, body, labels, state, close_reason }) => run(() => {
+  }, ({ repo, number, title, body, labels, state, close_reason }) => run(async () => {
     const input: Record<string, unknown> = { number };
     if (title !== undefined) input.title = title;
     if (body !== undefined) input.body = body;
     if (labels !== undefined) input.labels = labels;
+    if (labels?.length) await ensureLabels(rest, ownRepo(repo, owner), labels);
     if (state) input.state = state;
     if (close_reason) input.reason = close_reason;
     return saveIssue(rest, ownRepo(repo, owner), input);
@@ -191,6 +204,63 @@ export function buildServer(rawEnv: DevEnv): McpServer {
     inputSchema: { repo: z.string(), number: z.number().int().positive(), body: z.string().min(1).max(60_000) },
     annotations: WRITE,
   }, ({ repo, number, body }) => run(() => commentIssue(rest, ownRepo(repo, owner), { number, body })));
+
+  server.registerTool('set_issue_focus', {
+    title: 'Size and priority of issues',
+    description: 'Sets size (small/medium/big) and/or priority (now/later) on one or more issues, keeping their other labels. null removes it. Creates the labels where missing.',
+    inputSchema: {
+      issues: z.array(z.object({
+        repo: z.string(), number: z.number().int().positive(),
+        size: SIZE.nullable().optional(), priority: PRIORITY.nullable().optional(),
+      })).min(1).max(100),
+    },
+    annotations: { ...WRITE, idempotentHint: true },
+  }, ({ issues }) => run(async () => {
+    const results = [];
+    for (const i of issues) {
+      try {
+        results.push({ ok: true, ...(await setFocusLabels(rest, ownRepo(i.repo, owner), i.number, { size: i.size, priority: i.priority })) });
+      } catch (err) {
+        results.push({ ok: false, repo: i.repo, number: i.number, error: (err instanceof Error ? err.message : String(err)).slice(0, 200) });
+      }
+    }
+    return { results };
+  }));
+
+  server.registerTool('today_pick', {
+    title: 'What to work on today',
+    description:
+      'Picks 1–3 open issues to do today, the same pick as the Launchpad: "now" first, then small ones, then the ones waiting longest; ' +
+      '"later" issues are left out; one per project where possible. Each comes with why it was picked.',
+    inputSchema: {
+      count: z.number().int().min(1).max(3).optional().describe('Default: 3'),
+      exclude: z.array(z.string()).max(50).optional().describe('"repo#number" to skip, e.g. ones the user said not today'),
+    },
+    annotations: READ,
+  }, ({ count, exclude }) => run(() => todayPick(rest, owner, count ?? 3, exclude ?? [])));
+
+  server.registerTool('stale_issues', {
+    title: 'Stale issues',
+    description: 'Open issues in any project untouched for a number of days (default 60), oldest first, with their labels. To propose closing some as not planned.',
+    inputSchema: { days: z.number().int().min(7).max(1000).optional() },
+    annotations: READ,
+  }, ({ days }) => run(() => staleIssues(rest, owner, days ?? 60)));
+
+  server.registerTool('close_issues', {
+    title: 'Close issues in a batch',
+    description:
+      'Closes several issues, as not planned (default) or done, with an optional comment on each first. ' +
+      'Only after the user approved this exact list in the chat. Closed issues can be reopened.',
+    inputSchema: {
+      issues: z.array(z.object({ repo: z.string(), number: z.number().int().positive() })).min(1).max(100),
+      reason: z.enum(['not_planned', 'completed']).optional(),
+      comment: z.string().max(5000).optional().describe('e.g. "Closing in a cleanup; reopen if it matters again."'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  }, ({ issues, reason, comment }) => run(() => {
+    for (const i of issues) ownRepo(i.repo, owner);
+    return closeIssues(rest, owner, issues, reason ?? 'not_planned', comment);
+  }));
 
   // ---------- Website ----------
 
@@ -518,13 +588,15 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       title: z.string().min(1).max(200),
       text: z.string().max(100_000).optional().describe('Issue, sketch or post text; default: the idea text'),
       repo: z.string().optional().describe('For issues: repository name'),
+      size: SIZE.optional().describe('For issues'),
+      priority: PRIORITY.optional().describe('For issues'),
       tags: z.array(z.string()).max(12).optional().describe('For sketches and posts'),
       slug: z.string().optional().describe('For posts: URL name; default from the title'),
     },
     annotations: WRITE,
-  }, ({ id, target, title, text, repo, tags, slug }) => run(async () => {
+  }, ({ id, target, title, text, repo, tags, slug, size, priority }) => run(async () => {
     const idea = await getIdea(env, id);
-    return promoteIdea(env, gh, rest, owner, { id, target, title, text: text ?? idea.text, repo, tags, slug, hidden: true });
+    return promoteIdea(env, gh, rest, owner, { id, target, title, text: text ?? idea.text, repo, tags, slug, hidden: true, labels: focusLabels(size, priority) });
   }));
 
   server.registerTool('triage_inbox', {
@@ -556,7 +628,7 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       ideas: ideas.map(ideaOut), tagsInUse: r.tags,
       projects: p.ok ? p.items.filter(x => !x.archived && !x.fork).map(x => ({ name: x.name, description: x.description })) : `unavailable: ${p.error}`,
       possibleDuplicates: similar,
-      actions: 'issue (repo, title, text?) · sketch (title, text?, tags?) · post (title, text = the full post) · bin · keep (tags?, project?) · merge (into)',
+      actions: 'issue (repo, title, text?, size?, priority?) · sketch (title, text?, tags?) · post (title, text = the full post) · bin · keep (tags?, project?) · merge (into)',
     };
   }));
 
@@ -572,6 +644,8 @@ export function buildServer(rawEnv: DevEnv): McpServer {
         title: z.string().max(200).optional(),
         text: z.string().max(100_000).optional(),
         repo: z.string().optional(),
+        size: SIZE.optional().describe('For issues'),
+        priority: PRIORITY.optional().describe('For issues'),
         tags: z.array(z.string().max(30)).max(8).optional().describe('Tags for the idea (and for a sketch or post)'),
         project: z.string().optional(),
         into: z.string().optional().describe('For merge: the idea to merge into'),
@@ -598,6 +672,7 @@ export function buildServer(rawEnv: DevEnv): McpServer {
           const idea = await getIdea(env, d.id);
           const r = await promoteIdea(env, gh, rest, owner, {
             id: d.id, target: d.action, title: d.title, text: d.text ?? idea.text, repo: d.repo, tags: d.tags, hidden: true,
+            labels: focusLabels(d.size, d.priority),
           });
           result = r.idea.promotedTo;
         }
@@ -798,6 +873,51 @@ export function buildServer(rawEnv: DevEnv): McpServer {
     const notes = await releaseNotes((q, v) => pg.graphql(q, v), full, from);
     return { ...notes, latestRelease: latest, newReleasePage: `https://github.com/${full}/releases/new` };
   }));
+
+  // ---------- Weekly review ----------
+
+  server.registerTool('weekly_review_data', {
+    title: 'Weekly review: the numbers',
+    description:
+      'Everything for a weekly review in one call: streak and what shipped in the last 7 days, issues closed, the today pick, stale issues, ' +
+      'the idea inbox (count, oldest, tags), drafts waiting, promo not done, unanswered messages, samples queued, plays and downloads, ' +
+      'and last week\'s review. Write a short review from it (what moved, what\'s stuck, 3 suggestions for next week) and save it with save_weekly_review.',
+    inputSchema: { time_zone: z.string().optional().describe('IANA time zone, e.g. "Europe/Paris". Default: UTC') },
+    annotations: READ,
+  }, ({ time_zone }) => run(async () => {
+    const safe = async <T,>(f: () => Promise<T>): Promise<T | { error: string }> => {
+      try { return await f(); } catch (err) { return { error: (err instanceof Error ? err.message : String(err)).slice(0, 200) }; }
+    };
+    const [m, ideas, today, stale, drafts, plays, last] = await Promise.all([
+      loadMomentum(), listIdeas(env, 'inbox', 500), safe(() => todayPick(rest, owner, 3)), safe(() => staleIssues(rest, owner, 60)),
+      safe(() => listDrafts(gh)), eventCounts(env), latestReview(env),
+    ]);
+    const week = m.events.filter(e => e.t >= Date.now() - 7 * DAY);
+    const byKind = week.reduce<Record<string, string[]>>((acc, e) => ((acc[e.kind] ??= []).push(e.label), acc), {});
+    const oldest = [...ideas.ideas].sort((a, b) => a.created - b.created)[0];
+    return {
+      ...streakOf(m.events, time_zone ?? 'UTC'),
+      lastSevenDays: byKind,
+      todayPick: 'pick' in today ? today.pick : today,
+      openIssues: 'open' in today ? today.open : undefined,
+      stale: 'issues' in stale ? { total: stale.total, oldest: stale.issues.slice(0, 10) } : stale,
+      inbox: { waiting: ideas.count.inbox, oldestDays: oldest ? Math.floor((Date.now() - oldest.created) / DAY) : null, tags: ideas.tags },
+      drafts: 'posts' in drafts ? { posts: drafts.posts.map(p => p.meta.title ?? p.slug), sketches: drafts.sketches.map(s => s.title) } : drafts,
+      promoNotDone: (m.promo?.items ?? []).filter(i => !i.done).map(i => i.label),
+      unansweredMessages: m.messages?.unanswered ?? null,
+      samplesQueuedForRelease: m.queuedSamples,
+      plays: plays.configured && plays.ok ? plays.events.map(e => ({ what: e.label, last7Days: e.week, last30Days: e.month, top: e.top.slice(0, 3) })) : undefined,
+      lastReview: last ? { written: new Date(last.created).toISOString(), markdown: last.markdown } : null,
+      errors: m.errors.length ? m.errors : undefined,
+    };
+  }));
+
+  server.registerTool('save_weekly_review', {
+    title: 'Save the weekly review',
+    description: 'Saves the weekly review (markdown, short) so it shows at the top of the /dev Launchpad until the next one. Private: not on the site.',
+    inputSchema: { markdown: z.string().min(1).max(20_000) },
+    annotations: WRITE,
+  }, ({ markdown }) => run(async () => ({ ...(await saveReview(env, markdown)), shown: `${SITE}/dev#launchpad` })));
 
   return server;
 }

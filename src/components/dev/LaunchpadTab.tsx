@@ -7,6 +7,7 @@ import { analyse, encodeMp3 } from '../../lib/devAudio';
 import { useProjects } from './useProjects';
 import { Heatmap, NudgeStrip, useMomentum, useSound } from './Momentum';
 import { DraftsPanel } from './DraftsPanel';
+import { TodayPanel, WeeklyReview } from './TodayPanel';
 import { button, errorText, ghostButton, input, label } from './ui';
 
 /**
@@ -443,9 +444,12 @@ export function LaunchpadTab({ onPost, onIssues, onShip, onMessages, onSamples, 
   return (
     <div className="space-y-10">
       <div>
+        <div className="mb-4"><WeeklyReview /></div>
         <NudgeStrip data={momentum.data} s={momentum.stats} sound={sound} cheer={cheer} onIssues={onIssues} onShip={onShip} onMessages={onMessages} onSamples={onSamples} />
         <Capture projects={projects} onSaved={() => { momentum.reload(); if (status === 'inbox') load(); else setStatus('inbox'); }} />
       </div>
+
+      <TodayPanel onChange={() => momentum.reload()} />
 
       <DraftsPanel onPublished={() => momentum.reload()} onEditPost={onArchive} />
 
