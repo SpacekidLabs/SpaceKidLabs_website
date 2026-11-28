@@ -226,8 +226,8 @@ repo's `wrangler.jsonc` (`custom_domain: true` creates the DNS record and HTTPS 
 - **Noise Forge, DataPaint and Spectral Rotator** repos hold the built apps as they were on Netlify (`site/`,
   minified); the original source wasn't available. Build command: none.
 
-They were on `*.netlify.app` until November 2026. Those old addresses now 301-redirect to the subdomains: each
-Netlify site is linked to a folder in `netlify-redirects/` holding only a `_redirects` file (see its README).
+They were on `*.netlify.app` until November 2026. Those Netlify sites (noiseforge, datapaint, spectralrotatorfx,
+databenddaw) were deleted on 2026-11-28, so the old addresses no longer work; nothing links to them.
 
 ## The old Netlify site
 
