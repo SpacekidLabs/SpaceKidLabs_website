@@ -10,7 +10,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { z } from 'zod';
-import { addTextSketch, cleanEnv, content, GitHub, HttpError, publishPost, removeSketchById, BRANCH, type DevEnv } from './dev';
+import {
+  addTextSketch, changeSketch, cleanEnv, content, deletePost, deleteSamples, editPost, editSamples, getPost, GitHub, HttpError,
+  listPosts, listSamples, publishPost, removeSketchById, BRANCH, type DevEnv,
+} from './dev';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue, type Rest } from './issues';
 import { githubStats, projects } from './stats';
 import { cloudflareAnalytics } from './analytics';
@@ -67,7 +70,8 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       instructions:
         `Owner tools for SPACEKID LABS: ${owner}'s GitHub projects and issues, and the website ${SITE}. ` +
         `Repository names are short names under ${owner} (e.g. "${siteName}", "data-bend"); call list_projects to see them. ` +
-        'Sketch and archive tools commit to the website, which goes live about 2 minutes later.',
+        'Sketch, archive and sample tools commit to the website, which goes live about 2 minutes later. ' +
+        'Deleting asks for nothing more, so confirm with the user before delete_post, delete_sketch or delete_samples.',
     },
   );
 
@@ -203,6 +207,117 @@ export function buildServer(rawEnv: DevEnv): McpServer {
     inputSchema: { id: z.string().min(1) },
     annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
   }, ({ id }) => run(() => removeSketchById(gh, id)));
+
+  server.registerTool('update_sketch', {
+    title: 'Edit a sketch',
+    description: 'Changes a sketch\'s kind, title, date, text or tags (fields left out stay as they are). Can also remove its audio. New audio has to be uploaded from /dev. Commits to the website.',
+    inputSchema: {
+      id: z.string().min(1).describe('From list_sketches'),
+      kind: z.enum(['idea', 'demo']).optional(),
+      title: z.string().min(1).max(200).optional(),
+      text: z.string().max(20_000).optional(),
+      tags: z.array(z.string()).max(12).optional().describe('The full new set of tags'),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      remove_audio: z.boolean().optional(),
+    },
+    annotations: { ...WRITE, idempotentHint: true },
+  }, ({ id, remove_audio, ...patch }) => run(async () => {
+    const current = (await content(gh)).sketches.find((s: { id: string }) => s.id === id) as
+      | { kind: 'demo' | 'idea'; title: string; date: string; text?: string; tags?: string[] } | undefined;
+    if (!current) throw new HttpError(404, `No sketch with id "${id}"`);
+    const next = {
+      kind: patch.kind ?? current.kind, title: patch.title ?? current.title, date: patch.date ?? current.date,
+      text: patch.text ?? current.text ?? '', tags: patch.tags ?? current.tags ?? [],
+    };
+    const r = await changeSketch(gh, id, next, remove_audio || next.kind === 'idea' ? 'remove' : 'keep');
+    return { ...r, url: `${SITE}/sketches#${id}`, live: 'in about 2 minutes' };
+  }));
+
+  // ---------- Archive ----------
+
+  server.registerTool('list_posts', {
+    title: 'List archive posts',
+    description: `Every post on ${SITE}/archive: slug, title, date, tags, order (index), colour, summary; whether its text is editable (posts written in /dev or with publish_archive_post) or hand-written code; and which posts link to it.`,
+    inputSchema: {},
+    annotations: READ,
+  }, () => run(() => listPosts(gh)));
+
+  server.registerTool('get_post', {
+    title: 'Read an archive post',
+    description: 'One post\'s details and, if it was written in the dashboard, its plain text (source). Hand-written posts return source: null.',
+    inputSchema: { slug: z.string().min(1) },
+    annotations: READ,
+  }, ({ slug }) => run(() => getPost(gh, slug)));
+
+  server.registerTool('update_post', {
+    title: 'Edit an archive post',
+    description:
+      'Changes a post\'s title, date, tags, order, colour, summary or highlighted state (fields left out stay). The text (body) can only be ' +
+      'replaced for posts written in the dashboard; hand-written posts refuse it. The slug (URL) never changes. Commits to the website.',
+    inputSchema: {
+      slug: z.string().min(1),
+      title: z.string().min(1).max(200).optional(),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      tags: z.array(z.string()).max(8).optional().describe('The full new set of tags'),
+      index: z.number().int().min(0).optional().describe('Order in the archive; higher shows first'),
+      accent_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional().describe('null removes it'),
+      description: z.string().max(300).nullable().optional().describe('null removes it'),
+      highlighted: z.boolean().optional(),
+      body: z.string().min(1).max(100_000).optional().describe('New text, same format as publish_archive_post'),
+    },
+    annotations: { ...WRITE, idempotentHint: true },
+  }, ({ slug, accent_color, highlighted, body, ...rest }) => run(async () => {
+    const r = await editPost(gh, slug, { ...rest, accentColor: accent_color, isSpecial: highlighted }, body);
+    return { ...r, url: `${SITE}/archive/${slug}`, live: 'in about 2 minutes' };
+  }));
+
+  server.registerTool('delete_post', {
+    title: 'Delete an archive post',
+    description: 'Removes a post from the website (it stays in the Git history). Check list_posts first: links from other posts to it will break.',
+    inputSchema: { slug: z.string().min(1) },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  }, ({ slug }) => run(() => deletePost(gh, slug)));
+
+  // ---------- Samples ----------
+
+  server.registerTool('list_samples', {
+    title: 'List samples',
+    description: 'Samples on the website, from GitHub (newest). Filter by pack id and/or a name search. Pack ids: raw-sessions, vrac, cybernetics, drum-hits-2, shlims, one-shots, trap-tape, databend, and any others.',
+    inputSchema: {
+      pack: z.string().optional(),
+      search: z.string().optional().describe('Part of the name'),
+      limit: z.number().int().min(1).max(500).optional().describe('Default: 100'),
+    },
+    annotations: READ,
+  }, ({ pack, search, limit }) => run(async () => {
+    const { samples } = await listSamples(gh, pack);
+    const q = search?.toLowerCase();
+    const found = q ? samples.filter(s => s.name.toLowerCase().includes(q)) : samples;
+    const packs = [...new Set(samples.map(s => s.pack))];
+    return { total: found.length, packs: pack ? undefined : packs, samples: found.slice(0, limit ?? 100) };
+  }));
+
+  server.registerTool('update_samples', {
+    title: 'Edit samples',
+    description: 'Renames samples, changes their category or pack, or sets their Google Drive file ID (download button). One commit for all changes.',
+    inputSchema: {
+      changes: z.array(z.object({
+        id: z.number().int(),
+        name: z.string().min(1).max(120).optional(),
+        category: z.string().min(1).max(60).optional(),
+        pack: z.string().optional(),
+        drive_id: z.string().optional().describe('Empty string removes the download link'),
+      })).min(1).max(500),
+    },
+    annotations: { ...WRITE, idempotentHint: true },
+  }, ({ changes }) => run(() => editSamples(gh, changes.map(({ drive_id, ...c }) => ({ ...c, driveId: drive_id })))));
+
+  server.registerTool('delete_samples', {
+    title: 'Delete samples',
+    description: 'Removes samples and their MP3 previews from the website. The originals on Google Drive aren\'t touched.',
+    inputSchema: { ids: z.array(z.number().int()).min(1).max(500) },
+    annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+  }, ({ ids }) => run(() => deleteSamples(gh, ids)));
 
   server.registerTool('publish_archive_post', {
     title: 'Publish an archive post',

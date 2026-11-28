@@ -65,6 +65,22 @@ export function removeSketch(json: string, id: string) {
   return { text: JSON.stringify(list.filter(s => s.id !== id), null, 2) + '\n', entry };
 }
 
+/**
+ * Changes a sketch in place (same id, same position). `file`: undefined keeps the audio, null removes it, a path sets it.
+ * Returns the new file text, the new entry and the audio path it had before.
+ */
+export function updateSketch(json: string, id: string, input: SketchInput, file?: string | null) {
+  const list = JSON.parse(json) as SketchEntry[];
+  const i = list.findIndex(s => s.id === id);
+  if (i < 0) throw new Error(`No sketch with id "${id}"`);
+  const old = list[i];
+  const clean = cleanSketch(input);
+  const keep = file === undefined ? old.file : file ?? undefined;
+  const entry: SketchEntry = { id, ...clean, ...(keep && { file: keep }) };
+  list[i] = entry;
+  return { text: JSON.stringify(list, null, 2) + '\n', entry, oldFile: old.file };
+}
+
 // ---------- Samples (src/data/samples.ts) ----------
 
 export interface SampleInput {
@@ -117,6 +133,94 @@ export function appendSamples(ts: string, pack: string, category: string, items:
   const end = ts.lastIndexOf('];');
   if (end < 0 || !ts.includes('export const SAMPLES')) throw new Error('samples.ts has an unexpected shape');
   return { text: ts.slice(0, end) + rows.join('\n') + '\n' + ts.slice(end), previews };
+}
+
+export interface SampleRow {
+  id: number; pack: string; name: string; category: string; duration: string; format: string;
+  sizeBytes: number; preview: string; driveId: string;
+}
+
+const STR = '("(?:[^"\\\\]|\\\\.)*")';
+/** One SAMPLES row: two lines, exactly as appendSamples and scripts/make-sample-previews.ts write them. */
+const ROW = new RegExp(
+  `^  \\{ id: (\\d+), pack: ${STR}, name: ${STR}, category: ${STR}, duration: ${STR}, format: ${STR}, ` +
+    `sizeBytes: (\\d+), preview: ${STR}, driveId: ${STR},\\n    peaks: ("[^"]*") \\},$`,
+  'gm',
+);
+
+function rowOf(m: RegExpMatchArray): SampleRow {
+  return {
+    id: Number(m[1]), pack: JSON.parse(m[2]), name: JSON.parse(m[3]), category: JSON.parse(m[4]),
+    duration: JSON.parse(m[5]), format: JSON.parse(m[6]), sizeBytes: Number(m[7]), preview: JSON.parse(m[8]), driveId: JSON.parse(m[9]),
+  };
+}
+
+function rowText(r: SampleRow, peaks: string): string {
+  return (
+    `  { id: ${r.id}, pack: ${JSON.stringify(r.pack)}, name: ${JSON.stringify(r.name)}, category: ${JSON.stringify(r.category)}, ` +
+    `duration: ${JSON.stringify(r.duration)}, format: ${JSON.stringify(r.format)}, sizeBytes: ${r.sizeBytes}, ` +
+    `preview: ${JSON.stringify(r.preview)}, driveId: ${JSON.stringify(r.driveId)},\n    peaks: ${peaks} },`
+  );
+}
+
+/** Every sample row in samples.ts (all of them, or one pack's). */
+export function parseSamples(ts: string, pack?: string): SampleRow[] {
+  return [...ts.matchAll(ROW)].map(rowOf).filter(r => !pack || r.pack === pack);
+}
+
+export interface SampleChange { id: number; name?: string; category?: string; driveId?: string; pack?: string }
+
+/** Edits rows in place (name, category, Drive ID, pack). Unknown ids are an error, so nothing half-applies. */
+export function updateSamples(ts: string, changes: SampleChange[]) {
+  if (!changes.length) throw new Error('No changes');
+  const byId = new Map(changes.map(c => [Number(c.id), c]));
+  const packs = readPacks(ts);
+  const seen = new Set<number>();
+  const text = ts.replace(ROW, (...args) => {
+    const m = args.slice(0, 11) as unknown as RegExpMatchArray;
+    const row = rowOf(m);
+    const c = byId.get(row.id);
+    if (!c) return m[0];
+    seen.add(row.id);
+    if (c.name !== undefined) {
+      row.name = String(c.name).replace(/[\\/]/g, '-').trim().slice(0, 120);
+      if (!row.name) throw new Error(`Sample ${row.id}: the name is empty`);
+    }
+    if (c.category !== undefined) {
+      row.category = String(c.category).trim().slice(0, 60);
+      if (!row.category) throw new Error(`Sample ${row.id}: the category is empty`);
+    }
+    if (c.driveId !== undefined) {
+      row.driveId = String(c.driveId).trim();
+      if (row.driveId && !/^[A-Za-z0-9_-]{10,100}$/.test(row.driveId)) throw new Error(`Sample ${row.id}: that doesn't look like a Google Drive file ID`);
+    }
+    if (c.pack !== undefined) {
+      if (!packs.has(String(c.pack))) throw new Error(`Unknown pack "${c.pack}"`);
+      row.pack = String(c.pack);
+    }
+    return rowText(row, m[10]);
+  });
+  const missing = [...byId.keys()].filter(id => !seen.has(id));
+  if (missing.length) throw new Error(`No sample with id ${missing.join(', ')}`);
+  return { text, changed: seen.size };
+}
+
+/** Removes rows. Returns the new text and the preview files no remaining row uses. */
+export function removeSamples(ts: string, ids: number[]) {
+  const drop = new Set(ids.map(Number));
+  if (!drop.size) throw new Error('No samples');
+  const removed: SampleRow[] = [];
+  const text = ts.replace(new RegExp(ROW.source + '\\n?', 'gm'), (...args) => {
+    const m = args.slice(0, 11) as unknown as RegExpMatchArray;
+    const row = rowOf(m);
+    if (!drop.has(row.id)) return m[0];
+    removed.push(row);
+    return '';
+  });
+  const missing = [...drop].filter(id => !removed.some(r => r.id === id));
+  if (missing.length) throw new Error(`No sample with id ${missing.join(', ')}`);
+  const stillUsed = new Set(parseSamples(text).map(r => r.preview));
+  return { text, removed, previews: [...new Set(removed.map(r => r.preview))].filter(p => !stillUsed.has(p)) };
 }
 
 // ---------- Archive posts (src/posts/<slug>.tsx) ----------
@@ -205,5 +309,105 @@ ${jsx.join('\n\n')}
     </div>
   );
 }
+
+${sourceComment(body)}
 `;
+}
+
+// ---------- Editing posts ----------
+
+const SOURCE_TAG = '@dev-source ';
+
+/**
+ * Posts written in the dashboard keep their plain text in a comment at the end, so the text can be edited again.
+ * JSON keeps it on one line; "*\/" is escaped so it can't end the comment early.
+ */
+function sourceComment(body: string): string {
+  return `/* Written in the /dev dashboard. Edit the text there; this line is what it reads:\n${SOURCE_TAG}${JSON.stringify(body).replace(/\*\//g, '*\\/')}\n*/`;
+}
+
+/** Fields of PostMeta the dashboard can change. slug isn't one: it's the file name and the URL. */
+export interface PostMetaPatch {
+  title?: string; date?: string; tags?: string[]; index?: number; accentColor?: string | null;
+  description?: string | null; isSpecial?: boolean;
+}
+
+const META_BLOCK = /^export const meta: PostMeta = \{\n([\s\S]*?)\n\};$/m;
+const META_LINE = /^  ([A-Za-z]+): (.*),$/;
+
+export interface PostInfo {
+  slug: string;
+  /** Values that are plain data; anything else (e.g. a named constant) is in `fixed` and stays as written. */
+  meta: Record<string, unknown>;
+  fixed: Record<string, string>;
+  /** The plain text, for posts written in the dashboard; null for hand-written posts (code, labs). */
+  source: string | null;
+}
+
+export function readPost(slug: string, src: string): PostInfo {
+  const block = META_BLOCK.exec(src);
+  if (!block) throw new Error(`${slug}: no meta block`);
+  const meta: Record<string, unknown> = {};
+  const fixed: Record<string, string> = {};
+  for (const line of block[1].split('\n')) {
+    const m = META_LINE.exec(line);
+    if (!m) continue;
+    try {
+      meta[m[1]] = JSON.parse(m[2]);
+    } catch {
+      fixed[m[1]] = m[2];
+    }
+  }
+  const tagged = src.split('\n').find(l => l.startsWith(SOURCE_TAG));
+  let source: string | null = null;
+  if (tagged) {
+    try {
+      source = JSON.parse(tagged.slice(SOURCE_TAG.length)) as string;
+    } catch {
+      source = null;
+    }
+  }
+  return { slug, meta, fixed, source };
+}
+
+/**
+ * Changes a post's details, and its text if it was written in the dashboard. Other lines of the file stay as they are.
+ * Values the dashboard can't read (e.g. `accentColor: ACCENT`) can't be changed here either.
+ */
+export function updatePost(slug: string, src: string, patch: PostMetaPatch, body?: string): string {
+  const info = readPost(slug, src);
+  const next: Record<string, unknown> = { ...info.meta };
+  for (const key of Object.keys(patch) as Array<keyof PostMetaPatch>) {
+    if (patch[key] === undefined) continue;
+    if (key in info.fixed) throw new Error(`"${key}" is set in the post's code; change it there`);
+    next[key] = patch[key];
+  }
+
+  const title = String(next.title ?? '').trim().slice(0, 200);
+  if (!title) throw new Error('Title is required');
+  next.title = title;
+  if (!DATE.test(String(next.date))) throw new Error('Date must be YYYY-MM-DD');
+  next.tags = (Array.isArray(next.tags) ? next.tags : []).map(t => String(t).trim().toUpperCase().slice(0, 40)).filter(Boolean).slice(0, 8);
+  next.index = Math.max(0, Math.round(Number(next.index) || 0));
+  if (next.accentColor === null || next.accentColor === '') delete next.accentColor;
+  else if (next.accentColor !== undefined && !/^#[0-9a-fA-F]{6}$/.test(String(next.accentColor))) throw new Error('Colour must be like #ffaa00');
+  if (next.description === null || next.description === '') delete next.description;
+  else if (next.description !== undefined) next.description = String(next.description).replace(/\s+/g, ' ').trim().slice(0, 300);
+  if (next.isSpecial === false) delete next.isSpecial;
+
+  if (body !== undefined) {
+    if (info.source === null) throw new Error('This post is hand-written code (labs, components), so its text can only be changed in the code');
+    return postFile({
+      title, slug, date: String(next.date), tags: next.tags as string[], index: next.index as number,
+      accentColor: next.accentColor as string | undefined, description: next.description as string | undefined, body,
+    });
+  }
+
+  // Rewrite only the meta block: known keys in their usual order, then anything else the file had.
+  const order = ['title', 'slug', 'date', 'tags', 'index', 'accentColor', 'isSpecial', 'description'];
+  const keys = [...order, ...Object.keys(next), ...Object.keys(info.fixed)].filter((k, i, a) => a.indexOf(k) === i);
+  const lines = keys
+    .filter(k => k in next || k in info.fixed)
+    .map(k => `  ${k}: ${k in info.fixed ? info.fixed[k] : Array.isArray(next[k]) ? JSON.stringify(next[k]).replace(/","/g, '", "') : JSON.stringify(next[k])},`);
+  return src.replace(META_BLOCK, `export const meta: PostMeta = {\n${lines.join('\n')}\n};`);
 }

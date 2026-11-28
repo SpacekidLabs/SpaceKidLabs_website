@@ -13,8 +13,8 @@
  * Neither secret is ever put in a response or a log line.
  */
 import {
-  addSketch, appendSamples, postFile, removeSketch,
-  type PostInput, type SampleInput, type SketchInput,
+  addSketch, appendSamples, parseSamples, postFile, readPost, removeSamples, removeSketch, updatePost, updateSamples, updateSketch,
+  type PostInfo, type PostInput, type PostMetaPatch, type SampleChange, type SampleInput, type SketchInput,
 } from './content';
 import { githubStats, projects } from './stats';
 import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
@@ -293,6 +293,118 @@ export async function addTextSketch(gh: GitHub, input: SketchInput) {
   return { sha, id };
 }
 
+/** Edits a sketch. `audio`: "keep" (default), "remove", or a new MP3 in the form (field "audio"). */
+async function editSketch(request: Request, gh: GitHub) {
+  const form = await request.formData();
+  const { id, audio: audioMode, ...input } = JSON.parse(String(form.get('meta') ?? '{}')) as SketchInput & { id: string; audio?: 'keep' | 'remove' };
+  const audio = input.kind === 'demo' ? await mp3(form, 'audio') : null;
+  return changeSketch(gh, String(id), input, audio ? 'replace' : input.kind === 'idea' || audioMode === 'remove' ? 'remove' : 'keep', audio);
+}
+
+/**
+ * Changes a sketch's fields, and its audio: keep it, remove it, or replace it. A replacement gets a new file name,
+ * because browsers keep /audio/* for a week (public/_headers); the old file is deleted in the same commit.
+ */
+export async function changeSketch(gh: GitHub, id: string, input: SketchInput, audio: 'keep' | 'remove' | 'replace', bytes?: Uint8Array | null) {
+  const file = audio === 'replace' ? `/audio/sketches/${id}-${Date.now().toString(36)}.mp3` : audio === 'remove' ? null : undefined;
+  const sha = await gh.change(`Sketches: edit "${String(input.title).slice(0, 60)}"`, async read => {
+    const { text, entry, oldFile } = updateSketch(await must(read, SKETCHES), id, input, file);
+    const files: Array<{ path: string; content: string | Uint8Array | null }> = [{ path: SKETCHES, content: text }];
+    if (audio === 'replace' && bytes) files.push({ path: `public${entry.file}`, content: bytes });
+    if (oldFile && oldFile !== entry.file && oldFile.startsWith('/audio/sketches/')) files.push({ path: `public${oldFile}`, content: null });
+    return files;
+  });
+  return { sha, id };
+}
+
+// ---------- Archive posts ----------
+
+const POSTS_DIR = 'src/posts';
+const isSlug = (s: unknown): s is string => typeof s === 'string' && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) && s !== 'index' && s !== 'types';
+
+/** Every post's details, read in one GraphQL query, with the posts that link to each one. */
+export async function listPosts(gh: GitHub) {
+  const [owner, name] = gh.repo.split('/');
+  const data = await gh.graphql<{ repository: { object: { entries: Array<{ name: string; object: { text: string | null } | null }> } | null } }>(
+    `query ($owner: String!, $name: String!, $expr: String!) {
+      repository(owner: $owner, name: $name) { object(expression: $expr) { ... on Tree { entries { name object { ... on Blob { text } } } } } }
+    }`,
+    { owner, name, expr: `${BRANCH}:${POSTS_DIR}` },
+  );
+  const files = (data.repository.object?.entries ?? []).filter(e => e.name.endsWith('.tsx') && e.object?.text);
+  const posts: Array<Omit<PostInfo, 'source'> & { editableText: boolean; linkedFrom: string[] }> = [];
+  for (const f of files) {
+    const slug = f.name.slice(0, -4);
+    try {
+      const { source, ...info } = readPost(slug, f.object!.text!);
+      const linkedFrom = files.filter(o => o !== f && o.object!.text!.includes(`/archive/${slug}`)).map(o => o.name.slice(0, -4));
+      posts.push({ ...info, editableText: source !== null, linkedFrom });
+    } catch {
+      // A file without a meta block isn't a post the dashboard can handle; skip it.
+    }
+  }
+  return { posts: posts.sort((a, b) => Number(b.meta.index ?? 0) - Number(a.meta.index ?? 0)) };
+}
+
+export async function getPost(gh: GitHub, slug: unknown) {
+  if (!isSlug(slug)) throw new HttpError(400, 'Bad slug');
+  const text = await gh.read(`${POSTS_DIR}/${slug}.tsx`, await gh.head());
+  if (text === null) throw new HttpError(404, `No post "${slug}"`);
+  return readPost(slug, text);
+}
+
+/** Changes a post's details, and its text if it was written in the dashboard. */
+export async function editPost(gh: GitHub, slug: unknown, patch: PostMetaPatch, body?: string) {
+  if (!isSlug(slug)) throw new HttpError(400, 'Bad slug');
+  const path = `${POSTS_DIR}/${slug}.tsx`;
+  const sha = await gh.change(`Archive: edit "${slug}"`, async read => {
+    const src = await read(path);
+    if (src === null) throw new HttpError(404, `No post "${slug}"`);
+    return [{ path, content: updatePost(slug, src, patch, body) }];
+  });
+  return { sha, slug };
+}
+
+export async function deletePost(gh: GitHub, slug: unknown) {
+  if (!isSlug(slug)) throw new HttpError(400, 'Bad slug');
+  const path = `${POSTS_DIR}/${slug}.tsx`;
+  const sha = await gh.change(`Archive: delete "${slug}"`, async read => {
+    if ((await read(path)) === null) throw new HttpError(404, `No post "${slug}"`);
+    return [{ path, content: null }];
+  });
+  return { sha, slug };
+}
+
+// ---------- Samples: list, edit, delete ----------
+
+export async function listSamples(gh: GitHub, pack?: string | null) {
+  const head = await gh.head();
+  return { samples: parseSamples(await must(p => gh.read(p, head), SAMPLES), pack || undefined) };
+}
+
+export async function editSamples(gh: GitHub, changes: SampleChange[]) {
+  if (!Array.isArray(changes) || !changes.length || changes.length > 500) throw new HttpError(400, 'Send 1 to 500 changes');
+  let changed = 0;
+  const sha = await gh.change(`Samples: edit ${changes.length}`, async read => {
+    const r = updateSamples(await must(read, SAMPLES), changes);
+    changed = r.changed;
+    return [{ path: SAMPLES, content: r.text }];
+  });
+  return { sha, changed };
+}
+
+/** Removes samples and the preview MP3s no other sample uses. */
+export async function deleteSamples(gh: GitHub, ids: number[]) {
+  if (!Array.isArray(ids) || !ids.length || ids.length > 500) throw new HttpError(400, 'Send 1 to 500 ids');
+  let removed: string[] = [];
+  const sha = await gh.change(`Samples: delete ${ids.length}`, async read => {
+    const r = removeSamples(await must(read, SAMPLES), ids);
+    removed = r.removed.map(x => x.name);
+    return [{ path: SAMPLES, content: r.text }, ...r.previews.map(p => ({ path: `public${p}`, content: null }))];
+  });
+  return { sha, removed };
+}
+
 async function saveSamples(request: Request, gh: GitHub) {
   const form = await request.formData();
   const { pack, category, items } = JSON.parse(String(form.get('meta') ?? '{}')) as { pack: string; category: string; items: SampleInput[] };
@@ -404,6 +516,17 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
     }
     if (action === 'sketch' && method === 'POST') return json(200, await saveSketch(request, gh));
     if (action === 'sketch-delete' && method === 'POST') return json(200, await deleteSketch(request, gh));
+    if (action === 'sketch-update' && method === 'POST') return json(200, await editSketch(request, gh));
+    if (action === 'posts' && method === 'GET') return json(200, await listPosts(gh));
+    if (action === 'post-get' && method === 'GET') return json(200, await getPost(gh, url.searchParams.get('slug')));
+    if (action === 'post-update' && method === 'POST') {
+      const { slug, meta, body } = (await request.json()) as { slug: string; meta?: PostMetaPatch; body?: string };
+      return json(200, await editPost(gh, slug, meta ?? {}, body));
+    }
+    if (action === 'post-delete' && method === 'POST') return json(200, await deletePost(gh, ((await request.json()) as { slug: string }).slug));
+    if (action === 'samples-list' && method === 'GET') return json(200, await listSamples(gh, url.searchParams.get('pack')));
+    if (action === 'samples-update' && method === 'POST') return json(200, await editSamples(gh, ((await request.json()) as { changes: SampleChange[] }).changes));
+    if (action === 'samples-delete' && method === 'POST') return json(200, await deleteSamples(gh, ((await request.json()) as { ids: number[] }).ids));
     if (action === 'samples' && method === 'POST') return json(200, await saveSamples(request, gh));
     if (action === 'post' && method === 'POST') return json(200, await savePost(request, gh));
   } catch (err) {

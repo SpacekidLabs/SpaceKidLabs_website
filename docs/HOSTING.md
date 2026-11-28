@@ -75,9 +75,9 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 | All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
 | All projects | Issues | GitHub issues of one project or all of them: list, create, edit title/text/labels, comment, close (done or not planned), reopen (`worker/issues.ts`). Changes issues, not files |
 | Website | Overview | Cloudflare traffic (`worker/analytics.ts`), live version vs main, counts of sketches, samples and posts, DATABEND downloads, and the website repo's GitHub activity. Reads only |
-| Website | Sketches | `src/data/sketches.json`, demo audio in `public/audio/sketches/`. Deleting a sketch removes both |
-| Website | Samples | rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`. Originals stay on your computer; add Drive IDs later for download buttons |
-| Website | Archive post | `src/posts/<slug>.tsx` from plain text (paragraphs, `## headings`, `- lists`, `[links](https://...)`, `**bold**`). Labs and images still need code |
+| Website | Sketches | add, edit (all fields; replace or remove audio) and delete. `src/data/sketches.json`, demo audio in `public/audio/sketches/` (a replaced file gets a new name, since browsers cache /audio for a week) |
+| Website | Samples | add (rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`; originals stay on your computer), and edit: rename, change category or pack, set the Drive file ID (download button), delete with the preview |
+| Website | Archive | list, write, edit and delete posts (`src/posts/<slug>.tsx`). Title, date, tags, order, colour, summary and highlight can be changed on any post; the text only on posts written in the dashboard (they keep their plain text in a comment at the end of the file). Hand-written posts with labs are code: change their text in the code. The URL (slug) never changes |
 
 **Pull before working locally.** The dashboard commits straight to GitHub, so run `git pull` before editing in this
 folder, or your next push will be rejected until you do.
@@ -138,8 +138,9 @@ on the free plan, with no extra secrets.
 | `list_issues`, `get_issue` | issues of one project or all of them; one issue with comments |
 | `create_issue`, `update_issue`, `comment_on_issue` | open, edit, label, close/reopen, comment |
 | `site_traffic` | Cloudflare analytics for the site (7 or 30 days) |
-| `list_sketches`, `add_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; audio still goes through /dev) |
-| `publish_archive_post` | a new archive post from plain text |
+| `list_sketches`, `add_sketch`, `update_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; new audio still goes through /dev) |
+| `list_posts`, `get_post`, `publish_archive_post`, `update_post`, `delete_post` | archive posts, with the same limits as /dev |
+| `list_samples`, `update_samples`, `delete_samples` | samples: rename, category, pack, Drive ID, delete |
 
 **Connecting.** In Claude: **Settings → Connectors → Add custom connector**, URL `https://spacekidlabs.com/mcp`. Claude
 opens a spacekidlabs.com page that shows which app is asking; enter the /dev password there. In Claude Code:
