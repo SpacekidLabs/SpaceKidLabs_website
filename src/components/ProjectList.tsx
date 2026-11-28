@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { AudioComparison } from './AudioComparison';
 import { SpectralRotatorPreview } from './SpectralRotatorPreview';
 import { NoiseForgePreview } from './NoiseForgePreview';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { lazyNamed } from '../lib/lazyNamed';
 import { ReducedMotion } from './ReducedMotion';
 import { LasySynthPreview } from './LasySynthPreview';
@@ -140,14 +140,34 @@ const PROJECTS_DATA = [
   }
 ];
 
+/**
+ * Renders its children only once they're within a screen or so of the viewport, so the code and
+ * animation library behind them aren't downloaded with the page.
+ */
+function WhenNear({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || near) return;
+    if (typeof IntersectionObserver === 'undefined') { setNear(true); return; }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) setNear(true);
+    }, { rootMargin: '600px 0px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [near]);
+  return near ? <>{children}</> : <div ref={ref} className="w-full h-full" />;
+}
+
 export function ProjectList() {
   const renderPreview = (id: string) => {
     switch (id) {
       case 'gendy': return <GendyPreview />;
       case 'spectral': return <SpectralRotatorPreview />;
       case 'noiseforge': return <NoiseForgePreview />;
-      case 'waveset': return <Suspense fallback={null}><ReducedMotion><WavesetPreview /></ReducedMotion></Suspense>;
-      case 'datapaint': return <Suspense fallback={null}><ReducedMotion><DataPaintPreview /></ReducedMotion></Suspense>;
+      case 'waveset': return <WhenNear><Suspense fallback={null}><ReducedMotion><WavesetPreview /></ReducedMotion></Suspense></WhenNear>;
+      case 'datapaint': return <WhenNear><Suspense fallback={null}><ReducedMotion><DataPaintPreview /></ReducedMotion></Suspense></WhenNear>;
       case 'lasy': return <LasySynthPreview />;
       case 'people': return <PeopleVstPreview />;
       case 'datamos': return <DataMosPreview />;

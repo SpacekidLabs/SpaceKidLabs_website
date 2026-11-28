@@ -9,6 +9,8 @@ interface YoutubeFacadeProps {
 
 export function YoutubeFacade({ videoId, listId, title }: YoutubeFacadeProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [fallback, setFallback] = useState(false);
+  const thumbs = `https://img.youtube.com/vi/${videoId}`;
 
   const src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1${listId ? `&list=${listId}` : ''}`;
 
@@ -33,13 +35,16 @@ export function YoutubeFacade({ videoId, listId, title }: YoutubeFacadeProps) {
           className="absolute inset-0 w-full h-full cursor-pointer"
         >
           <img 
-            src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`} 
+            // 640px (~40 KB) on phones and the 500px desktop column, the full 1280px only where it's shown wider.
+            src={fallback ? `${thumbs}/hqdefault.jpg` : `${thumbs}/maxresdefault.jpg`}
+            srcSet={fallback ? undefined : `${thumbs}/sddefault.jpg 640w, ${thumbs}/maxresdefault.jpg 1280w`}
+            sizes="(min-width: 1024px) 500px, 100vw"
             alt={title}
             loading="lazy"
-            // Videos without an HD thumbnail get YouTube's 120x90 grey placeholder; fall back to hqdefault.
+            decoding="async"
+            // Videos without these thumbnails get YouTube's 120x90 grey placeholder; fall back to hqdefault.
             onLoad={e => {
-              const img = e.currentTarget;
-              if (img.naturalWidth <= 120 && img.src.includes('maxresdefault')) img.src = img.src.replace('maxresdefault', 'hqdefault');
+              if (!fallback && e.currentTarget.naturalWidth <= 120) setFallback(true);
             }}
             className="w-full h-full object-cover grayscale-[50%] group-hover:grayscale-0 transition-all duration-700" 
           />
