@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Lightbulb, LogOut, Mic, Pencil, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, ExternalLink, Lightbulb, LogOut, Mic, Pencil, Trash2 } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
 import { cn } from '../lib/utils';
@@ -196,6 +196,7 @@ function SamplesTab({ sub }: { sub: string }) {
   const [fileKey, setFileKey] = useState(0);
   const drive = useDrive();
   const [toDrive, setToDrive] = useState(true);
+  const [keepHidden, setKeepHidden] = useState(false);
   const upload = toDrive && Boolean(drive.status?.connected);
   /** "drive:<message>" after coming back from Google's sign-in. */
   const driveNotice = sub.startsWith('drive:') ? sub.slice(6) : '';
@@ -226,8 +227,11 @@ function SamplesTab({ sub }: { sub: string }) {
         const mp3 = await encodeMp3(a.buffer, { kbps: 192, maxSeconds });
         done.push({ meta: { name: file.name, duration: a.duration, format: a.format, sizeBytes: file.size, peaks: a.peaks, ...(driveId && { driveId }) }, mp3 });
       }
-      const sha = await publishSamples(pack, category, done, text => setStatus({ kind: 'busy', text }));
-      setStatus({ kind: 'ok', text: `Added ${files.length} sample${files.length > 1 ? 's' : ''} to ${PACKS.find(p => p.id === pack)?.title}${upload ? ', originals on Drive' : ''}:`, sha, href: `/samples?pack=${pack}` });
+      const sha = await publishSamples(pack, category, done, text => setStatus({ kind: 'busy', text }), keepHidden);
+      setStatus({
+        kind: 'ok', sha, href: keepHidden ? undefined : `/samples?pack=${pack}`,
+        text: `${keepHidden ? 'Saved' : 'Added'} ${files.length} sample${files.length > 1 ? 's' : ''} to ${PACKS.find(p => p.id === pack)?.title}${upload ? ', originals on Drive' : ''}${keepHidden ? ', hidden: show them in Edit samples below when ready' : ''}:`,
+      });
       setFiles([]); setFileKey(k => k + 1);
     } catch (err) {
       setStatus({ kind: 'error', text: errorText(err) });
@@ -264,6 +268,10 @@ function SamplesTab({ sub }: { sub: string }) {
           Upload the originals to the pack's Drive folder and link them (download buttons work right away)
         </label>
       )}
+      <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+        <input type="checkbox" checked={keepHidden} onChange={e => setKeepHidden(e.target.checked)} className="accent-brand-orange" />
+        <EyeOff className="w-4 h-4 text-zinc-500" aria-hidden /> Keep hidden: save them now, show them on the site later
+      </label>
       <Field name="Preview length limit (seconds)" hint="0 = whole file. For long clips, e.g. 30 keeps the first 30 s with a fade-out.">
         <input type="number" min={0} max={600} className={cn(input, 'w-32')} value={maxSeconds} onChange={e => setMaxSeconds(Number(e.target.value) || 0)} />
       </Field>
@@ -274,7 +282,7 @@ function SamplesTab({ sub }: { sub: string }) {
         </p>
       )}
       <button className={button} disabled={status.kind === 'busy' || !files.length || !category}>
-        Add {files.length || ''} sample{files.length === 1 ? '' : 's'}
+        {keepHidden ? 'Save' : 'Add'} {files.length || ''} sample{files.length === 1 ? '' : 's'}{keepHidden ? ' hidden' : ''}
       </button>
       <StatusLine status={status} />
     </form>
@@ -291,6 +299,7 @@ const PAGE = 100;
 function SampleEditor() {
   const [pack, setPack] = useState(PACKS[0].id);
   const [rows, setRows] = useState<SampleRow[] | null>(null);
+  const [hidden, setHidden] = useState<{ packs: string[]; samples: number[] }>({ packs: [], samples: [] });
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
   const [edits, setEdits] = useState<Map<number, SampleEdit>>(new Map());
@@ -303,13 +312,35 @@ function SampleEditor() {
 
   const load = (p = pack) => {
     setRows(null); setEdits(new Map()); setSelected(new Set()); setLimit(PAGE);
-    api<{ samples: SampleRow[] }>(`samples-list?pack=${encodeURIComponent(p)}`).then(r => setRows(r.samples)).catch(e => setStatus({ kind: 'error', text: errorText(e) }));
+    api<{ samples: SampleRow[]; hidden: typeof hidden }>(`samples-list?pack=${encodeURIComponent(p)}`)
+      .then(r => { setRows(r.samples); setHidden(r.hidden); })
+      .catch(e => setStatus({ kind: 'error', text: errorText(e) }));
   };
+  const packHidden = hidden.packs.includes(pack);
+  const hiddenIds = useMemo(() => new Set(hidden.samples), [hidden]);
+  const [onlyHidden, setOnlyHidden] = useState(false);
+
+  /** Hides or shows right away (one commit). Updates the list in place so it doesn't flicker. */
+  async function visibility(change: { packs?: string[]; samples?: number[] }, hide: boolean) {
+    const n = change.packs?.length ? `the pack ${PACKS.find(p => p.id === change.packs![0])?.title}` : `${change.samples!.length} sample${change.samples!.length === 1 ? '' : 's'}`;
+    try {
+      setStatus({ kind: 'busy', text: `${hide ? 'Hiding' : 'Showing'} ${n}…` });
+      const r = await postJson<{ sha: string }>('visibility', { ...change, hidden: hide });
+      setHidden(h => {
+        const apply = <T,>(list: T[], items: T[] = []) => hide ? [...new Set([...list, ...items])] : list.filter(x => !items.includes(x));
+        return { packs: apply(h.packs, change.packs), samples: apply(h.samples, change.samples) };
+      });
+      setStatus({ kind: 'ok', text: `${hide ? 'Hidden' : 'Shown'}: ${n}. ${hide ? 'Off the site' : 'On the site'} in about 2 minutes:`, sha: r.sha, href: hide ? undefined : `/samples?pack=${pack}` });
+    } catch (err) {
+      setStatus({ kind: 'error', text: errorText(err) });
+    }
+  }
   useEffect(() => { load(pack); }, [pack]);
 
   const categories = useMemo(() => [...new Set((rows ?? []).map(r => r.category))], [rows]);
   const q = query.trim().toLowerCase();
-  const shown = (rows ?? []).filter(r => (!category || r.category === category) && (!q || r.name.toLowerCase().includes(q)));
+  const shown = (rows ?? []).filter(r => (!category || r.category === category) && (!q || r.name.toLowerCase().includes(q)) && (!onlyHidden || hiddenIds.has(r.id)));
+  const hiddenCount = (rows ?? []).filter(r => hiddenIds.has(r.id)).length;
   const value = (r: SampleRow, k: keyof SampleEdit) => edits.get(r.id)?.[k] ?? r[k];
 
   function edit(r: SampleRow, k: keyof SampleEdit, v: string) {
@@ -367,8 +398,12 @@ function SampleEditor() {
       <h2 className="font-display font-bold text-xl text-white">Edit samples</h2>
       <div className="flex flex-wrap gap-3">
         <select className={cn(input, 'w-auto')} value={pack} onChange={e => setPack(e.target.value)} aria-label="Pack" disabled={busy}>
-          {PACKS.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+          {PACKS.map(p => <option key={p.id} value={p.id}>{p.title}{hidden.packs.includes(p.id) ? ' (hidden)' : ''}</option>)}
         </select>
+        <button type="button" disabled={busy || !rows} onClick={() => visibility({ packs: [pack] }, !packHidden)}
+          className={cn(ghostButton, 'py-2 inline-flex items-center gap-2', packHidden && 'border-amber-700/70 text-amber-300')}>
+          {packHidden ? <><Eye className="w-4 h-4" aria-hidden /> Show this pack</> : <><EyeOff className="w-4 h-4" aria-hidden /> Hide this pack</>}
+        </button>
         <select className={cn(input, 'w-auto')} value={category} onChange={e => setCategory(e.target.value)} aria-label="Category">
           <option value="">All categories</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -378,10 +413,25 @@ function SampleEditor() {
 
       {!rows ? <p className="text-sm text-zinc-500">Loading from GitHub…</p> : (
         <>
+          {packHidden && (
+            <p className="flex items-center gap-2 border border-amber-800/60 bg-amber-950/30 px-4 py-2.5 text-sm text-amber-200">
+              <EyeOff className="w-4 h-4 shrink-0" aria-hidden /> This whole pack is hidden: none of its samples are on the site. They're saved here until you show it.
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] text-zinc-400">
             <span>{shown.length} shown{selected.size ? ` · ${selected.size} selected` : ''}{edits.size ? ` · ${edits.size} edited` : ''}</span>
+            {hiddenCount > 0 && (
+              <label className="inline-flex items-center gap-1.5 text-amber-300 cursor-pointer">
+                <input type="checkbox" checked={onlyHidden} onChange={e => setOnlyHidden(e.target.checked)} className="accent-brand-orange" />
+                only the {hiddenCount} hidden
+              </label>
+            )}
             {selected.size > 0 && (
               <>
+                <button type="button" disabled={busy} onClick={() => visibility({ samples: [...selected] }, true)}
+                  className={cn(ghostButton, 'py-1 px-2 text-[11px] inline-flex items-center gap-1.5')}><EyeOff className="w-3.5 h-3.5" aria-hidden /> Hide selected</button>
+                <button type="button" disabled={busy} onClick={() => visibility({ samples: [...selected] }, false)}
+                  className={cn(ghostButton, 'py-1 px-2 text-[11px] inline-flex items-center gap-1.5')}><Eye className="w-3.5 h-3.5" aria-hidden /> Show selected</button>
                 <select className={cn(input, 'w-auto py-1 text-xs')} value={moveTo} aria-label="Move selected to pack"
                   onChange={e => { bulk('pack', e.target.value); setMoveTo(''); }}>
                   <option value="">Move selected to…</option>
@@ -400,17 +450,28 @@ function SampleEditor() {
                 <tr>
                   <th className="p-2 w-8"><input type="checkbox" aria-label="Select all shown" checked={allShown} className="accent-brand-orange"
                     onChange={() => setSelected(allShown ? new Set() : new Set(shown.map(r => r.id)))} /></th>
+                  <th className="p-2 w-10"><span className="sr-only">On the site</span></th>
                   <th className="p-2">Name</th><th className="p-2">Category</th><th className="p-2">Drive file ID</th><th className="p-2 w-20">Length</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-900">
                 {shown.slice(0, limit).map(r => {
                   const moved = edits.get(r.id)?.pack;
+                  const off = hiddenIds.has(r.id);
                   return (
-                    <tr key={r.id} className={cn(edits.has(r.id) && 'bg-brand-orange/5', selected.has(r.id) && 'bg-zinc-900/60')}>
+                    <tr key={r.id} className={cn(edits.has(r.id) && 'bg-brand-orange/5', selected.has(r.id) && 'bg-zinc-900/60', (off || packHidden) && 'opacity-60')}>
                       <td className="p-2"><input type="checkbox" aria-label={`Select ${r.name}`} checked={selected.has(r.id)} onChange={() => toggle(r.id)} className="accent-brand-orange" /></td>
+                      <td className="p-1">
+                        <button type="button" disabled={busy} onClick={() => visibility({ samples: [r.id] }, !off)}
+                          title={off ? 'Hidden from the site. Click to show it.' : 'On the site. Click to hide it.'}
+                          aria-label={off ? `Show ${r.name} on the site` : `Hide ${r.name} from the site`}
+                          className={cn('p-1.5 disabled:opacity-40', off ? 'text-amber-400 hover:text-white' : 'text-zinc-500 hover:text-white')}>
+                          {off ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="w-4 h-4" aria-hidden />}
+                        </button>
+                      </td>
                       <td className="p-1 min-w-[14rem]">
                         <input className={cell} value={value(r, 'name')} onChange={e => edit(r, 'name', e.target.value)} aria-label={`Name of ${r.name}`} />
+                        {off && <span className="px-2 font-mono text-[10px] uppercase tracking-widest text-amber-400">Hidden</span>}
                         {moved && <span className="px-2 font-mono text-[10px] text-brand-orange">→ {PACKS.find(p => p.id === moved)?.title}</span>}
                       </td>
                       <td className="p-1 min-w-[9rem]"><input className={cell} list="dev-sample-categories" value={value(r, 'category')} onChange={e => edit(r, 'category', e.target.value)} aria-label={`Category of ${r.name}`} /></td>
@@ -436,7 +497,7 @@ function SampleEditor() {
               <Trash2 className="w-4 h-4" aria-hidden /> Delete {selected.size || ''} selected
             </button>
           </div>
-          <p className="text-xs text-zinc-500">The list comes from GitHub, so it includes changes that aren't live yet. Deleting removes the sample and its preview from the site; the original in Google Drive stays.</p>
+          <p className="text-xs text-zinc-500">The list comes from GitHub, so it includes changes that aren't live yet. The eye hides a sample from the site (or the whole pack with Hide this pack) without deleting it; click again to show it. Deleting removes the sample and its preview from the site; the original in Google Drive stays.</p>
         </>
       )}
       <StatusLine status={status} />
@@ -452,6 +513,8 @@ interface PostSummary {
   slug: string;
   meta: { title?: string; date?: string; tags?: string[]; index?: number; accentColor?: string; description?: string; isSpecial?: boolean };
   fixed: Record<string, string>;
+  /** Saved in src/posts/drafts: not on the site. */
+  draft: boolean;
   editableText: boolean;
   linkedFrom: string[];
 }
@@ -474,6 +537,7 @@ function ArchiveTab() {
   const [description, setDescription] = useState('');
   const [order, setOrder] = useState(0);
   const [special, setSpecial] = useState(false);
+  const [draft, setDraft] = useState(false);
   const [body, setBody] = useState('');
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   /** Narrow screens show the list or the form, not both. */
@@ -499,7 +563,7 @@ function ArchiveTab() {
 
   function startNew() {
     setFromIdea(null); setEditing(null); setSource(null); setTitle(''); setSlug(''); setSlugEdited(false); setDate(today()); setTags('');
-    setAccent('#ffaa00'); setDescription(''); setBody(''); setSpecial(false); setStatus({ kind: 'idle' });
+    setAccent('#ffaa00'); setDescription(''); setBody(''); setSpecial(false); setDraft(false); setStatus({ kind: 'idle' });
     setFormOpen(true);
     window.scrollTo({ top: 0 });
   }
@@ -511,7 +575,7 @@ function ArchiveTab() {
     setEditing(p); setStatus({ kind: 'idle' }); setLoadingPost(true);
     const m = p.meta;
     setTitle(m.title ?? ''); setDate(m.date ?? today()); setTags((m.tags ?? []).join(', ')); setAccent(m.accentColor ?? '#ffaa00');
-    setDescription(m.description ?? ''); setOrder(Number(m.index ?? 0)); setSpecial(Boolean(m.isSpecial)); setBody(''); setSource(null);
+    setDescription(m.description ?? ''); setOrder(Number(m.index ?? 0)); setSpecial(Boolean(m.isSpecial)); setDraft(p.draft); setBody(''); setSource(null);
     setFormOpen(true);
     window.scrollTo({ top: 0 });
     try {
@@ -531,20 +595,41 @@ function ArchiveTab() {
       if (editing) {
         const meta: Record<string, unknown> = { title, date, tags: tags.split(','), index: order, description: description || null, isSpecial: special };
         if (!('accentColor' in editing.fixed)) meta.accentColor = accent;
-        const r = await postJson<{ sha: string; slug: string }>('post-update', { slug: editing.slug, meta, ...(source !== null && { body }) });
-        setStatus({ kind: 'ok', text: `Updated "${title}":`, sha: r.sha, href: `/archive/${r.slug}` });
+        const r = await postJson<{ sha: string; slug: string }>('post-update', { slug: editing.slug, meta, draft, ...(source !== null && { body }) });
+        const what = draft === editing.draft ? (draft ? 'Saved draft' : 'Updated') : draft ? 'Unpublished (now a draft)' : 'Published';
+        setStatus({ kind: 'ok', text: `${what} "${title}":`, sha: r.sha, href: draft ? undefined : `/archive/${r.slug}` });
+        setEditing({ ...editing, draft });
       } else {
         const r = await postJson<{ sha: string; slug: string }>('post', {
-          title, slug: finalSlug, date, tags: tags.split(','), index: nextIndex, accentColor: accent, description, body,
+          title, slug: finalSlug, date, tags: tags.split(','), index: nextIndex, accentColor: accent, description, body, draft,
         });
-        if (fromIdea) {
+        if (fromIdea && !draft) {
           await postJson('idea-update', { id: fromIdea.id, status: 'promoted', promotedTo: { kind: 'post', label: title, url: `/archive/${r.slug}` } }).catch(() => {});
           setFromIdea(null);
         }
+        const wasDraft = draft;
         startNew();
-        setStatus({ kind: 'ok', text: `Published "${title}":`, sha: r.sha, href: `/archive/${r.slug}` });
+        setStatus(wasDraft
+          ? { kind: 'ok', text: `Saved "${title}" as a draft (not on the site). Publish it from the list when ready:`, sha: r.sha }
+          : { kind: 'ok', text: `Published "${title}":`, sha: r.sha, href: `/archive/${r.slug}` });
       }
       load();
+    } catch (err) {
+      setStatus({ kind: 'error', text: errorText(err) });
+    }
+  }
+
+  /** Publish a draft or take a post off the site, straight from the list. */
+  async function toggleDraft(p: PostSummary) {
+    const toDraft = !p.draft;
+    const name = p.meta.title ?? p.slug;
+    if (toDraft && !confirm(`Take "${name}" off the site? It stays saved here as a draft.${p.linkedFrom.length ? `\n\nLinks to it from ${p.linkedFrom.join(', ')} will break until it's back.` : ''}`)) return;
+    try {
+      setStatus({ kind: 'busy', text: `${toDraft ? 'Unpublishing' : 'Publishing'} "${name}"…` });
+      const r = await postJson<{ sha: string; slug: string }>('post-update', { slug: p.slug, meta: {}, draft: toDraft });
+      setStatus({ kind: 'ok', text: toDraft ? `"${name}" is now a draft, off the site in about 2 minutes:` : `Published "${name}", live in about 2 minutes:`, sha: r.sha, href: toDraft ? undefined : `/archive/${p.slug}` });
+      setPosts(list => list?.map(x => x.slug === p.slug ? { ...x, draft: toDraft } : x) ?? null);
+      if (editing?.slug === p.slug) { setEditing({ ...editing, draft: toDraft }); setDraft(toDraft); }
     } catch (err) {
       setStatus({ kind: 'error', text: errorText(err) });
     }
@@ -578,16 +663,25 @@ function ArchiveTab() {
         {listError ? <p className="font-mono text-xs text-red-400">{listError}</p> : !posts ? <p className="text-sm text-zinc-500">Loading…</p> : (
           <ul className="divide-y divide-zinc-900 border-y border-zinc-900 max-h-[70vh] overflow-y-auto">
             {shown.map(p => (
-              <li key={p.slug}>
+              <li key={p.slug} className="flex items-stretch">
                 <button type="button" onClick={() => startEdit(p)} aria-current={editing?.slug === p.slug}
-                  className={cn('w-full text-left flex items-start gap-3 px-2 py-2.5 transition-colors', editing?.slug === p.slug ? 'bg-brand-orange/10' : 'hover:bg-zinc-900/60')}>
+                  className={cn('flex-1 min-w-0 text-left flex items-start gap-3 px-2 py-2.5 transition-colors', editing?.slug === p.slug ? 'bg-brand-orange/10' : 'hover:bg-zinc-900/60', p.draft && 'opacity-70')}>
                   <span className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: p.meta.accentColor ?? '#ffaa00' }} aria-hidden />
                   <span className="min-w-0">
-                    <span className="block text-sm text-zinc-200 leading-snug">{p.meta.title ?? p.slug}</span>
+                    <span className="block text-sm text-zinc-200 leading-snug">
+                      {p.draft && <span className="mr-2 px-1.5 py-0.5 border border-amber-700/70 font-mono text-[9px] uppercase tracking-widest text-amber-300 align-middle">Draft</span>}
+                      {p.meta.title ?? p.slug}
+                    </span>
                     <span className="font-mono text-[10px] text-zinc-500">
                       #{p.meta.index} · {p.meta.date}{p.editableText ? ' · text editable' : ''}
                     </span>
                   </span>
+                </button>
+                <button type="button" disabled={busy} onClick={() => toggleDraft(p)}
+                  title={p.draft ? 'Draft: not on the site. Click to publish.' : 'On the site. Click to unpublish (keep as a draft).'}
+                  aria-label={p.draft ? `Publish ${p.meta.title ?? p.slug}` : `Unpublish ${p.meta.title ?? p.slug}`}
+                  className={cn('px-3 shrink-0 disabled:opacity-40', p.draft ? 'text-amber-400 hover:text-white' : 'text-zinc-500 hover:text-white')}>
+                  {p.draft ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="w-4 h-4" aria-hidden />}
                 </button>
               </li>
             ))}
@@ -602,7 +696,8 @@ function ArchiveTab() {
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display font-bold text-xl text-white truncate">{editing ? `Edit: ${editing.meta.title}` : 'New post'}</h2>
           {fromIdea && !editing && <span className="font-mono text-[11px] text-brand-gold shrink-0">From the idea inbox</span>}
-          {editing && <Link to={`/archive/${editing.slug}`} target="_blank" className="font-mono text-[11px] text-zinc-400 hover:text-white shrink-0 inline-flex items-center gap-1">View <ExternalLink className="w-3 h-3" aria-hidden /></Link>}
+          {editing?.draft && <span className="px-1.5 py-0.5 border border-amber-700/70 font-mono text-[10px] uppercase tracking-widest text-amber-300 shrink-0">Draft · not on the site</span>}
+          {editing && !editing.draft && <Link to={`/archive/${editing.slug}`} target="_blank" className="font-mono text-[11px] text-zinc-400 hover:text-white shrink-0 inline-flex items-center gap-1">View <ExternalLink className="w-3 h-3" aria-hidden /></Link>}
         </div>
         <div className="grid md:grid-cols-2 gap-5">
           <Field name="Title"><input className={input} value={title} onChange={e => setTitle(e.target.value)} required maxLength={200} /></Field>
@@ -643,9 +738,15 @@ function ArchiveTab() {
               <textarea className={cn(input, 'min-h-80 font-mono text-[13px] leading-relaxed')} value={body} onChange={e => setBody(e.target.value)} required />
             </Field>
           )}
+        <label className={cn('flex items-center gap-2 text-sm cursor-pointer', draft ? 'text-amber-300' : 'text-zinc-400')}>
+          <input type="checkbox" checked={draft} onChange={e => setDraft(e.target.checked)} className="accent-brand-orange" />
+          <EyeOff className="w-4 h-4" aria-hidden /> Draft: save it here without putting it on the site
+        </label>
         <div className="flex flex-wrap gap-2">
           <button className={button} disabled={busy || !title || !finalSlug || (!editing && !body) || (editing !== null && loadingPost)}>
-            {editing ? 'Save changes' : 'Publish post'}
+            {!editing ? (draft ? 'Save draft' : 'Publish post')
+              : draft === editing.draft ? (draft ? 'Save draft' : 'Save changes')
+              : draft ? 'Save and unpublish' : 'Save and publish'}
           </button>
           {editing && (
             <>

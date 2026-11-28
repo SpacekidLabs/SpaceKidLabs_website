@@ -13,7 +13,8 @@
  * Neither secret is ever put in a response or a log line.
  */
 import {
-  addSketch, appendSamples, parseSamples, postFile, readPost, removeSamples, removeSketch, updatePost, updateSamples, updateSketch,
+  addSketch, appendSamples, parseSamples, postFile, readHidden, readPost, rebaseImports, readPacks, removeSamples, removeSketch, setHidden,
+  updatePost, updateSamples, updateSketch,
   type PostInfo, type PostInput, type PostMetaPatch, type SampleChange, type SampleInput, type SketchInput,
 } from './content';
 import { githubStats, projects } from './stats';
@@ -43,6 +44,8 @@ const COOKIE = 'dev_session';
 const SESSION_DAYS = 30;
 const SKETCHES = 'src/data/sketches.json';
 const SAMPLES = 'src/data/samples.ts';
+/** Packs and samples saved but not shown on /samples yet. */
+const HIDDEN = 'src/data/hidden.json';
 
 const json = (status: number, body: object, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
@@ -337,25 +340,39 @@ export async function changeSketch(gh: GitHub, id: string, input: SketchInput, a
 // ---------- Archive posts ----------
 
 const POSTS_DIR = 'src/posts';
+/** Drafts: saved posts that aren't built into the site (src/posts/index.ts only reads ./*.tsx). */
+const DRAFTS_DIR = 'src/posts/drafts';
 const isSlug = (s: unknown): s is string => typeof s === 'string' && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) && s !== 'index' && s !== 'types';
+const postPath = (slug: string, draft: boolean) => `${draft ? DRAFTS_DIR : POSTS_DIR}/${slug}.tsx`;
 
-/** Every post's details, read in one GraphQL query, with the posts that link to each one. */
-export async function listPosts(gh: GitHub) {
+type TreeFiles = { object: { entries: Array<{ name: string; object: { text: string | null } | null }> } | null };
+
+/** Every .tsx file in src/posts and src/posts/drafts, read in one GraphQL query. */
+export async function postFiles(gh: GitHub) {
   const [owner, name] = gh.repo.split('/');
-  const data = await gh.graphql<{ repository: { object: { entries: Array<{ name: string; object: { text: string | null } | null }> } | null } }>(
-    `query ($owner: String!, $name: String!, $expr: String!) {
-      repository(owner: $owner, name: $name) { object(expression: $expr) { ... on Tree { entries { name object { ... on Blob { text } } } } } }
+  const data = await gh.graphql<{ repository: { live: TreeFiles['object']; drafts: TreeFiles['object'] } }>(
+    `query ($owner: String!, $name: String!, $live: String!, $drafts: String!) {
+      repository(owner: $owner, name: $name) {
+        live: object(expression: $live) { ... on Tree { entries { name object { ... on Blob { text } } } } }
+        drafts: object(expression: $drafts) { ... on Tree { entries { name object { ... on Blob { text } } } } }
+      }
     }`,
-    { owner, name, expr: `${BRANCH}:${POSTS_DIR}` },
+    { owner, name, live: `${BRANCH}:${POSTS_DIR}`, drafts: `${BRANCH}:${DRAFTS_DIR}` },
   );
-  const files = (data.repository.object?.entries ?? []).filter(e => e.name.endsWith('.tsx') && e.object?.text);
-  const posts: Array<Omit<PostInfo, 'source'> & { editableText: boolean; linkedFrom: string[] }> = [];
+  const pick = (t: TreeFiles['object'], draft: boolean) =>
+    (t?.entries ?? []).filter(e => e.name.endsWith('.tsx') && e.object?.text).map(e => ({ slug: e.name.slice(0, -4), text: e.object!.text!, draft }));
+  return [...pick(data.repository.live, false), ...pick(data.repository.drafts, true)];
+}
+
+/** Every post's details (drafts too, marked draft: true), with the posts that link to each one. */
+export async function listPosts(gh: GitHub) {
+  const files = await postFiles(gh);
+  const posts: Array<Omit<PostInfo, 'source'> & { draft: boolean; editableText: boolean; linkedFrom: string[] }> = [];
   for (const f of files) {
-    const slug = f.name.slice(0, -4);
     try {
-      const { source, ...info } = readPost(slug, f.object!.text!);
-      const linkedFrom = files.filter(o => o !== f && o.object!.text!.includes(`/archive/${slug}`)).map(o => o.name.slice(0, -4));
-      posts.push({ ...info, editableText: source !== null, linkedFrom });
+      const { source, ...info } = readPost(f.slug, f.text);
+      const linkedFrom = files.filter(o => o !== f && !o.draft && o.text.includes(`/archive/${f.slug}`)).map(o => o.slug);
+      posts.push({ ...info, draft: f.draft, editableText: source !== null, linkedFrom });
     } catch {
       // A file without a meta block isn't a post the dashboard can handle; skip it.
     }
@@ -363,40 +380,79 @@ export async function listPosts(gh: GitHub) {
   return { posts: posts.sort((a, b) => Number(b.meta.index ?? 0) - Number(a.meta.index ?? 0)) };
 }
 
-export async function getPost(gh: GitHub, slug: unknown) {
-  if (!isSlug(slug)) throw new HttpError(400, 'Bad slug');
-  const text = await gh.read(`${POSTS_DIR}/${slug}.tsx`, await gh.head());
-  if (text === null) throw new HttpError(404, `No post "${slug}"`);
-  return readPost(slug, text);
+/** A post's file, live or draft. */
+async function findPost(read: (p: string) => Promise<string | null>, slug: string) {
+  for (const draft of [false, true]) {
+    const src = await read(postPath(slug, draft));
+    if (src !== null) return { src, draft, path: postPath(slug, draft) };
+  }
+  throw new HttpError(404, `No post "${slug}"`);
 }
 
-/** Changes a post's details, and its text if it was written in the dashboard. */
-export async function editPost(gh: GitHub, slug: unknown, patch: PostMetaPatch, body?: string) {
+export async function getPost(gh: GitHub, slug: unknown) {
   if (!isSlug(slug)) throw new HttpError(400, 'Bad slug');
-  const path = `${POSTS_DIR}/${slug}.tsx`;
-  const sha = await gh.change(`Archive: edit "${slug}"`, async read => {
-    const src = await read(path);
-    if (src === null) throw new HttpError(404, `No post "${slug}"`);
-    return [{ path, content: updatePost(slug, src, patch, body) }];
+  const head = await gh.head();
+  const { src, draft } = await findPost(p => gh.read(p, head), slug);
+  return { ...readPost(slug, src), draft };
+}
+
+/**
+ * Changes a post's details, and its text if it was written in the dashboard.
+ * `draft`: true moves it to drafts (off the site), false publishes it; undefined leaves it where it is.
+ */
+export async function editPost(gh: GitHub, slug: unknown, patch: PostMetaPatch, body?: string, draft?: boolean) {
+  if (!isSlug(slug)) throw new HttpError(400, 'Bad slug');
+  let nowDraft = false;
+  const verb = draft === true ? 'unpublish' : draft === false ? 'publish' : 'edit';
+  const sha = await gh.change(`Archive: ${verb} "${slug}"`, async read => {
+    const found = await findPost(read, slug);
+    const wantDraft = draft ?? found.draft;
+    nowDraft = wantDraft;
+    const hasPatch = body !== undefined || Object.values(patch).some(v => v !== undefined);
+    let text = hasPatch ? updatePost(slug, found.src, patch, body) : found.src;
+    // A new body is written fresh for src/posts (./types); a draft's file needs its imports one folder deeper.
+    if (found.draft && body !== undefined) text = rebaseImports(text, true);
+    if (wantDraft === found.draft) return [{ path: found.path, content: text }];
+    text = rebaseImports(text, wantDraft);
+    const to = postPath(slug, wantDraft);
+    if ((await read(to)) !== null) throw new HttpError(409, `${to} already exists`);
+    return [{ path: found.path, content: null }, { path: to, content: text }];
   });
-  return { sha, slug };
+  return { sha, slug, draft: nowDraft };
 }
 
 export async function deletePost(gh: GitHub, slug: unknown) {
   if (!isSlug(slug)) throw new HttpError(400, 'Bad slug');
-  const path = `${POSTS_DIR}/${slug}.tsx`;
-  const sha = await gh.change(`Archive: delete "${slug}"`, async read => {
-    if ((await read(path)) === null) throw new HttpError(404, `No post "${slug}"`);
-    return [{ path, content: null }];
-  });
+  const sha = await gh.change(`Archive: delete "${slug}"`, async read => [{ path: (await findPost(read, slug)).path, content: null }]);
   return { sha, slug };
 }
 
 // ---------- Samples: list, edit, delete ----------
 
+/** Samples from GitHub, with which packs and samples are hidden from the site. */
 export async function listSamples(gh: GitHub, pack?: string | null) {
   const head = await gh.head();
-  return { samples: parseSamples(await must(p => gh.read(p, head), SAMPLES), pack || undefined) };
+  const [ts, hidden] = await Promise.all([must(p => gh.read(p, head), SAMPLES), gh.read(HIDDEN, head)]);
+  return { samples: parseSamples(ts, pack || undefined), hidden: readHidden(hidden) };
+}
+
+/** Hides packs and/or samples from /samples, or shows them again. They stay saved either way. */
+export async function setVisibility(gh: GitHub, change: { packs?: string[]; samples?: number[]; hidden: boolean }) {
+  const packs = Array.isArray(change.packs) ? change.packs.map(String).slice(0, 100) : [];
+  const samples = Array.isArray(change.samples) ? change.samples.map(Number).filter(Number.isInteger).slice(0, 2000) : [];
+  if (!packs.length && !samples.length) throw new HttpError(400, 'Nothing to hide or show');
+  const hidden = Boolean(change.hidden);
+  const what = [packs.length && `${packs.length === 1 ? `pack ${packs[0]}` : `${packs.length} packs`}`, samples.length && `${samples.length} sample${samples.length === 1 ? '' : 's'}`]
+    .filter(Boolean).join(' and ');
+  const sha = await gh.change(`Samples: ${hidden ? 'hide' : 'show'} ${what}`, async read => {
+    if (packs.length) {
+      const known = readPacks(await must(read, SAMPLES));
+      const bad = packs.find(p => !known.has(p));
+      if (bad) throw new HttpError(400, `Unknown pack "${bad}"`);
+    }
+    return [{ path: HIDDEN, content: setHidden(await read(HIDDEN), { packs, samples, hidden }) }];
+  });
+  return { sha, hidden };
 }
 
 export async function editSamples(gh: GitHub, changes: SampleChange[]) {
@@ -417,14 +473,17 @@ export async function deleteSamples(gh: GitHub, ids: number[]) {
   const sha = await gh.change(`Samples: delete ${ids.length}`, async read => {
     const r = removeSamples(await must(read, SAMPLES), ids);
     removed = r.removed.map(x => x.name);
-    return [{ path: SAMPLES, content: r.text }, ...r.previews.map(p => ({ path: `public${p}`, content: null }))];
+    const hidden = await read(HIDDEN);
+    const unhide = hidden && readHidden(hidden).samples.some(id => ids.includes(id))
+      ? [{ path: HIDDEN, content: setHidden(hidden, { samples: ids, hidden: false }) }] : [];
+    return [{ path: SAMPLES, content: r.text }, ...r.previews.map(p => ({ path: `public${p}`, content: null })), ...unhide];
   });
   return { sha, removed };
 }
 
 async function saveSamples(request: Request, gh: GitHub) {
   const form = await request.formData();
-  const { pack, category, items } = JSON.parse(String(form.get('meta') ?? '{}')) as { pack: string; category: string; items: SampleInput[] };
+  const { pack, category, items, hidden } = JSON.parse(String(form.get('meta') ?? '{}')) as { pack: string; category: string; items: SampleInput[]; hidden?: boolean };
   if (!Array.isArray(items) || items.length > 200) throw new HttpError(400, 'Send 1 to 200 samples at a time');
   const previews: Uint8Array[] = [];
   for (let i = 0; i < items.length; i++) {
@@ -432,9 +491,10 @@ async function saveSamples(request: Request, gh: GitHub) {
     if (!bytes) throw new HttpError(400, `Missing preview for ${items[i].name}`);
     previews.push(bytes);
   }
-  const sha = await gh.change(`Samples: add ${items.length} to ${pack}`, async read => {
-    const { text, previews: paths } = appendSamples(await must(read, SAMPLES), pack, category, items);
-    return [{ path: SAMPLES, content: text }, ...paths.map((p, i) => ({ path: `public${p}`, content: previews[i] }))];
+  const sha = await gh.change(`Samples: add ${items.length} to ${pack}${hidden ? ' (hidden)' : ''}`, async read => {
+    const { text, previews: paths, ids } = appendSamples(await must(read, SAMPLES), pack, category, items);
+    const hide = hidden ? [{ path: HIDDEN, content: setHidden(await read(HIDDEN), { samples: ids, hidden: true }) }] : [];
+    return [{ path: SAMPLES, content: text }, ...paths.map((p, i) => ({ path: `public${p}`, content: previews[i] })), ...hide];
   });
   return { sha };
 }
@@ -443,14 +503,17 @@ async function savePost(request: Request, gh: GitHub) {
   return publishPost(gh, (await request.json()) as PostInput);
 }
 
-export async function publishPost(gh: GitHub, input: PostInput) {
-  const file = postFile(input);
-  const path = `src/posts/${input.slug}.tsx`;
-  const sha = await gh.change(`Archive: add "${String(input.title).slice(0, 60)}"`, async read => {
-    if ((await read(path)) !== null) throw new HttpError(409, `A post with the slug "${input.slug}" already exists`);
-    return [{ path, content: file }];
+/** Writes a new post, live or (draft: true) saved in src/posts/drafts without going on the site. */
+export async function publishPost(gh: GitHub, input: PostInput & { draft?: boolean }) {
+  const draft = Boolean(input.draft);
+  const file = draft ? rebaseImports(postFile(input), true) : postFile(input);
+  const sha = await gh.change(`Archive: ${draft ? 'draft' : 'add'} "${String(input.title).slice(0, 60)}"`, async read => {
+    for (const d of [false, true]) {
+      if ((await read(postPath(input.slug, d))) !== null) throw new HttpError(409, `A post with the slug "${input.slug}" already exists${d ? ' (as a draft)' : ''}`);
+    }
+    return [{ path: postPath(input.slug, draft), content: file }];
   });
-  return { sha, slug: input.slug };
+  return { sha, slug: input.slug, draft };
 }
 
 /** Sketches as they are on GitHub right now (the live site may be a deploy behind). */
@@ -745,13 +808,14 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
     if (action === 'posts' && method === 'GET') return json(200, await listPosts(gh));
     if (action === 'post-get' && method === 'GET') return json(200, await getPost(gh, url.searchParams.get('slug')));
     if (action === 'post-update' && method === 'POST') {
-      const { slug, meta, body } = (await request.json()) as { slug: string; meta?: PostMetaPatch; body?: string };
-      return json(200, await editPost(gh, slug, meta ?? {}, body));
+      const { slug, meta, body, draft } = (await request.json()) as { slug: string; meta?: PostMetaPatch; body?: string; draft?: boolean };
+      return json(200, await editPost(gh, slug, meta ?? {}, body, typeof draft === 'boolean' ? draft : undefined));
     }
     if (action === 'post-delete' && method === 'POST') return json(200, await deletePost(gh, ((await request.json()) as { slug: string }).slug));
     if (action === 'samples-list' && method === 'GET') return json(200, await listSamples(gh, url.searchParams.get('pack')));
     if (action === 'samples-update' && method === 'POST') return json(200, await editSamples(gh, ((await request.json()) as { changes: SampleChange[] }).changes));
     if (action === 'samples-delete' && method === 'POST') return json(200, await deleteSamples(gh, ((await request.json()) as { ids: number[] }).ids));
+    if (action === 'visibility' && method === 'POST') return json(200, await setVisibility(gh, (await request.json()) as { packs?: string[]; samples?: number[]; hidden: boolean }));
     if (action === 'samples' && method === 'POST') return json(200, await saveSamples(request, gh));
     if (action === 'post' && method === 'POST') return json(200, await savePost(request, gh));
   } catch (err) {

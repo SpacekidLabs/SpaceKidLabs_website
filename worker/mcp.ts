@@ -12,7 +12,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { z } from 'zod';
 import {
   addTextSketch, changeSketch, cleanEnv, content, deletePost, deleteSamples, editPost, editSamples, getPost, GitHub, HttpError,
-  driveFolderStatus, linkDriveIds, listPosts, listSamples, promoteIdea, publishPost, startRelease, removeSketchById, BRANCH, type DevEnv,
+  driveFolderStatus, linkDriveIds, listPosts, listSamples, postFiles, promoteIdea, publishPost, setVisibility, startRelease, removeSketchById, BRANCH, type DevEnv,
 } from './dev';
 import { addIdea, IdeaError, listIdeas } from './ideas';
 import { listMessages } from './messages';
@@ -44,18 +44,9 @@ const today = () => new Date().toISOString().slice(0, 10);
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
 
-/** The next archive post number: the highest `index:` in src/posts, read in one GraphQL query. */
+/** The next archive post number: the highest `index:` in src/posts and its drafts. */
 async function nextPostIndex(gh: GitHub): Promise<number> {
-  const [owner, name] = gh.repo.split('/');
-  const data = await gh.graphql<{ repository: { object: { entries: Array<{ name: string; object: { text: string | null } | null }> } | null } }>(
-    `query ($owner: String!, $name: String!, $expr: String!) {
-      repository(owner: $owner, name: $name) { object(expression: $expr) { ... on Tree { entries { name object { ... on Blob { text } } } } } }
-    }`,
-    { owner, name, expr: `${BRANCH}:src/posts` },
-  );
-  const indexes = (data.repository.object?.entries ?? [])
-    .filter(e => e.name.endsWith('.tsx'))
-    .map(e => Number(/^\s*index:\s*(\d+)/m.exec(e.object?.text ?? '')?.[1] ?? 0));
+  const indexes = (await postFiles(gh)).map(f => Number(/^\s*index:\s*(\d+)/m.exec(f.text)?.[1] ?? 0));
   return Math.max(0, ...indexes) + 1;
 }
 
@@ -274,11 +265,12 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       description: z.string().max(300).nullable().optional().describe('null removes it'),
       highlighted: z.boolean().optional(),
       body: z.string().min(1).max(100_000).optional().describe('New text, same format as publish_archive_post'),
+      draft: z.boolean().optional().describe('true takes the post off the site and keeps it as a draft; false publishes a draft'),
     },
     annotations: { ...WRITE, idempotentHint: true },
-  }, ({ slug, accent_color, highlighted, body, ...rest }) => run(async () => {
-    const r = await editPost(gh, slug, { ...rest, accentColor: accent_color, isSpecial: highlighted }, body);
-    return { ...r, url: `${SITE}/archive/${slug}`, live: 'in about 2 minutes' };
+  }, ({ slug, accent_color, highlighted, body, draft, ...rest }) => run(async () => {
+    const r = await editPost(gh, slug, { ...rest, accentColor: accent_color, isSpecial: highlighted }, body, draft);
+    return r.draft ? { ...r, note: 'Saved as a draft: not on the site' } : { ...r, url: `${SITE}/archive/${slug}`, live: 'in about 2 minutes' };
   }));
 
   server.registerTool('delete_post', {
@@ -300,12 +292,27 @@ export function buildServer(rawEnv: DevEnv): McpServer {
     },
     annotations: READ,
   }, ({ pack, search, limit }) => run(async () => {
-    const { samples } = await listSamples(gh, pack);
+    const { samples, hidden } = await listSamples(gh, pack);
     const q = search?.toLowerCase();
     const found = q ? samples.filter(s => s.name.toLowerCase().includes(q)) : samples;
     const packs = [...new Set(samples.map(s => s.pack))];
-    return { total: found.length, packs: pack ? undefined : packs, samples: found.slice(0, limit ?? 100) };
+    const hiddenIds = new Set(hidden.samples);
+    return {
+      total: found.length, packs: pack ? undefined : packs, hiddenPacks: hidden.packs,
+      samples: found.slice(0, limit ?? 100).map(s => ({ ...s, hidden: hiddenIds.has(s.id) || hidden.packs.includes(s.pack) })),
+    };
   }));
+
+  server.registerTool('set_samples_visibility', {
+    title: 'Hide or show samples and packs',
+    description: 'Hides packs and/or samples from /samples without deleting them, or shows them again. Hidden ones stay saved and editable in /dev.',
+    inputSchema: {
+      hidden: z.boolean().describe('true hides, false shows'),
+      packs: z.array(z.string()).max(100).optional().describe('Pack ids'),
+      sample_ids: z.array(z.number().int()).max(2000).optional(),
+    },
+    annotations: { ...WRITE, idempotentHint: true },
+  }, ({ hidden, packs, sample_ids }) => run(() => setVisibility(gh, { hidden, packs, samples: sample_ids })));
 
   server.registerTool('update_samples', {
     title: 'Edit samples',
@@ -342,14 +349,15 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       tags: z.array(z.string()).max(12).optional(),
       description: z.string().max(300).optional().describe('One line for link previews; default: the first paragraph'),
       accent_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe('Default: #ffaa00'),
+      draft: z.boolean().optional().describe('true saves it as a draft that is not on the site until published (update_post with draft: false)'),
     },
     annotations: WRITE,
-  }, ({ title, body, slug, date, tags, description, accent_color }) => run(async () => {
+  }, ({ title, body, slug, date, tags, description, accent_color, draft }) => run(async () => {
     const r = await publishPost(gh, {
       title, body, slug: slug ? slugify(slug) : slugify(title), date: date ?? today(), tags: tags ?? [],
-      description, accentColor: accent_color ?? '#ffaa00', index: await nextPostIndex(gh),
+      description, accentColor: accent_color ?? '#ffaa00', index: await nextPostIndex(gh), draft,
     });
-    return { ...r, url: `${SITE}/archive/${r.slug}`, live: 'in about 2 minutes' };
+    return r.draft ? { ...r, note: 'Saved as a draft: not on the site' } : { ...r, url: `${SITE}/archive/${r.slug}`, live: 'in about 2 minutes' };
   }));
 
   // ---------- Idea inbox (private) ----------

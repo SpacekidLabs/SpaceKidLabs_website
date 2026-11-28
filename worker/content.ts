@@ -105,7 +105,7 @@ export function readPacks(ts: string): Map<string, Set<string>> {
 
 /**
  * Appends rows to SAMPLES in samples.ts, in the same format as scripts/make-sample-previews.ts.
- * Returns the new text and, for each input, the public path its MP3 preview must be written to.
+ * Returns the new text and, for each input, the public path its MP3 preview must be written to and its new id.
  */
 export function appendSamples(ts: string, pack: string, category: string, items: SampleInput[]) {
   if (!readPacks(ts).has(pack)) throw new Error(`Unknown pack "${pack}"`);
@@ -116,6 +116,7 @@ export function appendSamples(ts: string, pack: string, category: string, items:
   let nextId = Math.max(0, ...[...ts.matchAll(/\{ id: (\d+), pack:/g)].map(m => Number(m[1]))) + 1;
   const taken = new Set([...ts.matchAll(/preview: "\/audio\/([^"]+)\.mp3"/g)].map(m => m[1]));
   const previews: string[] = [];
+  const ids: number[] = [];
   const rows = items.map(it => {
     const name = String(it.name).replace(/[\\/]/g, '-').trim().slice(0, 120);
     if (!name) throw new Error('A sample has no name');
@@ -125,6 +126,7 @@ export function appendSamples(ts: string, pack: string, category: string, items:
     const preview = `/audio/${base}.mp3`;
     const driveId = it.driveId && /^[A-Za-z0-9_-]{10,100}$/.test(it.driveId) ? it.driveId : '';
     previews.push(preview);
+    ids.push(nextId);
     return (
       `  { id: ${nextId++}, pack: ${JSON.stringify(pack)}, name: ${JSON.stringify(name)}, category: ${JSON.stringify(category)}, ` +
       `duration: ${JSON.stringify(String(it.duration).slice(0, 12))}, format: ${JSON.stringify(String(it.format).slice(0, 30))}, ` +
@@ -135,7 +137,7 @@ export function appendSamples(ts: string, pack: string, category: string, items:
 
   const end = ts.lastIndexOf('];');
   if (end < 0 || !ts.includes('export const SAMPLES')) throw new Error('samples.ts has an unexpected shape');
-  return { text: ts.slice(0, end) + rows.join('\n') + '\n' + ts.slice(end), previews };
+  return { text: ts.slice(0, end) + rows.join('\n') + '\n' + ts.slice(end), previews, ids };
 }
 
 export interface SampleRow {
@@ -413,4 +415,52 @@ export function updatePost(slug: string, src: string, patch: PostMetaPatch, body
     .filter(k => k in next || k in info.fixed)
     .map(k => `  ${k}: ${k in info.fixed ? info.fixed[k] : Array.isArray(next[k]) ? JSON.stringify(next[k]).replace(/","/g, '", "') : JSON.stringify(next[k])},`);
   return src.replace(META_BLOCK, `export const meta: PostMeta = {\n${lines.join('\n')}\n};`);
+}
+
+// ---------- Drafts (src/posts/drafts/<slug>.tsx) ----------
+
+/**
+ * Moves a post file's relative imports one folder deeper (into drafts/) or back up (out of drafts/).
+ * Drafts live in their own folder because src/posts/index.ts only picks up ./*.tsx: a draft isn't built into the site at all.
+ */
+export function rebaseImports(src: string, intoDrafts: boolean): string {
+  return src.replace(/(\bfrom\s+|\bimport\s*\(\s*|\bimport\s+)(['"])(\.{1,2}\/[^'"]*)\2/g, (_all, lead: string, q: string, spec: string) => {
+    let next: string;
+    if (intoDrafts) next = spec.startsWith('./') ? `../${spec.slice(2)}` : `../${spec}`;
+    else if (spec.startsWith('../../')) next = spec.slice(3);
+    else if (spec.startsWith('../')) next = `./${spec.slice(3)}`;
+    else throw new Error(`Can't move an import of "${spec}" out of drafts/`);
+    return `${lead}${q}${next}${q}`;
+  });
+}
+
+// ---------- Hidden packs and samples (src/data/hidden.json) ----------
+
+/** Packs and samples that are saved in samples.ts but not shown on /samples yet. */
+export interface Hidden { packs: string[]; samples: number[] }
+
+export function readHidden(json: string | null): Hidden {
+  const raw = (json ? JSON.parse(json) : {}) as Partial<Hidden>;
+  return {
+    packs: Array.isArray(raw.packs) ? raw.packs.map(String) : [],
+    samples: Array.isArray(raw.samples) ? raw.samples.map(Number).filter(Number.isInteger) : [],
+  };
+}
+
+export function hiddenText(h: Hidden): string {
+  const packs = [...new Set(h.packs)].sort();
+  const samples = [...new Set(h.samples)].sort((a, b) => a - b);
+  return `{\n  "packs": ${JSON.stringify(packs)},\n  "samples": ${JSON.stringify(samples)}\n}\n`;
+}
+
+/** Hides or shows packs and/or samples. Returns the new file text. */
+export function setHidden(json: string | null, change: { packs?: string[]; samples?: number[]; hidden: boolean }): string {
+  const h = readHidden(json);
+  const apply = <T,>(list: T[], items: T[] | undefined) => {
+    if (!items?.length) return list;
+    const set = new Set(list);
+    for (const x of items) if (change.hidden) set.add(x); else set.delete(x);
+    return [...set];
+  };
+  return hiddenText({ packs: apply(h.packs, change.packs?.map(String)), samples: apply(h.samples, change.samples?.map(Number)) });
 }

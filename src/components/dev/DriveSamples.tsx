@@ -62,6 +62,8 @@ export async function publishSamples(
   pack: string, category: string,
   done: Array<{ meta: { name: string; duration: string; format: string; sizeBytes: number; peaks: string; driveId?: string }; mp3: Blob }>,
   onStatus: (s: string) => void,
+  /** Save them hidden: in the dashboard, not on /samples until shown. */
+  hidden = false,
 ): Promise<string> {
   const batches: typeof done[] = [[]];
   let size = 0;
@@ -74,7 +76,7 @@ export async function publishSamples(
   for (const [i, batch] of batches.entries()) {
     onStatus(`Publishing${batches.length > 1 ? ` part ${i + 1} of ${batches.length}` : ''}…`);
     const form = new FormData();
-    form.set('meta', JSON.stringify({ pack, category, items: batch.map(b => b.meta) }));
+    form.set('meta', JSON.stringify({ pack, category, items: batch.map(b => b.meta), hidden }));
     batch.forEach((b, j) => form.set(`preview${j}`, b.mp3, `preview${j}.mp3`));
     sha = (await api<{ sha: string }>('samples', { method: 'POST', body: form })).sha;
   }

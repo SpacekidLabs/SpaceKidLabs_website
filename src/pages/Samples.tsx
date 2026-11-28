@@ -5,7 +5,8 @@ import { Link } from 'react-router-dom';
 import React, { useState, useRef, useMemo, useCallback, useEffect, memo } from 'react';
 import { useSamplePlayer } from '../components/samples/useSamplePlayer';
 import { Waveform } from '../components/samples/Waveform';
-import { PACKS, SAMPLES, type Sample, type SamplePack } from '../data/samples';
+import type { Sample, SamplePack } from '../data/samples';
+import { VISIBLE_PACKS as PACKS, VISIBLE_SAMPLES as SAMPLES } from '../data/visible';
 import { track } from '../lib/track';
 
 const CornerAccents = () => (
