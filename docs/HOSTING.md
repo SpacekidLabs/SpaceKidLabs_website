@@ -60,7 +60,7 @@ If sending fails, the form shows an error with the email address as a fallback. 
 
 ## Dev dashboard (/dev)
 
-**spacekidlabs.com/dev** (linked only as a small **DEV** in the footer) is a password-protected dashboard for all
+**spacekidlabs.com/dev** (linked only as a small **DEV** in the footer, and in the top bar on the local dev server) is a password-protected dashboard for all
 your GitHub projects, and for adding sketches, samples and archive posts to the website, from any browser, including
 a phone. The open tab and project are in the address (e.g. `/dev#projects/xen`, `/dev#issues/data-bend`), so the back
 button and bookmarks work.
@@ -126,6 +126,38 @@ repository's files.
 
 To try the dashboard locally: `npm run preview:cf` with `DEV_PASSWORD` (and a `GITHUB_TOKEN` if you want saves to
 really commit) in `.dev.vars`. Saving from there commits to the real `main`.
+
+## MCP connector (/mcp)
+
+**https://spacekidlabs.com/mcp** gives Claude (or any MCP client) the dashboard as tools. It runs in the same Worker,
+on the free plan, with no extra secrets.
+
+| Tool | Does |
+| --- | --- |
+| `list_projects`, `project_activity` | your repositories; one project's pushes, commits, issues, PRs, Actions, releases |
+| `list_issues`, `get_issue` | issues of one project or all of them; one issue with comments |
+| `create_issue`, `update_issue`, `comment_on_issue` | open, edit, label, close/reopen, comment |
+| `site_traffic` | Cloudflare analytics for the site (7 or 30 days) |
+| `list_sketches`, `add_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; audio still goes through /dev) |
+| `publish_archive_post` | a new archive post from plain text |
+
+**Connecting.** In Claude: **Settings → Connectors → Add custom connector**, URL `https://spacekidlabs.com/mcp`. Claude
+opens a spacekidlabs.com page that shows which app is asking; enter the /dev password there. In Claude Code:
+`claude mcp add --transport http spacekidlabs https://spacekidlabs.com/mcp`, then `/mcp` to sign in.
+
+**How it's secured.** OAuth 2.1 with PKCE (Cloudflare's `@cloudflare/workers-oauth-provider`, `worker/oauth.ts`): apps
+register themselves, you approve each one with the dashboard password, and they get an access token that lasts an
+hour and refreshes itself. A connection unused for 30 days ends (90 days at most); then sign in again. Registered
+apps and grants live in the KV namespace **spacekidlabs-mcp-oauth** (binding `OAUTH_KV`), tokens only as hashes.
+Changing `DEV_PASSWORD` doesn't end existing connections: to cut them all, delete the keys in that KV namespace
+(Storage & databases → Workers KV) or remove the connector in Claude. The GitHub and Cloudflare tokens never leave
+the Worker. Tools act only on repositories under the owner of `GITHUB_REPO`.
+
+**Code.** `worker/mcp.ts` (tools; stateless Streamable HTTP, one server per request), `worker/oauth.ts` (the sign-in
+page), `worker/index.ts` (routing). The paths the Worker handles are listed in `run_worker_first` in `wrangler.jsonc`.
+
+**Testing locally.** `npx wrangler dev --local-upstream localhost:8788 --port 8788` with `SITE_ORIGIN=http://localhost:8788`
+in `.dev.vars` (OAuth accepts plain http only on localhost).
 
 ## Email on the domain
 

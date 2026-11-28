@@ -12,7 +12,19 @@
     "directory": "./dist",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*"]
+    // The Worker runs first only for the API, the MCP connector and its OAuth sign-in; everything else is static.
+    "run_worker_first": [
+      "/api/*",
+      "/mcp",
+      "/mcp/*",
+      "/authorize",
+      "/token",
+      "/register",
+      "/.well-known/oauth-authorization-server",
+      "/.well-known/oauth-authorization-server/*",
+      "/.well-known/oauth-protected-resource",
+      "/.well-known/oauth-protected-resource/*"
+    ]
   },
 
   // Contact form (POST /api/contact): emails each message through Cloudflare Email Routing.
@@ -29,6 +41,9 @@
     "CF_ZONE_ID": "4b13163242261480a3f6acfdc865f248",
     "CF_ACCOUNT_ID": "a33a51651bcfc4f9dbad002c944bb8e7"
   },
+
+  // MCP connector sign-ins (worker/oauth.ts): registered apps and grants, tokens stored only as hashes.
+  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "8adf736d49ab448199a025f87afa075e" }],
 
   "routes": [{ "pattern": "spacekidlabs.com", "custom_domain": true }],
   "workers_dev": true,

@@ -29,7 +29,7 @@ export interface DevEnv extends AnalyticsEnv {
   GITHUB_API?: string;
 }
 
-const BRANCH = 'main';
+export const BRANCH = 'main';
 const COOKIE = 'dev_session';
 const SESSION_DAYS = 30;
 const SKETCHES = 'src/data/sketches.json';
@@ -41,7 +41,7 @@ const json = (status: number, body: object, headers: Record<string, string> = {}
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers },
   });
 
-class HttpError extends Error {
+export class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
@@ -96,7 +96,7 @@ function base64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-class GitHub {
+export class GitHub {
   constructor(private env: Required<Pick<DevEnv, 'GITHUB_TOKEN' | 'GITHUB_REPO'>> & Pick<DevEnv, 'GITHUB_API'>) {}
 
   private async call(path: string, init: RequestInit & { raw?: boolean } = {}): Promise<Response> {
@@ -160,6 +160,26 @@ class GitHub {
     throw new HttpError(502, `GitHub said ${res.status}${detail ? `: ${detail.slice(0, 200)}` : ''}`);
   }
 
+  /** One GraphQL query (e.g. many files in a single request; Workers on the free plan get 50 requests per call). */
+  async graphql<T>(query: string, variables: object): Promise<T> {
+    const res = await fetch(`${this.env.GITHUB_API || 'https://api.github.com'}/graphql`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.env.GITHUB_TOKEN}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'spacekidlabs-dev-dashboard',
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { data?: T; errors?: Array<{ message: string }>; message?: string };
+    if (!res.ok || body.errors?.length || !body.data) {
+      const detail = body.errors?.[0]?.message ?? body.message ?? '';
+      console.error(`GitHub GraphQL: ${res.status} ${detail}`);
+      throw new HttpError(502, `GitHub said ${res.status}${detail ? `: ${detail.slice(0, 200)}` : ''}`);
+    }
+    return body.data;
+  }
+
   get repo(): string {
     return this.env.GITHUB_REPO;
   }
@@ -217,7 +237,7 @@ class GitHub {
 
 // ---------- Actions ----------
 
-async function must(read: (p: string) => Promise<string | null>, path: string): Promise<string> {
+export async function must(read: (p: string) => Promise<string | null>, path: string): Promise<string> {
   const text = await read(path);
   if (text === null) throw new HttpError(500, `${path} is missing from the repository`);
   return text;
@@ -249,12 +269,28 @@ async function saveSketch(request: Request, gh: GitHub) {
 
 async function deleteSketch(request: Request, gh: GitHub) {
   const { id } = (await request.json()) as { id: string };
-  const sha = await gh.change(`Sketches: remove "${String(id).slice(0, 60)}"`, async read => {
-    const { text, entry } = removeSketch(await must(read, SKETCHES), String(id));
+  return removeSketchById(gh, String(id));
+}
+
+/** Removes a sketch and its uploaded audio in one commit. */
+export async function removeSketchById(gh: GitHub, id: string) {
+  const sha = await gh.change(`Sketches: remove "${id.slice(0, 60)}"`, async read => {
+    const { text, entry } = removeSketch(await must(read, SKETCHES), id);
     const audio = entry.file?.startsWith('/audio/sketches/') ? [{ path: `public${entry.file}`, content: null }] : [];
     return [{ path: SKETCHES, content: text }, ...audio];
   });
   return { sha };
+}
+
+/** Adds a sketch without audio (an idea, or a demo placeholder). Used by the MCP connector. */
+export async function addTextSketch(gh: GitHub, input: SketchInput) {
+  let id = '';
+  const sha = await gh.change(`Sketches: add "${String(input.title).slice(0, 60)}"`, async read => {
+    const { text, entry } = addSketch(await must(read, SKETCHES), input);
+    id = entry.id;
+    return [{ path: SKETCHES, content: text }];
+  });
+  return { sha, id };
 }
 
 async function saveSamples(request: Request, gh: GitHub) {
@@ -275,7 +311,10 @@ async function saveSamples(request: Request, gh: GitHub) {
 }
 
 async function savePost(request: Request, gh: GitHub) {
-  const input = (await request.json()) as PostInput;
+  return publishPost(gh, (await request.json()) as PostInput);
+}
+
+export async function publishPost(gh: GitHub, input: PostInput) {
   const file = postFile(input);
   const path = `src/posts/${input.slug}.tsx`;
   const sha = await gh.change(`Archive: add "${String(input.title).slice(0, 60)}"`, async read => {
@@ -286,21 +325,30 @@ async function savePost(request: Request, gh: GitHub) {
 }
 
 /** Sketches as they are on GitHub right now (the live site may be a deploy behind). */
-async function content(gh: GitHub) {
+export async function content(gh: GitHub) {
   const head = await gh.head();
   return { head, sketches: JSON.parse((await gh.read(SKETCHES, head)) ?? '[]') };
 }
 
 // ---------- Router ----------
 
-export async function handleDev(request: Request, rawEnv: DevEnv, pathname: string): Promise<Response> {
-  // Pasted secrets often carry a stray space or line break; GitHub then answers "Bad credentials".
-  const env: DevEnv = {
-    ...rawEnv,
-    GITHUB_TOKEN: rawEnv.GITHUB_TOKEN?.trim(),
-    GITHUB_PROJECTS_TOKEN: rawEnv.GITHUB_PROJECTS_TOKEN?.trim(),
-    DEV_PASSWORD: rawEnv.DEV_PASSWORD?.trim(),
+/** Pasted secrets often carry a stray space or line break; GitHub then answers "Bad credentials". */
+export function cleanEnv<E extends DevEnv>(raw: E): E {
+  return {
+    ...raw,
+    GITHUB_TOKEN: raw.GITHUB_TOKEN?.trim(),
+    GITHUB_PROJECTS_TOKEN: raw.GITHUB_PROJECTS_TOKEN?.trim(),
+    DEV_PASSWORD: raw.DEV_PASSWORD?.trim(),
   };
+}
+
+/** Compares a typed password with DEV_PASSWORD without leaking timing. */
+export async function checkPassword(typed: string, env: DevEnv): Promise<boolean> {
+  return Boolean(env.DEV_PASSWORD) && (await sameString(typed, env.DEV_PASSWORD!));
+}
+
+export async function handleDev(request: Request, rawEnv: DevEnv, pathname: string): Promise<Response> {
+  const env = cleanEnv(rawEnv);
   const action = pathname.slice('/api/dev/'.length);
   const method = request.method;
 

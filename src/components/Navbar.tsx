@@ -56,6 +56,8 @@ export function Navbar() {
     { label: 'SOFTWARE', path: '/#code', isExternal: true },
     { label: 'ARCHIVE', path: '/archive', isExternal: false },
     { label: 'CONTACT', path: '/#contact', isExternal: true },
+    // Only on the local dev server (npm run dev); the live site links /dev from the footer only.
+    ...(import.meta.env.DEV ? [{ label: 'DEV', path: '/dev', isExternal: false }] : []),
   ];
 
   return (

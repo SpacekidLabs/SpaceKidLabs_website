@@ -1,14 +1,28 @@
 /**
  * Cloudflare Worker for spacekidlabs.com.
  *
- * Static files in dist/ are served by Cloudflare directly (see "assets" in wrangler.jsonc); this code only
- * runs for /api/*. It handles the /dev dashboard (worker/dev.ts) and the contact form: POST /api/contact emails the message to the CONTACT_TO secret
- * through Cloudflare Email Routing (send_email binding in wrangler.jsonc). See docs/HOSTING.md.
+ * Static files in dist/ are served by Cloudflare directly (see "assets" in wrangler.jsonc); this code only runs
+ * for /api/*, the MCP connector and its sign-in. It handles:
+ *   - the contact form: POST /api/contact emails the message to the CONTACT_TO secret through Cloudflare Email
+ *     Routing (send_email binding in wrangler.jsonc);
+ *   - the /dev dashboard's API (worker/dev.ts);
+ *   - the MCP connector at /mcp (worker/mcp.ts), behind OAuth (worker/oauth.ts and Cloudflare's OAuthProvider,
+ *     which serves /token, /register and the /.well-known metadata).
+ * See docs/HOSTING.md.
  */
 import { EmailMessage } from 'cloudflare:email';
+import { OAuthProvider, type OAuthHelpers } from '@cloudflare/workers-oauth-provider';
 import { handleDev, type DevEnv } from './dev';
+import { handleMcp } from './mcp';
+import { handleAuthorize, SCOPE } from './oauth';
 
 interface Env extends DevEnv {
+  /** MCP connector sign-ins (worker/oauth.ts): registered apps and grants. */
+  OAUTH_KV: KVNamespace;
+  /** Set by OAuthProvider for the /authorize page. */
+  OAUTH_PROVIDER: OAuthHelpers;
+  /** Public address of this site, for OAuth metadata. Only set for local tests. */
+  SITE_ORIGIN?: string;
   CONTACT_EMAIL: SendEmail;
   /** Address the form sends from; must be on a domain with Email Routing turned on. */
   CONTACT_FROM: string;
@@ -112,14 +126,54 @@ async function handleContact(request: Request, env: Env): Promise<Response> {
   return json(200, { ok: true });
 }
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+/** Everything that isn't the MCP endpoint itself. */
+const site: ExportedHandler<Env> = {
+  async fetch(request, env) {
     const { pathname } = new URL(request.url);
     if (pathname === '/api/contact') {
       if (request.method !== 'POST') return json(405, { error: 'Use POST' });
       return handleContact(request, env);
     }
     if (pathname.startsWith('/api/dev/')) return handleDev(request, env, pathname);
+    if (pathname === '/authorize') return handleAuthorize(request, env);
     return json(404, { error: 'Not found' });
+  },
+};
+
+/** The MCP endpoint, reached only with a valid access token. */
+const mcp = {
+  fetch: (request: Request, env: Env) => handleMcp(request, env),
+};
+
+// One provider per origin (spacekidlabs.com live; localhost in local tests).
+const providers = new Map<string, OAuthProvider<Env>>();
+
+function provider(origin: string): OAuthProvider<Env> {
+  let p = providers.get(origin);
+  if (!p) {
+    p = new OAuthProvider<Env>({
+      apiRoute: '/mcp',
+      apiHandler: mcp,
+      defaultHandler: site,
+      authorizeEndpoint: '/authorize',
+      tokenEndpoint: '/token',
+      clientRegistrationEndpoint: '/register',
+      scopesSupported: [SCOPE],
+      requiredScopes: [SCOPE],
+      resourceMetadata: { resource: `${origin}/mcp`, authorization_servers: [origin] },
+      clientIdMetadataDocumentEnabled: true,
+      // A token lasts an hour; the app refreshes it. Unused for 30 days, the connection ends.
+      accessTokenTTL: 3600,
+      refreshTokenTTL: 90 * 86_400,
+      refreshTokenIdleTTL: 30 * 86_400,
+    });
+    providers.set(origin, p);
+  }
+  return p;
+}
+
+export default {
+  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    return provider(env.SITE_ORIGIN || 'https://spacekidlabs.com').fetch(request, env, ctx);
   },
 } satisfies ExportedHandler<Env>;
