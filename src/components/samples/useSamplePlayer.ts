@@ -203,9 +203,11 @@ export function useSamplePlayer(onEnded?: (id: number) => void) {
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.connect(ctx.destination);
-      const offset = Math.min(from, 0.999) * buffer.duration;
+      // Positions are in the whole sound, which can be longer than its preview (see --max-preview).
+      const full = Math.max(buffer.duration, durationSeconds(sample.duration));
+      const offset = Math.min(from * full, buffer.duration * 0.999);
       startedAtRef.current = ctx.currentTime - offset;
-      durationRef.current = buffer.duration;
+      durationRef.current = full;
       source.onended = () => { if (sourceRef.current === source) finish(); };
       source.start(0, offset);
       sourceRef.current = source;

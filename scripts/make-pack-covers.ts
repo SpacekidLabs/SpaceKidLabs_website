@@ -212,6 +212,23 @@ function vrac(samples: Sample[]) {
   return frame(out, 'VRAC DRUMS', `${samples.length} HITS // KICKS, PERC + HATS // SPACEKID LABS`);
 }
 
+/** Raw Sessions: every clip laid end to end like one long recording, wrapped into tape lanes. */
+function rawSessions(samples: Sample[]) {
+  const left = 40, right = SIZE - 40, top = 110, bottom = SIZE - 130;
+  const shades: Record<string, string> = { Jams: ORANGE, 'Synth Sessions': '#ffffff', 'Tape & Radio': '#00d8ff', 'Junk & Percussion': '#8a8a8a', Processed: '#c084fc' };
+  const bars = samples.flatMap(s => levels(s).filter((_, k) => k % 4 === 0).map(v => ({ v, color: shades[s.category] ?? ORANGE })));
+  const bw = 3, perLane = Math.floor((right - left) / bw), lanes = Math.ceil(bars.length / perLane);
+  const laneH = (bottom - top) / lanes;
+  const paths: Record<string, string> = {};
+  bars.forEach(({ v, color }, i) => {
+    const x = left + (i % perLane) * bw, mid = top + Math.floor(i / perLane) * laneH + laneH / 2;
+    const h = Math.max(0.6, v * (laneH * 0.9));
+    paths[color] = (paths[color] ?? '') + `M${f(x)} ${f(mid - h / 2)}h2v${f(h)}h-2z`;
+  });
+  const out = Object.entries(paths).map(([c, d]) => `<path d="${d}" fill="${c}" opacity="0.85"/>`).join('\n');
+  return frame(out, 'RAW SESSIONS', `${samples.length} CLIPS FROM LONG TAKES // SPACEKID LABS`);
+}
+
 mkdirSync(OUT, { recursive: true });
 const pack = (id: string) => SAMPLES.filter(s => s.pack === id && s.peaks);
 writeFileSync(join(OUT, 'weird-breaks.svg'), weirdBreaks(pack('weird-breaks')));
@@ -223,3 +240,4 @@ writeFileSync(join(OUT, 'drum-hits-2.svg'), drumHits(pack('drum-hits-2')));
 writeFileSync(join(OUT, 'shlims.svg'), shlims(pack('shlims')));
 writeFileSync(join(OUT, 'vrac.svg'), vrac(pack('vrac')));
 console.log('Wrote the pack covers in public/packs/');
+writeFileSync(join(OUT, 'raw-sessions.svg'), rawSessions(pack('raw-sessions')));

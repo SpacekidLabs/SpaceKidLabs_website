@@ -18,6 +18,8 @@
  *                     instead of Drive, so this works before the pack is uploaded)
  * Shorter previews:   --max-preview 30  (seconds; longer sounds get the first 30 s with a fade-out.
  *                     Duration, size and waveform still describe the whole original.)
+ * Smaller previews:   --quality 6  (LAME VBR level, 0 best to 9 smallest; default 2. Useful for
+ *                     packs of long clips, where previews add up quickly.)
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -33,6 +35,7 @@ const FORCE = process.argv.includes('--force');
 const ONLY_PACK = process.argv.includes('--pack') ? process.argv[process.argv.indexOf('--pack') + 1] : null;
 const LOCAL = process.env.LOCAL_SAMPLES;
 const MAX_PREVIEW = process.argv.includes('--max-preview') ? Number(process.argv[process.argv.indexOf('--max-preview') + 1]) : 0;
+const QUALITY = process.argv.includes('--quality') ? process.argv[process.argv.indexOf('--quality') + 1] : '2';
 
 /** "SP26 Kick 1+.wav" -> "sp26-kick-1" */
 export function previewName(name: string): string {
@@ -123,7 +126,7 @@ for (const sample of SAMPLES) {
       ? ['-t', String(MAX_PREVIEW), '-af', `afade=t=out:st=${MAX_PREVIEW - 1.5}:d=1.5`]
       : [];
     // VBR MP3 around 190 kbps: transparent for previews, about a tenth of the 24-bit WAV size.
-    run('ffmpeg', ['-v', 'error', '-y', '-i', original, '-vn', ...cut, '-map_metadata', '-1', '-c:a', 'libmp3lame', '-q:a', '2', preview]);
+    run('ffmpeg', ['-v', 'error', '-y', '-i', original, '-vn', ...cut, '-map_metadata', '-1', '-c:a', 'libmp3lame', '-q:a', QUALITY, preview]);
   }
   updated.push({
     ...sample,
