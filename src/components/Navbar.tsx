@@ -48,6 +48,12 @@ export function Navbar() {
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen]);
 
+  // DEV link only for the owner: set by the /dev page after logging in (the real check is server-side).
+  const [isDev, setIsDev] = useState(false);
+  useEffect(() => {
+    setIsDev(localStorage.getItem('spacekid-dev') === '1');
+  }, [location]);
+
   const navLinks = [
     { label: 'MUSIC', path: '/#featured', isExternal: true },
     { label: 'SERVICES', path: '/services', isExternal: false },
@@ -56,6 +62,7 @@ export function Navbar() {
     { label: 'SOFTWARE', path: '/#code', isExternal: true },
     { label: 'ARCHIVE', path: '/archive', isExternal: false },
     { label: 'CONTACT', path: '/#contact', isExternal: true },
+    ...(isDev ? [{ label: 'DEV', path: '/dev', isExternal: false }] : []),
   ];
 
   return (

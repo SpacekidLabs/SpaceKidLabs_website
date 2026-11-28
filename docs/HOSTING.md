@@ -29,7 +29,7 @@ To deploy by hand from your Mac instead: `npx wrangler login` once, then `npm ru
 | File | What it does |
 | --- | --- |
 | `wrangler.jsonc` | Worker name, static files, 404 handling, email binding, custom domain |
-| `worker/index.ts` | The Worker: `POST /api/contact` emails the message. Every other URL is a static file and never runs the Worker |
+| `worker/index.ts` | The Worker: `POST /api/contact` emails the message, `/api/dev/*` is the dev dashboard (`worker/dev.ts`). Every other URL is a static file and never runs the Worker |
 | `public/_headers` | Cache rules (copied into `dist/`): built JS/CSS for a year, audio and favicons for a week, RSS content type |
 | `scripts/prerender.ts` | Writes `dist/<page>.html` for each page, and `dist/404.html` (the empty app) for everything else |
 
@@ -57,6 +57,55 @@ To change where messages go:
 
 If sending fails, the form shows an error with the email address as a fallback. Worker logs:
 **Workers & Pages → spacekidlabs → Logs**.
+
+## Dev dashboard (/dev)
+
+**spacekidlabs.com/dev** (also linked as **DEV** in the footer) is a password-protected page for adding sketches,
+samples and archive posts from any browser, including a phone. Once you've logged in on a device, **DEV** shows in the
+navbar there too.
+
+How it works: the browser converts audio to MP3 and works out the duration and waveform itself, then sends it to the
+Worker (`worker/dev.ts`). The Worker commits the change to `main` on GitHub through the GitHub API, and that push
+deploys the site like any other, so a new item is live about 2 minutes after saving. Every save is a normal commit
+("Added from the /dev dashboard"), so anything can be undone with `git revert`.
+
+| Tab | Writes |
+| --- | --- |
+| Sketches | `src/data/sketches.json`, demo audio in `public/audio/sketches/`. Deleting a sketch removes both |
+| Samples | rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`. Originals stay on your computer; add Drive IDs later for download buttons |
+| Archive post | `src/posts/<slug>.tsx` from plain text (paragraphs, `## headings`, `- lists`, `[links](https://...)`, `**bold**`). Labs and images still need code |
+
+**Pull before working locally.** The dashboard commits straight to GitHub, so run `git pull` before editing in this
+folder, or your next push will be rejected until you do.
+
+### Setup (once)
+
+The dashboard needs two **secrets**. They live only in Cloudflare: never put them in this repo, in `wrangler.jsonc`
+or in chat. The Worker never sends them back in a response or writes them to its logs.
+
+1. **GitHub token.** github.com → Settings → Developer settings → **Fine-grained personal access tokens → Generate
+   new token**. Resource owner: **SpacekidLabs**. Repository access: **Only select repositories →
+   SpaceKidLabs_website**. Permissions: **Contents → Read and write** (nothing else). Pick an expiry (e.g. 1 year) and
+   copy the token. If the organization requires approval for fine-grained tokens, approve it under the org's
+   **Settings → Personal access tokens → Pending requests**.
+2. **Add both secrets.** Cloudflare dashboard → **Workers & Pages → spacekidlabs → Settings → Variables and Secrets →
+   Add**, type **Secret**:
+   - `GITHUB_TOKEN`: the token from step 1.
+   - `DEV_PASSWORD`: a long password for the dashboard (a passphrase of 4+ random words is good).
+
+   Or from this folder: `npx wrangler secret put GITHUB_TOKEN` and `npx wrangler secret put DEV_PASSWORD`, which ask
+   for the value without echoing it.
+3. Open spacekidlabs.com/dev and log in.
+
+`GITHUB_REPO` (which repository it commits to) is a plain variable in `wrangler.jsonc`.
+
+**Security notes.** Login sets an HttpOnly, Secure, SameSite=Strict cookie that lasts 30 days and is signed with
+`DEV_PASSWORD`: changing the password logs out every device. Wrong passwords are slowed down. Requests from other
+sites are refused. If the token leaks, revoke it on GitHub and create a new one. It can only touch this one
+repository's files.
+
+To try the dashboard locally: `npm run preview:cf` with `DEV_PASSWORD` (and a `GITHUB_TOKEN` if you want saves to
+really commit) in `.dev.vars`. Saving from there commits to the real `main`.
 
 ## Email on the domain
 

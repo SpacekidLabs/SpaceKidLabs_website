@@ -2,12 +2,13 @@
  * Cloudflare Worker for spacekidlabs.com.
  *
  * Static files in dist/ are served by Cloudflare directly (see "assets" in wrangler.jsonc); this code only
- * runs for /api/*. It handles the contact form: POST /api/contact emails the message to the CONTACT_TO secret
+ * runs for /api/*. It handles the /dev dashboard (worker/dev.ts) and the contact form: POST /api/contact emails the message to the CONTACT_TO secret
  * through Cloudflare Email Routing (send_email binding in wrangler.jsonc). See docs/HOSTING.md.
  */
 import { EmailMessage } from 'cloudflare:email';
+import { handleDev, type DevEnv } from './dev';
 
-interface Env {
+interface Env extends DevEnv {
   CONTACT_EMAIL: SendEmail;
   /** Address the form sends from; must be on a domain with Email Routing turned on. */
   CONTACT_FROM: string;
@@ -118,6 +119,7 @@ export default {
       if (request.method !== 'POST') return json(405, { error: 'Use POST' });
       return handleContact(request, env);
     }
+    if (pathname.startsWith('/api/dev/')) return handleDev(request, env, pathname);
     return json(404, { error: 'Not found' });
   },
 } satisfies ExportedHandler<Env>;

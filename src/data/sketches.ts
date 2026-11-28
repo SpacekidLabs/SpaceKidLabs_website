@@ -1,7 +1,10 @@
+import data from './sketches.json';
+
 /**
  * Sketches: unfinished demos and loose ideas, shown on /sketches.
  *
- * To add one, copy an entry and put it at the top (newest first).
+ * The entries live in sketches.json (newest first). The easiest way to add one is the local dashboard:
+ * run `npm run dev` and open http://localhost:3000/dev. To add one by hand, copy an entry in the JSON.
  * - kind 'demo': a rough recording. Put the mp3 in public/audio/sketches/ and set `file` to its path,
  *   e.g. '/audio/sketches/night-drive.mp3'. Leave `file` out and the card shows "audio coming soon".
  * - kind 'idea': a written note. `text` can hold several paragraphs separated by a blank line.
@@ -23,35 +26,4 @@ export interface Sketch {
   tags?: string[];
 }
 
-export const SKETCHES: Sketch[] = [
-  {
-    id: 'placeholder-demo-1',
-    kind: 'demo',
-    title: 'Untitled demo #1',
-    date: '2026-11-28',
-    text: 'Placeholder. A rough loop, recorded in one take.',
-    tags: ['WIP'],
-  },
-  {
-    id: 'placeholder-idea-1',
-    kind: 'idea',
-    title: 'Idea placeholder',
-    date: '2026-11-28',
-    text: 'Placeholder for a written idea: a tool, a track concept, a process to try.\n\nA second paragraph works too.',
-  },
-  {
-    id: 'placeholder-demo-2',
-    kind: 'demo',
-    title: 'Untitled demo #2',
-    date: '2026-11-27',
-    text: 'Placeholder. Drums only for now.',
-    tags: ['WIP'],
-  },
-  {
-    id: 'placeholder-idea-2',
-    kind: 'idea',
-    title: 'Another idea placeholder',
-    date: '2026-11-26',
-    text: 'Placeholder. One-line thoughts are fine here.',
-  },
-];
+export const SKETCHES = data as Sketch[];

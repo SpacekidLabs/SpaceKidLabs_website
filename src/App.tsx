@@ -11,6 +11,7 @@ const DownloadPage = lazyNamed(() => import('./pages/Download'), 'DownloadPage')
 const ServicesPage = lazyNamed(() => import('./pages/Services'), 'ServicesPage');
 const SamplesPage = lazyNamed(() => import('./pages/Samples'), 'SamplesPage');
 const SketchesPage = lazyNamed(() => import('./pages/Sketches'), 'SketchesPage');
+const DevPage = lazyNamed(() => import('./pages/Dev'), 'DevPage');
 const NotFoundPage = lazyNamed(() => import('./pages/NotFound'), 'NotFoundPage');
 
 /** Page loaders by route, so the browser can fetch the current page's code before hydrating pre-rendered HTML. */
@@ -22,6 +23,7 @@ export const ROUTE_PRELOADERS: Array<[RegExp, () => Promise<unknown>]> = [
   [/^\/services$/, () => import('./pages/Services')],
   [/^\/samples$/, () => import('./pages/Samples')],
   [/^\/sketches$/, () => import('./pages/Sketches')],
+  [/^\/dev$/, () => import('./pages/Dev')],
 ];
 
 function ScrollToTop() {
@@ -51,6 +53,7 @@ export function AppRoutes() {
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/samples" element={<SamplesPage />} />
           <Route path="/sketches" element={<SketchesPage />} />
+          <Route path="/dev" element={<DevPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

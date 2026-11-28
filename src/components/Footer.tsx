@@ -63,6 +63,7 @@ export function Footer() {
         <div className="flex gap-4 font-mono text-xs text-zinc-600">
           <a href="#" className="hover:text-zinc-300 transition-colors">TRANSMISSION_LOGS</a>
           <a href="#" className="hover:text-zinc-300 transition-colors">SYSTEM_STATUS</a>
+          <Link to="/dev" className="hover:text-zinc-300 transition-colors">DEV</Link>
         </div>
       </div>
     </footer>

@@ -1,0 +1,36 @@
+[
+  {
+    "id": "placeholder-demo-1",
+    "kind": "demo",
+    "title": "Untitled demo #1",
+    "date": "2026-11-28",
+    "text": "Placeholder. A rough loop, recorded in one take.",
+    "tags": [
+      "WIP"
+    ]
+  },
+  {
+    "id": "placeholder-idea-1",
+    "kind": "idea",
+    "title": "Idea placeholder",
+    "date": "2026-11-28",
+    "text": "Placeholder for a written idea: a tool, a track concept, a process to try.\n\nA second paragraph works too."
+  },
+  {
+    "id": "placeholder-demo-2",
+    "kind": "demo",
+    "title": "Untitled demo #2",
+    "date": "2026-11-27",
+    "text": "Placeholder. Drums only for now.",
+    "tags": [
+      "WIP"
+    ]
+  },
+  {
+    "id": "placeholder-idea-2",
+    "kind": "idea",
+    "title": "Another idea placeholder",
+    "date": "2026-11-26",
+    "text": "Placeholder. One-line thoughts are fine here."
+  }
+]
