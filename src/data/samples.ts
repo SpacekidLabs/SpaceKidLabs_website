@@ -3237,4 +3237,8 @@ export const SAMPLES: Sample[] = [
     peaks: "R_99jYVKECBBH73yYQOHDBAABDBCBAAAAAAABCBBAAAAAAAABCBBAAAAAAAABCBA" },
   { id: 2159, pack: "databend", name: "SP26 HiHat Closed 1.wav", category: "Percussion", duration: "0.1s", format: "WAV 24-bit", sizeBytes: 34796, preview: "/audio/sp26-hihat-closed-1.mp3", driveId: "1L1hHIHz_vBlUyhHePR3YLF-IUBvecJeI",
     peaks: "AZ-_vpjtaVVOPMJGEBAAAAAAAAAAAAAAAE41knieURORLMHGECBBBAAAAAAAAAAA" },
+  { id: 2160, pack: "databend", name: "noiseforge_json_1780556950313.wav", category: "Textures", duration: "42.2s", format: "WAV 16-bit", sizeBytes: 8102024, preview: "/audio/noiseforge-json-1780556950313.mp3", driveId: "1nqrDUMG-C9AlpJW_f0_XHnYKlfkKLHDR",
+    peaks: "hOfY5PeacOucmKjplMfiyM_wwVla-IhcnTkbtLljdMgdiI3w_MmZcMlfpTogmNos" },
+  { id: 2161, pack: "databend", name: "noiseforge_ascii_1780556793534.wav", category: "Textures", duration: "24.0s", format: "WAV 16-bit", sizeBytes: 4608044, preview: "/audio/noiseforge-ascii-1780556793534.mp3", driveId: "1iczZk95D5aiaCJWJ31EOS0YDUczoOQEy",
+    peaks: "aitw6ut080tv-2u9yry_86771x37_0234wxz6vx0wxq6wrzw0wv8zxs4wrs14zxw" },
 ];
