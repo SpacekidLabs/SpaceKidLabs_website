@@ -106,6 +106,11 @@ or in chat. The Worker never sends them back in a response or writes them to its
 
 `GITHUB_REPO` (which repository it commits to) is a plain variable in `wrangler.jsonc`.
 
+**Add or change secrets only when no deploy is running.** "Add variable and deploy" in the dashboard makes a new
+version from whichever version was live when the settings page opened. If a push was still deploying then, the
+secret goes live on the older code and the new code is rolled back until the next push. If that happens, push again
+(or re-run the latest build under **Deployments**): builds keep all existing secrets.
+
 **Security notes.** Login sets an HttpOnly, Secure, SameSite=Strict cookie that lasts 30 days and is signed with
 `DEV_PASSWORD`: changing the password logs out every device. Wrong passwords are slowed down. Requests from other
 sites are refused. If the token leaks, revoke it on GitHub and create a new one. It can only touch this one
