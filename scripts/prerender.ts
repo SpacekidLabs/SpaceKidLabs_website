@@ -3,7 +3,7 @@
  * <title>, description and link-preview tags. Link-preview bots (Discord, Instagram, X...) and search engines
  * then see real content without running JavaScript; in the browser, React takes over the same HTML (src/main.tsx).
  *
- * Output: dist/index.html for "/", dist/<path>.html for every other page (Netlify serves /archive/wavesets from
+ * Output: dist/index.html for "/", dist/<path>.html for every other page (Cloudflare serves /archive/wavesets from
  * dist/archive/wavesets.html), and dist/404.html, the empty app served with a 404 status for any other URL (see wrangler.jsonc).
  * It also writes dist/rss.xml, the archive's RSS feed, using the same post descriptions.
  *
