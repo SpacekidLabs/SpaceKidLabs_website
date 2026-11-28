@@ -213,7 +213,7 @@ export function Landing() {
                 <Link to="/download" className="inline-flex items-center gap-3 px-8 py-4 border border-brand-orange bg-brand-orange/10 text-brand-orange font-bold uppercase tracking-widest hover:bg-brand-orange hover:text-black transition-colors box-glow">
                   Download App <ArrowRight className="w-5 h-5" />
                 </Link>
-                <a href="https://databenddaw.netlify.app/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-8 py-4 border border-zinc-600 text-white font-bold uppercase tracking-widest hover:border-brand-orange hover:text-brand-orange transition-colors">
+                <a href="https://databend.spacekidlabs.com/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-8 py-4 border border-zinc-600 text-white font-bold uppercase tracking-widest hover:border-brand-orange hover:text-brand-orange transition-colors">
                   Try Web Version
                 </a>
               </div>

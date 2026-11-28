@@ -205,6 +205,29 @@ npm run preview:cf   # the built site on Cloudflare's runtime (wrangler dev), ht
 create `.dev.vars` (git-ignored) with `CONTACT_TO=test@example.com`. Emails aren't sent; wrangler saves each one
 as an `.eml` file under `.wrangler/tmp/` and prints the path.
 
+## The web apps (subdomains)
+
+Each web app has its own GitHub repo and its own Cloudflare Worker, set up the same way as this site: Workers
+Builds is connected to the repo, every push to `main` deploys, and the subdomain comes from `routes` in that
+repo's `wrangler.jsonc` (`custom_domain: true` creates the DNS record and HTTPS certificate on deploy).
+
+| App | Address | Repo | Worker |
+| --- | --- | --- | --- |
+| DATABEND online | https://databend.spacekidlabs.com | [data-bend](https://github.com/SpacekidLabs/data-bend) | `databend` |
+| Noise Forge | https://noiseforge.spacekidlabs.com | [noise-forge](https://github.com/SpacekidLabs/noise-forge) | `noise-forge` |
+| DataPaint | https://datapaint.spacekidlabs.com | [datapaint](https://github.com/SpacekidLabs/datapaint) | `datapaint` |
+| Spectral Rotator FX | https://spectralrotator.spacekidlabs.com | [spectral-rotator](https://github.com/SpacekidLabs/spectral-rotator) | `spectral-rotator` |
+
+- **DATABEND online** is built from the desktop app's own files: Workers Builds runs `npm run build:web`, which
+  copies the UI files listed in `package.json` `build.files` (minus the Electron-only ones) into `web-dist/`.
+  Build variable `ELECTRON_SKIP_BINARY_DOWNLOAD=1` keeps `npm ci` from downloading Electron. A push to `main`
+  updates the online version; a version tag also builds the desktop release (see the data-bend README), which
+  this site's download page reads on its next build.
+- **Noise Forge, DataPaint and Spectral Rotator** repos hold the built apps as they were on Netlify (`site/`,
+  minified); the original source wasn't available. Build command: none.
+
+They were on `*.netlify.app` until November 2026 (see below).
+
 ## The old Netlify site
 
 `spacekidlabs.netlify.app` still exists and still serves the last version Netlify built. It's no longer linked

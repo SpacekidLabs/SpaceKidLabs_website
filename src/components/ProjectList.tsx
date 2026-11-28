@@ -38,7 +38,7 @@ const PROJECTS_DATA = [
     hook: 'Turn sound sideways.',
     description: 'A spectral processor that swaps time and frequency axes before reshaping the result, producing impossible timbres conventional DSP chains can\'t reach.',
     features: ['Lossless coordinate-axis rotation', 'Rotated state DSP wave-shaping', 'Bypasses standard phase limitations'],
-    primaryLink: 'https://spectralrotatorfx.netlify.app',
+    primaryLink: 'https://spectralrotator.spacekidlabs.com',
     primaryLinkText: 'TRANSMIT TO WEB SYSTEM',
     secondaryLink: '/archive',
     secondaryLinkText: 'READ THEORY MANUAL'
@@ -55,7 +55,7 @@ const PROJECTS_DATA = [
     hook: 'Fracture the digital stream.',
     description: 'An extreme browser-based sandbox dedicated entirely to digital signal disintegration. Crush any audio file through unconventional degradation state machines, custom buffer truncation, and bit-leak algorithms.',
     features: ['Real-time buffer decimation', 'Multi-stage digital signal clipping', 'Organic lo-fi texture forging'],
-    primaryLink: 'https://noiseforge.netlify.app',
+    primaryLink: 'https://noiseforge.spacekidlabs.com',
     primaryLinkText: 'INITIALIZE DEGRADATION RUN'
   },
   {
@@ -85,7 +85,7 @@ const PROJECTS_DATA = [
     hook: 'Draw sounds into existence.',
     description: 'Vector strokes become FM synthesis structures, transforming sketches into unstable instruments.',
     features: ['Dynamic canvas-to-audio engine', 'Visual trace path parameters', 'FM synthesis collision grids'],
-    primaryLink: 'https://datapaint.netlify.app',
+    primaryLink: 'https://datapaint.spacekidlabs.com',
     primaryLinkText: 'LAUNCH CANVAS INTERFACE'
   },
   {

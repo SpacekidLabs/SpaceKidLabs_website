@@ -25,7 +25,7 @@ export default function Post() {
         Putting an idea into words forces me to be specific about it, and the more specific version is usually
         narrower and more extreme than what I started with. Writing{' '}
         <Link to="/archive/systems-fail" className={link}>Listening to Systems Fail</Link> made{' '}
-        <a href="https://noiseforge.netlify.app" target="_blank" rel="noreferrer" className={link}>Noise Forge</a>{' '}
+        <a href="https://noiseforge.spacekidlabs.com" target="_blank" rel="noreferrer" className={link}>Noise Forge</a>{' '}
         harsher. After the <Link to="/archive/databend" className={link}>databend.jpg</Link> post I started treating
         almost any signal as something that could be corrupted.
       </p>

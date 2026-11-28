@@ -21,7 +21,7 @@ export default function Post() {
       <p>
         Databending means editing a file's raw bytes without regard for what format it's in, for example opening an image
         as audio or a sound file in a text editor, changing some data, and opening it again as what it was. Building{' '}
-        <a href="https://databenddaw.netlify.app/" target="_blank" rel="noreferrer" className={link}>DATABEND</a>, my
+        <a href="https://databend.spacekidlabs.com/" target="_blank" rel="noreferrer" className={link}>DATABEND</a>, my
         playground for doing this to sound, changed how I think about files. I started seeing them as bytes rather than as
         audio or pictures: a spectrogram is an image, and a corrupted header is something to play with rather than a
         problem to fix. I had a tool for breaking sound but not one for images, so I made databend.jpg.

@@ -33,7 +33,7 @@ export const DATABEND_RELEASE = RELEASE_JSON as DatabendRelease;
 
 export const DATABEND_REPO_URL = 'https://github.com/SpacekidLabs/data-bend';
 export const DATABEND_RELEASES_URL = `${DATABEND_REPO_URL}/releases`;
-export const DATABEND_WEB_URL = 'https://databenddaw.netlify.app/';
+export const DATABEND_WEB_URL = 'https://databend.spacekidlabs.com/';
 
 /**
  * The app is built on Electron 25, which runs on macOS 10.13 High Sierra and later.

@@ -115,7 +115,7 @@ export default function Post() {
         </p>
 
         <div className="flex justify-center">
-          <a href="https://spectralrotatorfx.netlify.app" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[#00e5ff] hover:text-[#00e5ff]/80 transition-colors font-mono text-sm border border-[#00e5ff]/20 px-4 py-2 rounded-sm bg-[#00e5ff]/5">
+          <a href="https://spectralrotator.spacekidlabs.com" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-[#00e5ff] hover:text-[#00e5ff]/80 transition-colors font-mono text-sm border border-[#00e5ff]/20 px-4 py-2 rounded-sm bg-[#00e5ff]/5">
             Open Spectral Rotator FX <ExternalLink className="w-4 h-4" />
           </a>
         </div>
