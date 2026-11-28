@@ -9,7 +9,7 @@
  *
  * Usage: npx tsx scripts/prerender.ts
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createServer } from 'vite';
 import type { Post } from '../src/posts';
@@ -114,10 +114,20 @@ function outFile(path: string) {
   return resolve(DIST, path === '/' ? 'index.html' : `.${path}.html`);
 }
 
-const template = readFileSync(resolve(DIST, 'index.html'), 'utf8');
+let template = readFileSync(resolve(DIST, 'index.html'), 'utf8');
 if (!template.includes('<div id="root"></div>')) {
   throw new Error('dist/index.html is already pre-rendered; run `vite build` first');
 }
+
+// Preload the two fonts every page's first screen uses (headings, body text), so the browser fetches them
+// with the CSS instead of only after it has parsed it. Other weights load when they're used.
+const PRELOAD_FONTS = [/^space-grotesk-latin-700-normal-.+\.woff2$/, /^inter-latin-400-normal-.+\.woff2$/];
+const fontFiles = readdirSync(resolve(DIST, 'assets')).filter(f => PRELOAD_FONTS.some(re => re.test(f)));
+if (fontFiles.length !== PRELOAD_FONTS.length) throw new Error(`Fonts to preload not found in dist/assets: ${fontFiles}`);
+template = template.replace(
+  '</head>',
+  fontFiles.map(f => `  <link rel="preload" href="/assets/${f}" as="font" type="font/woff2" crossorigin>\n`).join('') + '</head>',
+);
 // The empty app shell, served for URLs that weren't pre-rendered (e.g. typos -> the 404 page).
 // Cloudflare serves 404.html with a 404 status (not_found_handling in wrangler.jsonc).
 writeFileSync(resolve(DIST, '404.html'), template);
