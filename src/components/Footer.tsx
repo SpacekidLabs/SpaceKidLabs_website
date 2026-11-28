@@ -29,6 +29,7 @@ export function Footer() {
           <ul className="space-y-2">
             <li><Link to="/services" className="text-zinc-300 hover:text-brand-orange transition-colors text-sm font-mono">Services (Prod & Mix)</Link></li>
             <li><a href="/#samples" className="text-zinc-300 hover:text-brand-orange transition-colors text-sm font-mono">Sample Packs</a></li>
+            <li><Link to="/sketches" className="text-zinc-300 hover:text-brand-orange transition-colors text-sm font-mono">Sketches</Link></li>
             <li><a href="/#code" className="text-zinc-300 hover:text-brand-orange transition-colors text-sm font-mono">Projects & Software</a></li>
             <li><Link to="/archive" className="text-zinc-300 hover:text-brand-orange transition-colors text-sm font-mono">Archive</Link></li>
             <li><a href="/#contact" className="text-zinc-300 hover:text-brand-orange transition-colors text-sm font-mono">Contact</a></li>

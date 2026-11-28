@@ -52,6 +52,7 @@ export function Navbar() {
     { label: 'MUSIC', path: '/#featured', isExternal: true },
     { label: 'SERVICES', path: '/services', isExternal: false },
     { label: 'SAMPLES', path: '/samples', isExternal: false },
+    { label: 'SKETCHES', path: '/sketches', isExternal: false },
     { label: 'SOFTWARE', path: '/#code', isExternal: true },
     { label: 'ARCHIVE', path: '/archive', isExternal: false },
     { label: 'CONTACT', path: '/#contact', isExternal: true },
