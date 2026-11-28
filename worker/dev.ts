@@ -4,7 +4,10 @@
  *
  * Secrets (set in Cloudflare, never in this repo; locally in .dev.vars, which git ignores):
  *   DEV_PASSWORD  the dashboard password; it also signs the login cookie, so changing it logs everyone out
- *   GITHUB_TOKEN  fine-grained token with Contents: read and write on this repository only
+ *   GITHUB_TOKEN  fine-grained token with Contents: read and write on this repository only (saving content)
+ *   GITHUB_PROJECTS_TOKEN  optional, read-mostly token for all your repositories (Projects and Issues tabs):
+ *                 Issues: read and write; Contents, Pull requests, Actions: read. Without it GITHUB_TOKEN is used,
+ *                 which only sees this repository and public ones.
  * Var: GITHUB_REPO ("owner/name", in wrangler.jsonc).
  *
  * Neither secret is ever put in a response or a log line.
@@ -13,12 +16,14 @@ import {
   addSketch, appendSamples, postFile, removeSketch,
   type PostInput, type SampleInput, type SketchInput,
 } from './content';
-import { githubStats } from './stats';
+import { githubStats, projects } from './stats';
 import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
+import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue } from './issues';
 
 export interface DevEnv extends AnalyticsEnv {
   DEV_PASSWORD?: string;
   GITHUB_TOKEN?: string;
+  GITHUB_PROJECTS_TOKEN?: string;
   GITHUB_REPO?: string;
   /** Only for local tests against a mock; defaults to GitHub's API. */
   GITHUB_API?: string;
@@ -127,6 +132,32 @@ class GitHub {
     });
     if (!res.ok) return { status: res.status, data: null };
     return { status: res.status, data: (await res.json()) as T };
+  }
+
+  /** A REST call for the Issues tab. Throws a readable error on anything but success. */
+  async rest<T>(method: string, path: string, body?: object): Promise<T> {
+    const res = await fetch(`${this.env.GITHUB_API || 'https://api.github.com'}${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.env.GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'spacekidlabs-dev-dashboard',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (res.ok) return (await res.json()) as T;
+    const detail = ((await res.json().catch(() => ({}))) as { message?: string }).message ?? '';
+    console.error(`GitHub ${method} ${path.split('?')[0]}: ${res.status} ${detail}`);
+    const repo = path.split('/').slice(2, 4).join('/');
+    if (res.status === 401) throw new HttpError(502, 'GitHub rejected the token (401). Replace GITHUB_TOKEN in Cloudflare.');
+    if (res.status === 403 && method !== 'GET') {
+      throw new HttpError(403, `The token can't change issues in ${repo}. In GitHub, give the token "Issues: Read and write" on that repository (docs/HOSTING.md).`);
+    }
+    if (res.status === 404) throw new HttpError(404, `Not found on GitHub, or the token can't see ${repo}.`);
+    if (res.status === 410) throw new HttpError(410, `Issues are turned off for ${repo}.`);
+    throw new HttpError(502, `GitHub said ${res.status}${detail ? `: ${detail.slice(0, 200)}` : ''}`);
   }
 
   get repo(): string {
@@ -264,7 +295,12 @@ async function content(gh: GitHub) {
 
 export async function handleDev(request: Request, rawEnv: DevEnv, pathname: string): Promise<Response> {
   // Pasted secrets often carry a stray space or line break; GitHub then answers "Bad credentials".
-  const env: DevEnv = { ...rawEnv, GITHUB_TOKEN: rawEnv.GITHUB_TOKEN?.trim(), DEV_PASSWORD: rawEnv.DEV_PASSWORD?.trim() };
+  const env: DevEnv = {
+    ...rawEnv,
+    GITHUB_TOKEN: rawEnv.GITHUB_TOKEN?.trim(),
+    GITHUB_PROJECTS_TOKEN: rawEnv.GITHUB_PROJECTS_TOKEN?.trim(),
+    DEV_PASSWORD: rawEnv.DEV_PASSWORD?.trim(),
+  };
   const action = pathname.slice('/api/dev/'.length);
   const method = request.method;
 
@@ -290,13 +326,40 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
       const days = Number(new URL(request.url).searchParams.get('days')) === 30 ? 30 : 7;
       return json(200, await cloudflareAnalytics(env, days));
     }
-    if (action === 'github' && method === 'GET') return json(200, await githubStats(p => gh.get(p), gh.repo));
+    // Reading across projects and handling issues use the projects token when there is one.
+    const pg = new GitHub({ GITHUB_TOKEN: env.GITHUB_PROJECTS_TOKEN || env.GITHUB_TOKEN, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API });
+    const owner = env.GITHUB_REPO.split('/')[0];
+    const url = new URL(request.url);
+    if (action === 'projects' && method === 'GET') {
+      return json(200, { ...(await projects(p => pg.get(p), owner)), owner, site: env.GITHUB_REPO.split('/')[1], projectsToken: Boolean(env.GITHUB_PROJECTS_TOKEN) });
+    }
+    if (action === 'github' && method === 'GET') {
+      const name = url.searchParams.get('repo');
+      const repo = name ? ownRepo(name, owner) : env.GITHUB_REPO;
+      return json(200, await githubStats(p => pg.get(p), repo, repo === env.GITHUB_REPO));
+    }
+    if (action.startsWith('issue')) {
+      const rest: <T>(m: string, p: string, b?: object) => Promise<T> = (m, p, b) => pg.rest(m, p, b);
+      if (action === 'issues' && method === 'GET') {
+        const repo = url.searchParams.get('repo');
+        const state = url.searchParams.get('state');
+        return json(200, repo === '*' ? await listAllIssues(rest, owner, state) : await listIssues(rest, ownRepo(repo, owner), state));
+      }
+      if (action === 'issue' && method === 'GET') {
+        return json(200, await readIssue(rest, ownRepo(url.searchParams.get('repo'), owner), url.searchParams.get('number')));
+      }
+      if ((action === 'issue-save' || action === 'issue-comment') && method === 'POST') {
+        const input = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+        const repo = ownRepo(input.repo, owner);
+        return json(200, action === 'issue-save' ? await saveIssue(rest, repo, input) : await commentIssue(rest, repo, input));
+      }
+    }
     if (action === 'sketch' && method === 'POST') return json(200, await saveSketch(request, gh));
     if (action === 'sketch-delete' && method === 'POST') return json(200, await deleteSketch(request, gh));
     if (action === 'samples' && method === 'POST') return json(200, await saveSamples(request, gh));
     if (action === 'post' && method === 'POST') return json(200, await savePost(request, gh));
   } catch (err) {
-    if (err instanceof HttpError) return json(err.status, { error: err.message });
+    if (err instanceof HttpError || err instanceof IssueError) return json(err.status, { error: err.message });
     // Errors from content.ts are input problems with plain messages; anything else stays in the log.
     const message = err instanceof Error ? err.message : String(err);
     console.error('Dev dashboard:', message);

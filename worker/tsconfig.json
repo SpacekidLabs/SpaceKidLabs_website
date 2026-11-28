@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["index.ts", "dev.ts", "content.ts", "stats.ts", "analytics.ts"]
+  "include": ["index.ts", "dev.ts", "content.ts", "stats.ts", "analytics.ts", "issues.ts"]
 }

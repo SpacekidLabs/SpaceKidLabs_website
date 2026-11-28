@@ -60,35 +60,37 @@ If sending fails, the form shows an error with the email address as a fallback. 
 
 ## Dev dashboard (/dev)
 
-**spacekidlabs.com/dev** (also linked as **DEV** in the footer) is a password-protected page for adding sketches,
-samples and archive posts from any browser, including a phone. Once you've logged in on a device, **DEV** shows in the
-navbar there too.
+**spacekidlabs.com/dev** (linked only as a small **DEV** in the footer) is a password-protected dashboard for all
+your GitHub projects, and for adding sketches, samples and archive posts to the website, from any browser, including
+a phone. The open tab and project are in the address (e.g. `/dev#projects/xen`, `/dev#issues/data-bend`), so the back
+button and bookmarks work.
 
 How it works: the browser converts audio to MP3 and works out the duration and waveform itself, then sends it to the
 Worker (`worker/dev.ts`). The Worker commits the change to `main` on GitHub through the GitHub API, and that push
 deploys the site like any other, so a new item is live about 2 minutes after saving. Every save is a normal commit
 ("Added from the /dev dashboard"), so anything can be undone with `git revert`.
 
-| Tab | Writes |
-| --- | --- |
-| Overview | nothing: Cloudflare traffic (visitors, page views, cache, top pages, countries, browsers, status codes, Worker calls; 7 or 30 days, `worker/analytics.ts`), live version vs main (deploying or up to date), counts of sketches, samples and posts, DATABEND downloads, pushes per week, recent commits, issues, pull requests, Actions runs and releases (`worker/stats.ts`) |
-| Sketches | `src/data/sketches.json`, demo audio in `public/audio/sketches/`. Deleting a sketch removes both |
-| Samples | rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`. Originals stay on your computer; add Drive IDs later for download buttons |
-| Archive post | `src/posts/<slug>.tsx` from plain text (paragraphs, `## headings`, `- lists`, `[links](https://...)`, `**bold**`). Labs and images still need code |
+| Group | Tab | What it does |
+| --- | --- | --- |
+| All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
+| All projects | Issues | GitHub issues of one project or all of them: list, create, edit title/text/labels, comment, close (done or not planned), reopen (`worker/issues.ts`). Changes issues, not files |
+| Website | Overview | Cloudflare traffic (`worker/analytics.ts`), live version vs main, counts of sketches, samples and posts, DATABEND downloads, and the website repo's GitHub activity. Reads only |
+| Website | Sketches | `src/data/sketches.json`, demo audio in `public/audio/sketches/`. Deleting a sketch removes both |
+| Website | Samples | rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`. Originals stay on your computer; add Drive IDs later for download buttons |
+| Website | Archive post | `src/posts/<slug>.tsx` from plain text (paragraphs, `## headings`, `- lists`, `[links](https://...)`, `**bold**`). Labs and images still need code |
 
 **Pull before working locally.** The dashboard commits straight to GitHub, so run `git pull` before editing in this
 folder, or your next push will be rejected until you do.
 
 ### Setup (once)
 
-The dashboard needs two **secrets**. They live only in Cloudflare: never put them in this repo, in `wrangler.jsonc`
+The dashboard needs two **secrets**, plus two optional ones. They live only in Cloudflare: never put them in this repo, in `wrangler.jsonc`
 or in chat. The Worker never sends them back in a response or writes them to its logs.
 
-1. **GitHub token.** github.com → Settings → Developer settings → **Fine-grained personal access tokens → Generate
-   new token**. Resource owner: **SpacekidLabs**. Repository access: **Only select repositories →
-   SpaceKidLabs_website**. Permissions: **Contents → Read and write**. For the Overview tab's issues, pull requests and Actions runs, also add **Issues**, **Pull requests** and **Actions** as **Read-only** (optional; without them those panels say what's missing). Pick an expiry (e.g. 1 year) and
-   copy the token. If the organization requires approval for fine-grained tokens, approve it under the org's
-   **Settings → Personal access tokens → Pending requests**.
+1. **GitHub token (website).** github.com → Settings → Developer settings → **Fine-grained personal access tokens →
+   Generate new token**. Resource owner: **SpacekidLabs**. Repository access: **Only select repositories →
+   SpaceKidLabs_website**. Permissions: **Contents → Read and write**. Pick an expiry (e.g. 1 year) and copy the
+   token. This is the only token that can change files, and only in the website repository.
 2. **Add both secrets.** Cloudflare dashboard → **Workers & Pages → spacekidlabs → Settings → Variables and Secrets →
    Add**, type **Secret**:
    - `GITHUB_TOKEN`: the token from step 1.
@@ -97,7 +99,13 @@ or in chat. The Worker never sends them back in a response or writes them to its
    Or from this folder: `npx wrangler secret put GITHUB_TOKEN` and `npx wrangler secret put DEV_PASSWORD`, which ask
    for the value without echoing it.
 3. Open spacekidlabs.com/dev and log in.
-4. **Traffic numbers (optional).** Cloudflare dashboard → **My Profile → API Tokens → Create Token → Create Custom
+4. **Projects token (for the Projects and Issues tabs).** A second fine-grained token, so the one that can write
+   files stays limited to the website. Name it `spacekidlabs-dev-projects`. Repository access: **All repositories**.
+   Permissions: **Issues → Read and write**, and **Contents**, **Pull requests**, **Actions** as **Read-only**. It
+   can't change any code. Add it as the secret `GITHUB_PROJECTS_TOKEN` (same place as step 2). Without it the
+   dashboard uses `GITHUB_TOKEN`, which only sees the website and your public repositories. Editing a token's
+   permissions later keeps the same token, so the secret doesn't change.
+5. **Traffic numbers (optional).** Cloudflare dashboard → **My Profile → API Tokens → Create Token → Create Custom
    Token**. Name it `spacekidlabs-dev-analytics`. Permissions: **Zone → Analytics → Read** and **Account → Account
    Analytics → Read**. Zone Resources: **Include → Specific zone → spacekidlabs.com**. Account Resources: your account.
    Create it, then add it to the Worker as the secret `CF_API_TOKEN` (same place as step 2). It can only read

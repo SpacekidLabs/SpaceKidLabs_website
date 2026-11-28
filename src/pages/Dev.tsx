@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, Lightbulb, LogOut, Mic, Trash2 } from 'lucide-react';
 import { Layout } from '../components/Layout';
@@ -10,34 +10,22 @@ import { POSTS } from '../posts';
 import type { Sketch } from '../data/sketches';
 import { api, postJson } from '../lib/devApi';
 import { OverviewTab } from '../components/dev/OverviewTab';
+import { IssuesTab } from '../components/dev/IssuesTab';
+import { ProjectsTab } from '../components/dev/ProjectsTab';
+import { button, errorText, Field, input, label } from '../components/dev/ui';
 
 /**
- * /dev: the owner's dashboard for adding sketches, samples and archive posts from any browser.
+ * /dev: the owner's dashboard, from any browser: all GitHub projects and their issues, plus the website's traffic
+ * and adding sketches, samples and archive posts.
  * Saving goes to the Worker (worker/dev.ts), which commits to GitHub; the push redeploys the site.
  * The password and GitHub token live only in Cloudflare; this page never sees them.
  */
 
 const REPO_URL = 'https://github.com/SpacekidLabs/SpaceKidLabs_website';
-/** Set while logged in, so the navbar can show a DEV link. Not a secret: the real check is the cookie. */
-export const DEV_FLAG = 'spacekid-dev';
 /** Keep each upload under the Worker's 100 MB request limit (base64 inside adds a third). */
 const BATCH_BYTES = 40_000_000;
 
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
-
-const input = 'w-full bg-black/40 border border-zinc-800 focus:border-brand-orange px-3 py-2 text-zinc-100 font-sans text-sm outline-none transition-colors';
-const label = 'block font-mono text-[11px] uppercase tracking-widest text-zinc-500 mb-1.5';
-const button = 'px-5 py-2.5 bg-brand-orange text-black font-mono font-bold text-xs uppercase tracking-widest hover:bg-brand-gold disabled:opacity-40 disabled:cursor-not-allowed transition-colors';
-
-function Field({ name, children, hint }: { name: string; children: ReactNode; hint?: ReactNode }) {
-  return (
-    <label className="block">
-      <span className={label}>{name}</span>
-      {children}
-      {hint && <span className="block mt-1 text-xs text-zinc-500">{hint}</span>}
-    </label>
-  );
-}
 
 type Status = { kind: 'idle' } | { kind: 'busy'; text: string } | { kind: 'ok'; text: string; sha?: string; href?: string } | { kind: 'error'; text: string };
 
@@ -65,8 +53,6 @@ function StatusLine({ status }: { status: Status }) {
     </p>
   );
 }
-
-const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // ---------- Sketches ----------
 
@@ -299,12 +285,48 @@ function ArchiveTab() {
 
 // ---------- Page ----------
 
-const TABS = [
-  { id: 'overview', label: 'Overview', Tab: OverviewTab },
-  { id: 'sketches', label: 'Sketches', Tab: SketchesTab },
-  { id: 'samples', label: 'Samples', Tab: SamplesTab },
-  { id: 'archive', label: 'Archive post', Tab: ArchiveTab },
+/** Tabs in two groups. The address holds the open one (#projects/xen, #issues/data-bend, #sketches…). */
+const GROUPS = [
+  { name: 'All projects', tabs: [{ id: 'projects', label: 'Projects' }, { id: 'issues', label: 'Issues' }] },
+  {
+    name: 'Website',
+    tabs: [{ id: 'overview', label: 'Overview' }, { id: 'sketches', label: 'Sketches' }, { id: 'samples', label: 'Samples' }, { id: 'archive', label: 'Archive post' }],
+  },
 ] as const;
+type TabId = (typeof GROUPS)[number]['tabs'][number]['id'];
+const TAB_IDS: string[] = GROUPS.flatMap(g => g.tabs.map(t => t.id));
+/** Tabs that commit to the website repository. */
+const SAVES = ['sketches', 'samples', 'archive'];
+
+function readHash(): { tab: TabId; sub: string } {
+  const [tab, ...rest] = decodeURIComponent(location.hash.slice(1)).split('/');
+  return TAB_IDS.includes(tab) ? { tab: tab as TabId, sub: rest.join('/') } : { tab: 'projects', sub: '' };
+}
+
+function useHashRoute() {
+  const [route, setRoute] = useState(readHash);
+  useEffect(() => {
+    const on = () => setRoute(readHash());
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
+  const go = (tab: TabId, sub = '') => {
+    location.hash = sub ? `${tab}/${encodeURIComponent(sub)}` : tab;
+    window.scrollTo({ top: 0 });
+  };
+  return { ...route, go };
+}
+
+function ActiveTab({ tab, sub, go }: { tab: TabId; sub: string; go: (tab: TabId, sub?: string) => void }) {
+  switch (tab) {
+    case 'projects': return <ProjectsTab open={sub} onOpen={name => go('projects', name)} onIssues={repo => go('issues', repo)} />;
+    case 'issues': return <IssuesTab repo={sub || '*'} onRepo={repo => go('issues', repo === '*' ? '' : repo)} />;
+    case 'overview': return <OverviewTab onIssues={() => go('issues', REPO_URL.split('/').pop())} />;
+    case 'sketches': return <SketchesTab />;
+    case 'samples': return <SamplesTab />;
+    case 'archive': return <ArchiveTab />;
+  }
+}
 
 function LoginForm({ onDone }: { onDone: () => void }) {
   const [password, setPassword] = useState('');
@@ -314,7 +336,6 @@ function LoginForm({ onDone }: { onDone: () => void }) {
     try {
       setStatus({ kind: 'busy', text: 'Checking…' });
       await postJson('login', { password });
-      localStorage.setItem(DEV_FLAG, '1');
       onDone();
     } catch (err) {
       setStatus({ kind: 'error', text: errorText(err) });
@@ -335,25 +356,22 @@ export function DevPage() {
   usePageTitle('Dev');
   const [session, setSession] = useState<{ loggedIn: boolean; configured: boolean } | null>(null);
   const [error, setError] = useState('');
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('overview');
+  const { tab, sub, go } = useHashRoute();
 
   const check = () =>
     api<{ loggedIn: boolean; configured: boolean }>('session')
-      .then(s => { setSession(s); if (!s.loggedIn) localStorage.removeItem(DEV_FLAG); })
+      .then(setSession)
       .catch(e => setError(errorText(e)));
   useEffect(() => { check(); }, []);
 
   async function logout() {
     await postJson('logout', {}).catch(() => {});
-    localStorage.removeItem(DEV_FLAG);
     setSession(s => s && { ...s, loggedIn: false });
   }
 
-  const Active = TABS.find(t => t.id === tab)!.Tab;
-
   return (
     <Layout>
-      <div className="pt-24 pb-24 max-w-5xl mx-auto px-6 w-full">
+      <div className="pt-24 pb-24 max-w-6xl mx-auto px-6 w-full">
         <div className="flex items-start justify-between gap-4 mb-10">
           <div>
             <p className="font-mono text-xs text-zinc-500 uppercase tracking-widest mb-4">// Owner only</p>
@@ -377,21 +395,30 @@ export function DevPage() {
             {!session.configured && (
               <p className="mb-8 font-mono text-xs text-amber-400">The GitHub token isn't set up yet, so saving won't work. See docs/HOSTING.md.</p>
             )}
-            <div role="tablist" className="flex gap-6 border-b border-zinc-900 mb-10 font-mono text-xs uppercase tracking-widest">
-              {TABS.map(t => (
-                <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-                  className={cn('pb-3 -mb-px border-b-2 transition-colors', tab === t.id ? 'border-brand-orange text-brand-orange' : 'border-transparent text-zinc-400 hover:text-white')}>
-                  {t.label}
-                </button>
+            <nav aria-label="Dashboard sections" className="flex flex-wrap gap-x-10 gap-y-4 border-b border-zinc-900 mb-10">
+              {GROUPS.map(g => (
+                <div key={g.name}>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-zinc-600 mb-2">{g.name}</p>
+                  <div role="tablist" aria-label={g.name} className="flex gap-6 font-mono text-xs uppercase tracking-widest">
+                    {g.tabs.map(t => (
+                      <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} onClick={() => go(t.id)}
+                        className={cn('pb-3 -mb-px border-b-2 transition-colors', tab === t.id ? 'border-brand-orange text-brand-orange' : 'border-transparent text-zinc-400 hover:text-white')}>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
-            </div>
-            <Active />
-            <p className="mt-16 font-mono text-[11px] text-zinc-600 flex items-center gap-1.5">
-              Every save is a commit to main.{' '}
-              <a href={`${REPO_URL}/commits/main`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-zinc-300">
-                History <ExternalLink className="w-3 h-3" aria-hidden />
-              </a>
-            </p>
+            </nav>
+            <ActiveTab tab={tab} sub={sub} go={go} />
+            {SAVES.includes(tab) && (
+              <p className="mt-16 font-mono text-[11px] text-zinc-600 flex items-center gap-1.5">
+                Every save is a commit to the website's main branch and goes live in about 2 minutes.{' '}
+                <a href={`${REPO_URL}/commits/main`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-zinc-300">
+                  History <ExternalLink className="w-3 h-3" aria-hidden />
+                </a>
+              </p>
+            )}
           </>
         )}
       </div>

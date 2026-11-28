@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { CheckCircle2, CircleDot, ExternalLink, GitCommitHorizontal, GitMerge, GitPullRequest, Loader2, RefreshCw, Tag, XCircle } from 'lucide-react';
+import { CheckCircle2, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { api } from '../../lib/devApi';
 import { PACKS, SAMPLES } from '../../data/samples';
@@ -7,122 +7,17 @@ import { POSTS } from '../../posts';
 import { DATABEND_RELEASE } from '../../data/databend';
 import type { Sketch } from '../../data/sketches';
 import { TrafficSection } from './TrafficSection';
-import { BarChart } from './BarChart';
+import { ago, card, ExtLink, heading, nf, Panel, Problem, ReleaseList, RepoPanels, Stat, type Stats } from './RepoPanels';
 
 /**
- * /dev Overview: what's on the site, whether the live site is up to date, and the GitHub side
- * (pushes, weekly activity, issues, pull requests, Actions, versions). Data from worker/stats.ts.
+ * /dev Website → Overview: what's on the site, whether the live site is up to date, traffic, and the website
+ * repository's GitHub activity (RepoPanels). Data from worker/stats.ts and worker/analytics.ts.
  */
-
-type Section<T> = ({ ok: true } & T) | { ok: false; error: string };
-interface Commit { sha: string; url: string; message: string; author: string; date: string; fromDashboard: boolean }
-interface Release { tag: string; name: string; url: string; date: string | null; prerelease: boolean; downloads: number; assets: Array<{ name: string; downloads: number }> }
-interface Stats {
-  repo: Section<{ private: boolean; pushedAt: string; sizeKb: number; url: string }>;
-  commits: Section<{ recent: Commit[]; weeks: Array<{ start: string; count: number }>; total: number }>;
-  issues: Section<{ items: Array<{ number: number; title: string; url: string; updated: string; author: string; comments: number; labels: string[]; state: string }> }>;
-  pulls: Section<{ items: Array<{ number: number; title: string; url: string; updated: string; author: string; branch: string; state: string }> }>;
-  runs: Section<{ items: Array<{ name: string; title: string; url: string; status: string; conclusion: string | null; date: string; event: string }> }>;
-  versions: {
-    site: Section<{ releases: Release[] }>;
-    tags: Section<{ items: Array<{ name: string; sha: string }> }>;
-    databend: Section<{ repo: string; releases: Release[] }>;
-  };
-}
 
 const REPO_URL = 'https://github.com/SpacekidLabs/SpaceKidLabs_website';
 const DEPLOYS_URL = 'https://dash.cloudflare.com/?to=/:account/workers/services/view/spacekidlabs/production/deployments';
 
-/** "3m ago", "5h ago", "2d ago", or a date for anything older than a month. */
-function ago(iso: string | null): string {
-  if (!iso) return '';
-  const s = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (s < 60) return 'just now';
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86_400) return `${Math.floor(s / 3600)}h ago`;
-  if (s < 30 * 86_400) return `${Math.floor(s / 86_400)}d ago`;
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-const nf = new Intl.NumberFormat('en');
-const weekLabel = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
-
-const heading = 'font-mono text-[11px] uppercase tracking-widest text-zinc-500 mb-3';
-const card = 'border border-zinc-800 bg-zinc-900/40 p-5';
-
-function Panel({ title, action, children, className }: { title: string; action?: ReactNode; children: ReactNode; className?: string }) {
-  return (
-    <section className={cn(card, className)}>
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className={heading}>{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Stat({ label, value, detail }: { label: string; value: ReactNode; detail?: ReactNode }) {
-  return (
-    <div className={card}>
-      <div className={heading}>{label}</div>
-      <div className="font-display font-bold text-3xl text-white tabular-nums">{value}</div>
-      {detail && <div className="mt-1 text-xs text-zinc-400">{detail}</div>}
-    </div>
-  );
-}
-
-const Problem = ({ text }: { text: string }) => <p className="text-xs text-amber-400 leading-relaxed">{text}</p>;
-const Empty = ({ text }: { text: string }) => <p className="text-sm text-zinc-500">{text}</p>;
-
-function ExtLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer" className={cn('hover:text-brand-orange transition-colors', className)}>
-      {children}
-    </a>
-  );
-}
-
-function ActivityChart({ weeks }: { weeks: Array<{ start: string; count: number }> }) {
-  return (
-    <BarChart
-      points={weeks.map(w => ({ key: `Week of ${weekLabel(w.start)}`, value: w.count }))}
-      describe={i => (
-        <>
-          <span className="font-mono tabular-nums text-white">{weeks[i].count}</span> commit{weeks[i].count === 1 ? '' : 's'} in the week of {weekLabel(weeks[i].start)}
-          {i === weeks.length - 1 && <span className="text-zinc-500"> (this week)</span>}
-        </>
-      )}
-      firstLabel={weekLabel(weeks[0].start)}
-      lastLabel="this week"
-    />
-  );
-}
-
-function runIcon(status: string, conclusion: string | null) {
-  if (status !== 'completed') return <Loader2 className="w-4 h-4 text-zinc-400 animate-spin shrink-0" aria-label="Running" />;
-  if (conclusion === 'success') return <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" aria-label="Passed" />;
-  return <XCircle className="w-4 h-4 text-red-400 shrink-0" aria-label={conclusion ?? 'Failed'} />;
-}
-
-function ReleaseList({ list, empty }: { list: Release[]; empty: string }) {
-  if (!list.length) return <Empty text={empty} />;
-  return (
-    <ul className="space-y-2">
-      {list.map((r, i) => (
-        <li key={r.tag} className="flex items-baseline gap-3 text-sm">
-          <Tag className="w-3.5 h-3.5 text-zinc-500 shrink-0 translate-y-0.5" aria-hidden />
-          <ExtLink href={r.url} className={cn('font-mono', i === 0 ? 'text-white' : 'text-zinc-300')}>{r.tag}</ExtLink>
-          {r.prerelease && <span className="font-mono text-[10px] uppercase text-zinc-500 border border-zinc-700 px-1">pre</span>}
-          <span className="text-xs text-zinc-500">{ago(r.date)}</span>
-          <span className="ml-auto text-xs text-zinc-400 tabular-nums">{nf.format(r.downloads)} downloads</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-export function OverviewTab() {
+export function OverviewTab({ onIssues }: { onIssues?: () => void }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [sketches, setSketches] = useState<Sketch[] | null>(null);
   const [error, setError] = useState('');
@@ -148,8 +43,8 @@ export function OverviewTab() {
   const latestPost = POSTS[0]?.meta;
   const latestPostDate = POSTS.reduce((d, p) => (p.meta.date > d ? p.meta.date : d), '');
   const packCounts = PACKS.map(p => ({ title: p.title, n: SAMPLES.filter(s => s.pack === p.id).length }));
-  const databendLatest = stats?.versions.databend.ok ? stats.versions.databend.releases[0] : undefined;
-  const databendDownloads = stats?.versions.databend.ok ? stats.versions.databend.releases.reduce((n, r) => n + r.downloads, 0) : null;
+  const databendLatest = stats?.versions.databend?.ok ? stats.versions.databend.releases[0] : undefined;
+  const databendDownloads = stats?.versions.databend?.ok ? stats.versions.databend.releases.reduce((n, r) => n + r.downloads, 0) : null;
 
   // Live site vs main: how many commits on main are newer than the one this page was built from.
   const recent = stats?.commits.ok ? stats.commits.recent : [];
@@ -205,104 +100,34 @@ export function OverviewTab() {
       <TrafficSection />
 
       <h2 className="font-display font-bold text-xl text-white tracking-wide pt-4">GitHub</h2>
-      <div className="grid lg:grid-cols-[3fr_2fr] gap-4">
-        <Panel title={`Pushes to main · last 12 weeks${stats?.commits.ok ? ` · ${stats.commits.total}` : ''}`}>
-          {!stats ? <Empty text="Loading…" /> : stats.commits.ok ? <ActivityChart weeks={stats.commits.weeks} /> : <Problem text={stats.commits.error} />}
-        </Panel>
-        <Panel title="Samples per pack">
-          <ul className="space-y-1.5">
-            {packCounts.map(p => (
-              <li key={p.title} className="flex justify-between gap-4 text-sm">
-                <span className="text-zinc-300 truncate">{p.title}</span>
-                <span className="font-mono text-zinc-400 tabular-nums">{p.n}</span>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      </div>
-
-      <Panel title="Recent pushes" action={<ExtLink href={`${REPO_URL}/commits/main`} className="font-mono text-[11px] text-zinc-400">All commits</ExtLink>}>
-        {!stats ? <Empty text="Loading…" /> : !stats.commits.ok ? <Problem text={stats.commits.error} /> : (
-          <ul className="divide-y divide-zinc-900">
-            {stats.commits.recent.map(c => (
-              <li key={c.sha} className="flex items-baseline gap-3 py-2 text-sm">
-                <GitCommitHorizontal className="w-4 h-4 text-zinc-500 shrink-0 translate-y-0.5" aria-hidden />
-                <ExtLink href={c.url} className="font-mono text-xs text-zinc-400 shrink-0">{c.sha.slice(0, 7)}</ExtLink>
-                <span className="text-zinc-200 truncate">{c.message}</span>
-                {c.fromDashboard && <span className="font-mono text-[10px] uppercase text-brand-orange border border-brand-orange/40 px-1 shrink-0">dev</span>}
-                {c.sha === __BUILD_COMMIT__ && <span className="font-mono text-[10px] uppercase text-emerald-400 border border-emerald-400/40 px-1 shrink-0">live</span>}
-                <span className="ml-auto text-xs text-zinc-500 shrink-0">{ago(c.date)}</span>
-              </li>
-            ))}
-          </ul>
+      <RepoPanels
+        stats={stats}
+        repoUrl={REPO_URL}
+        liveCommit={__BUILD_COMMIT__}
+        onIssues={onIssues}
+        noVersions="No releases or tags. The site deploys every push to main; the live version is shown above."
+        aside={
+          <Panel title="Samples per pack">
+            <ul className="space-y-1.5">
+              {packCounts.map(p => (
+                <li key={p.title} className="flex justify-between gap-4 text-sm">
+                  <span className="text-zinc-300 truncate">{p.title}</span>
+                  <span className="font-mono text-zinc-400 tabular-nums">{p.n}</span>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        }
+        versionsTop={stats?.versions.databend && (
+          <div className="mb-5">
+            <h3 className="text-xs text-zinc-400 mb-2">DATABEND {stats.versions.databend.ok && <span className="font-mono text-zinc-500">({stats.versions.databend.repo})</span>}</h3>
+            {stats.versions.databend.ok
+              ? <ReleaseList list={stats.versions.databend.releases} empty="No releases yet." />
+              : <Problem text={stats.versions.databend.error} />}
+            <h3 className="text-xs text-zinc-400 mt-5 mb-2">This site</h3>
+          </div>
         )}
-      </Panel>
-
-      <div className="grid lg:grid-cols-2 gap-4">
-        <Panel title="Issues" action={<ExtLink href={`${REPO_URL}/issues`} className="font-mono text-[11px] text-zinc-400">On GitHub</ExtLink>}>
-          {!stats ? <Empty text="Loading…" /> : !stats.issues.ok ? <Problem text={stats.issues.error} /> : !stats.issues.items.length ? <Empty text="No issues." /> : (
-            <ul className="space-y-2">
-              {stats.issues.items.map(i => (
-                <li key={i.number} className="flex items-baseline gap-2 text-sm">
-                  <CircleDot className={cn('w-4 h-4 shrink-0 translate-y-0.5', i.state === 'open' ? 'text-emerald-400' : 'text-zinc-500')} aria-label={i.state} />
-                  <ExtLink href={i.url} className="text-zinc-200 truncate">#{i.number} {i.title}</ExtLink>
-                  <span className="ml-auto text-xs text-zinc-500 shrink-0">{ago(i.updated)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-        <Panel title="Pull requests" action={<ExtLink href={`${REPO_URL}/pulls`} className="font-mono text-[11px] text-zinc-400">On GitHub</ExtLink>}>
-          {!stats ? <Empty text="Loading…" /> : !stats.pulls.ok ? <Problem text={stats.pulls.error} /> : !stats.pulls.items.length ? <Empty text="No pull requests." /> : (
-            <ul className="space-y-2">
-              {stats.pulls.items.map(p => (
-                <li key={p.number} className="flex items-baseline gap-2 text-sm">
-                  {p.state === 'merged'
-                    ? <GitMerge className="w-4 h-4 text-violet-400 shrink-0 translate-y-0.5" aria-label="merged" />
-                    : <GitPullRequest className={cn('w-4 h-4 shrink-0 translate-y-0.5', p.state === 'open' ? 'text-emerald-400' : 'text-zinc-500')} aria-label={p.state} />}
-                  <ExtLink href={p.url} className="text-zinc-200 truncate">#{p.number} {p.title}</ExtLink>
-                  <span className="ml-auto text-xs text-zinc-500 shrink-0">{p.state} · {ago(p.updated)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-4">
-        <Panel title="Versions">
-          <h3 className="text-xs text-zinc-400 mb-2">DATABEND {stats?.versions.databend.ok && <span className="font-mono text-zinc-500">({stats.versions.databend.repo})</span>}</h3>
-          {!stats ? <Empty text="Loading…" /> : stats.versions.databend.ok
-            ? <ReleaseList list={stats.versions.databend.releases} empty="No releases yet." />
-            : <Problem text={stats.versions.databend.error} />}
-          <h3 className="text-xs text-zinc-400 mt-5 mb-2">This site</h3>
-          {!stats ? null : stats.versions.site.ok && stats.versions.site.releases.length
-            ? <ReleaseList list={stats.versions.site.releases} empty="" />
-            : stats.versions.tags.ok && stats.versions.tags.items.length
-              ? <p className="text-sm text-zinc-300 font-mono">{stats.versions.tags.items.map(t => t.name).join(' · ')}</p>
-              : !stats.versions.site.ok ? <Problem text={stats.versions.site.error} />
-              : <Empty text="No releases or tags. The site deploys every push to main; the live version is shown above." />}
-        </Panel>
-        <Panel title="GitHub Actions" action={<ExtLink href={`${REPO_URL}/actions`} className="font-mono text-[11px] text-zinc-400">On GitHub</ExtLink>}>
-          {!stats ? <Empty text="Loading…" /> : !stats.runs.ok ? <Problem text={stats.runs.error} /> : !stats.runs.items.length ? <Empty text="No runs yet." /> : (
-            <ul className="space-y-2">
-              {stats.runs.items.map(r => (
-                <li key={r.url} className="flex items-baseline gap-2 text-sm">
-                  <span className="translate-y-0.5">{runIcon(r.status, r.conclusion)}</span>
-                  <ExtLink href={r.url} className="text-zinc-200 truncate">{r.name}: {r.title}</ExtLink>
-                  <span className="ml-auto text-xs text-zinc-500 shrink-0">{ago(r.date)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      </div>
-
-      {stats?.repo.ok && (
-        <p className="font-mono text-[11px] text-zinc-600">
-          Repository: {stats.repo.private ? 'private' : 'public'} · {(stats.repo.sizeKb / 1024).toFixed(0)} MB · last push {ago(stats.repo.pushedAt)}
-        </p>
-      )}
+      />
     </div>
   );
 }

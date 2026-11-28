@@ -1,6 +1,6 @@
 /**
- * GitHub data for the /dev dashboard's Overview tab: recent pushes, weekly activity, issues, pull requests,
- * Actions runs, and releases (this site and DATABEND). Each section is fetched on its own, so a section the
+ * GitHub data for the /dev dashboard's Projects and Website tabs: the list of repositories, and for one repository
+ * its recent pushes (default branch), weekly activity, issues, pull requests, Actions runs and releases. Each section is fetched on its own, so a section the
  * token can't read shows a short message instead of breaking the page. Only public-facing fields are passed
  * on (titles, dates, links, counts); nothing from the request side.
  */
@@ -46,19 +46,59 @@ const releases = (list: GhRelease[]) =>
     assets: r.assets.map(a => ({ name: a.name, downloads: a.download_count, size: a.size })),
   }));
 
-export async function githubStats(get: Get, repo: string) {
+/** Every repository the token can see under the owner, newest push first, for the Projects tab. */
+interface GhRepoListItem {
+  name: string; full_name: string; description: string | null; private: boolean; archived: boolean; fork: boolean;
+  language: string | null; pushed_at: string; open_issues_count: number; stargazers_count: number; html_url: string;
+  topics?: string[]; owner: { login: string }; homepage: string | null;
+}
+
+export async function projects(get: Get, owner: string) {
+  // /user/repos lists private repositories too, if the token includes them; the public list is the fallback.
+  let list = await get<GhRepoListItem[]>('/user/repos?affiliation=owner&sort=pushed&per_page=100');
+  let limited = false;
+  if (!list.data) {
+    list = await get<GhRepoListItem[]>(`/users/${owner}/repos?sort=pushed&per_page=100`);
+    limited = true;
+  }
+  if (!list.data) return failure(list.status, 'your repositories', 'Check GITHUB_TOKEN.');
+  return {
+    ok: true as const,
+    limited,
+    items: list.data
+      .filter(r => r.owner.login.toLowerCase() === owner.toLowerCase())
+      .map(r => ({
+        name: r.name,
+        description: r.description ?? '',
+        private: r.private,
+        archived: r.archived,
+        fork: r.fork,
+        language: r.language,
+        pushedAt: r.pushed_at,
+        // GitHub counts open pull requests as issues here.
+        openIssues: r.open_issues_count,
+        stars: r.stargazers_count,
+        url: r.html_url,
+        homepage: r.homepage || null,
+        topics: (r.topics ?? []).slice(0, 6),
+      })),
+  };
+}
+
+/** Pushes, issues, pull requests, Actions and versions of one repository. `withDatabend` adds DATABEND's releases. */
+export async function githubStats(get: Get, repo: string, withDatabend = false) {
   const since = new Date(weekStart(new Date()) - (WEEKS - 1) * 7 * 86_400_000).toISOString();
   const r = `/repos/${repo}`;
 
   const [repoInfo, commitPages, issues, pulls, runs, siteReleases, tags, databend] = await Promise.all([
     get<GhRepo>(r),
-    Promise.all([1, 2, 3].map(page => get<GhCommit[]>(`${r}/commits?sha=main&per_page=100&page=${page}&since=${since}`))),
+    Promise.all([1, 2, 3].map(page => get<GhCommit[]>(`${r}/commits?per_page=100&page=${page}&since=${since}`))),
     get<GhIssue[]>(`${r}/issues?state=all&per_page=30&sort=updated`),
     get<GhPull[]>(`${r}/pulls?state=all&per_page=10&sort=updated&direction=desc`),
     get<GhRuns>(`${r}/actions/runs?per_page=6`),
     get<GhRelease[]>(`${r}/releases?per_page=5`),
     get<GhTag[]>(`${r}/tags?per_page=6`),
-    get<GhRelease[]>(`/repos/${DATABEND_REPO}/releases?per_page=6`),
+    withDatabend ? get<GhRelease[]>(`/repos/${DATABEND_REPO}/releases?per_page=6`) : Promise.resolve(null),
   ]);
 
   // Pushes: commits on main, newest first, and how many per week.
@@ -92,7 +132,7 @@ export async function githubStats(get: Get, repo: string) {
 
   return {
     repo: repoInfo.data
-      ? { ok: true as const, private: repoInfo.data.private, pushedAt: repoInfo.data.pushed_at, sizeKb: repoInfo.data.size, url: repoInfo.data.html_url }
+      ? { ok: true as const, name: repo, branch: repoInfo.data.default_branch, private: repoInfo.data.private, pushedAt: repoInfo.data.pushed_at, sizeKb: repoInfo.data.size, url: repoInfo.data.html_url }
       : failure(repoInfo.status, 'the repository', permissionFix('Metadata')),
     commits,
     issues: issues.data
@@ -128,7 +168,7 @@ export async function githubStats(get: Get, repo: string) {
     versions: {
       site: siteReleases.data ? { ok: true as const, releases: releases(siteReleases.data) } : failure(siteReleases.status, 'releases', 'It needs "Contents: Read".'),
       tags: tags.data ? { ok: true as const, items: tags.data.map(t => ({ name: t.name, sha: t.commit.sha })) } : failure(tags.status, 'tags', 'It needs "Contents: Read".'),
-      databend: databend.data
+      databend: !databend ? null : databend.data
         ? { ok: true as const, repo: DATABEND_REPO, releases: releases(databend.data) }
         : failure(databend.status, `${DATABEND_REPO}`, `On GitHub, edit the token and add ${DATABEND_REPO} to its repositories.`),
     },
