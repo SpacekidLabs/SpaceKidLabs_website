@@ -22,12 +22,13 @@ const levels = (s: Sample) => [...s.peaks].map(c => ALPHABET.indexOf(c) / 63);
 const f = (n: number) => +n.toFixed(1);
 
 function frame(body: string, label: string, sub: string) {
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" width="${SIZE}" height="${SIZE}">
 <rect width="${SIZE}" height="${SIZE}" fill="#050505"/>
 ${body}
 <rect x="40" y="${SIZE - 112}" width="${SIZE - 80}" height="72" fill="#050505" opacity="0.88"/>
-<text x="60" y="${SIZE - 70}" fill="#ffffff" font-size="30" font-weight="700" letter-spacing="4" ${FONT}>${label}</text>
-<text x="60" y="${SIZE - 50}" fill="${ORANGE}" font-size="13" letter-spacing="3" ${FONT}>${sub}</text>
+<text x="60" y="${SIZE - 70}" fill="#ffffff" font-size="30" font-weight="700" letter-spacing="4" ${FONT}>${esc(label)}</text>
+<text x="60" y="${SIZE - 50}" fill="${ORANGE}" font-size="13" letter-spacing="3" ${FONT}>${esc(sub)}</text>
 </svg>
 `;
 }
@@ -84,8 +85,56 @@ function databend(samples: Sample[]) {
   return frame(body, 'DATABEND PROCESS', `${samples.length} SAMPLES // 48 KHZ // SPACEKID LABS`);
 }
 
+/** One-Shots: every hit as one spoke of a burst, its waveform drawn outward from the centre. */
+function oneShots(samples: Sample[]) {
+  const cx = SIZE / 2, cy = 330, inner = 46, outer = 270;
+  const shades: Record<string, string> = { Kicks: ORANGE, Snares: '#ffffff', Claps: '#ffffff', Percussion: '#8a8a8a', 'Hats & Shakers': '#5a5a5a' };
+  let out = `<circle cx="${cx}" cy="${cy}" r="${inner - 14}" fill="none" stroke="${ORANGE}" stroke-width="1.5"/>\n`;
+  samples.forEach((s, i) => {
+    const a = (i / samples.length) * Math.PI * 2 - Math.PI / 2;
+    const ux = Math.cos(a), uy = Math.sin(a), px = -uy, py = ux;
+    const bars = levels(s);
+    const step = (outer - inner) / bars.length;
+    // Mirrored outline along the spoke, as a closed shape.
+    const side = (sign: number) => bars.map((v, k) => {
+      const r = inner + k * step, w = sign * Math.max(0.4, v * 5.5);
+      return `${f(cx + ux * r + px * w)},${f(cy + uy * r + py * w)}`;
+    });
+    const pts = [...side(1), ...side(-1).reverse()];
+    out += `<path d="M${pts.join('L')}Z" fill="${shades[s.category] ?? ORANGE}" opacity="0.9"/>\n`;
+  });
+  return frame(out, 'SPACEKID ONE-SHOTS', `${samples.length} HITS // KICKS SNARES CLAPS PERC // SPACEKID LABS`);
+}
+
+/** Trap & Tape: two tape reels; each loop is one ring, its waveform drawn around the circle. */
+function trapTape(samples: Sample[]) {
+  const reels = [{ cx: 220, cy: 330 }, { cx: 580, cy: 330 }];
+  const half = Math.ceil(samples.length / 2);
+  const inner = 34, outer = 160;
+  let out = `<path d="M${reels[0].cx - 4} ${reels[0].cy + outer + 6}L${reels[1].cx + 4} ${reels[1].cy + outer + 6}" stroke="#3f3f46" stroke-width="3"/>\n`;
+  reels.forEach((reel, ri) => {
+    const list = samples.slice(ri * half, (ri + 1) * half);
+    const gap = (outer - inner) / list.length;
+    out += `<circle cx="${reel.cx}" cy="${reel.cy}" r="${inner - 10}" fill="none" stroke="${ORANGE}" stroke-width="1.5"/>\n`;
+    list.forEach((s, i) => {
+      const bars = levels(s), r0 = inner + i * gap;
+      let d = '';
+      bars.forEach((v, k) => {
+        const a = (k / bars.length) * Math.PI * 2 + ri * 0.4;
+        const r1 = r0 + Math.max(0.6, v * gap * 0.9);
+        d += `M${f(reel.cx + Math.cos(a) * r0)} ${f(reel.cy + Math.sin(a) * r0)}L${f(reel.cx + Math.cos(a) * r1)} ${f(reel.cy + Math.sin(a) * r1)}`;
+      });
+      const color = s.category === '808s' ? '#ffffff' : s.category === 'Trap Loops' ? ORANGE : '#8a8a8a';
+      out += `<path d="${d}" stroke="${color}" stroke-width="${f(Math.max(1, (2 * Math.PI * r0) / bars.length * 0.55))}"/>\n`;
+    });
+  });
+  return frame(out, 'TRAP & TAPE', `${samples.length} SOUNDS // LOOPS 808S FX // SPACEKID LABS`);
+}
+
 mkdirSync(OUT, { recursive: true });
 const pack = (id: string) => SAMPLES.filter(s => s.pack === id && s.peaks);
 writeFileSync(join(OUT, 'weird-breaks.svg'), weirdBreaks(pack('weird-breaks')));
 writeFileSync(join(OUT, 'databend.svg'), databend(pack('databend')));
-console.log('Wrote public/packs/weird-breaks.svg and public/packs/databend.svg');
+writeFileSync(join(OUT, 'one-shots.svg'), oneShots(pack('one-shots')));
+writeFileSync(join(OUT, 'trap-tape.svg'), trapTape(pack('trap-tape')));
+console.log('Wrote the pack covers in public/packs/');
