@@ -1,5 +1,16 @@
 [
   {
+    "id": "2026-11-28-live-test-draft-delete-me",
+    "kind": "idea",
+    "title": "Live test draft (delete me)",
+    "date": "2026-11-28",
+    "text": "Created by Claude to test drafts. It should not appear on /sketches.",
+    "tags": [
+      "test"
+    ],
+    "hidden": true
+  },
+  {
     "id": "placeholder-demo-1",
     "kind": "demo",
     "title": "Untitled demo #1",
