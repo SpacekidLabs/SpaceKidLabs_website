@@ -1,15 +1,5 @@
 [
   {
-    "id": "2026-11-28-publish-test-removed-in-a-few-minutes",
-    "kind": "idea",
-    "title": "Publish test (removed in a few minutes)",
-    "date": "2026-11-28",
-    "text": "A test of publishing drafts from the /dev dashboard. This will be gone shortly.",
-    "tags": [
-      "test"
-    ]
-  },
-  {
     "id": "placeholder-demo-1",
     "kind": "demo",
     "title": "Untitled demo #1",
