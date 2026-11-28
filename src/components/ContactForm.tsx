@@ -1,6 +1,6 @@
 import { useId, useState, type FormEvent } from 'react';
 import { CheckCircle2, Loader2, Send } from 'lucide-react';
-import { CONTACT_FORM_ACTION, CONTACT_FORM_NAME, SERVICES, contactEmail, type Service } from '../data/contact';
+import { CONTACT_FORM_ACTION, SERVICES, contactEmail, type Service } from '../data/contact';
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
 
@@ -16,8 +16,8 @@ const fieldClass =
 const labelClass = 'block font-mono text-xs uppercase tracking-widest text-zinc-400 mb-2';
 
 /**
- * Contact form, sent through Netlify Forms (no backend). Submissions are emailed via the form notification
- * set up in the Netlify dashboard. See src/data/contact.ts.
+ * Contact form. Posts to /api/contact (worker/index.ts), which emails the message through Cloudflare Email
+ * Routing. See docs/HOSTING.md.
  */
 export function ContactForm({ service: controlledService, onServiceChange }: Props) {
   const id = useId();
@@ -30,7 +30,6 @@ export function ContactForm({ service: controlledService, onServiceChange }: Pro
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
-    data.set('form-name', CONTACT_FORM_NAME);
     data.set('page', window.location.pathname);
     setStatus('sending');
     try {
@@ -69,14 +68,12 @@ export function ContactForm({ service: controlledService, onServiceChange }: Pro
 
   return (
     <form
-      name={CONTACT_FORM_NAME}
       method="POST"
       action={CONTACT_FORM_ACTION}
       onSubmit={handleSubmit}
       className="grid gap-5 text-left"
     >
-      <input type="hidden" name="form-name" value={CONTACT_FORM_NAME} />
-      {/* Honeypot: hidden from people, filled in by bots; Netlify drops any submission that has it. */}
+      {/* Honeypot: hidden from people, filled in by bots; the Worker drops any submission that has it. */}
       <p className="hidden" aria-hidden>
         <label>
           Leave this empty: <input name="bot-field" tabIndex={-1} autoComplete="off" />

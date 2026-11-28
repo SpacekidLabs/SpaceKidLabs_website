@@ -1,12 +1,8 @@
 /**
- * Contact settings. Messages go through the Netlify form named below (src/components/ContactForm.tsx).
- * Netlify finds the form in public/__forms.html at deploy time; keep its fields in step with SERVICES and
- * the inputs in ContactForm.
+ * Contact settings. The form (src/components/ContactForm.tsx) posts to the Cloudflare Worker in worker/index.ts,
+ * which emails the message. Keep SERVICES in step with the list in the Worker.
  */
-export const CONTACT_FORM_NAME = 'contact';
-
-/** Where the form posts. A real static file, so Netlify handles the POST before any redirect rule. */
-export const CONTACT_FORM_ACTION = '/__forms.html';
+export const CONTACT_FORM_ACTION = '/api/contact';
 
 export const SERVICES = [
   { value: 'production', label: 'Production' },

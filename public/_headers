@@ -1,0 +1,16 @@
+# Cache rules for Cloudflare (static assets). https://developers.cloudflare.com/workers/static-assets/headers/
+
+# Built JS/CSS files get a new name whenever they change, so browsers can keep them for a year.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Sample previews (scripts/make-sample-previews.ts). Names don't change when a file is re-encoded,
+# so cache for a week rather than forever.
+/audio/*
+  Cache-Control: public, max-age=604800
+
+/favicons/*
+  Cache-Control: public, max-age=604800
+
+/rss.xml
+  Content-Type: application/rss+xml; charset=utf-8

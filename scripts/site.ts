@@ -1,10 +1,7 @@
 /** Shared settings for the build scripts. */
 
-/**
- * The site's public address. On Netlify, `URL` is the site's main address (including a custom domain once added).
- * Local builds fall back to spacekidlabs.com.
- */
-export const SITE_URL = (process.env.URL || 'https://spacekidlabs.com').replace(/\/$/, '');
+/** The site's public address. Set SITE_URL to build for another address (e.g. a preview). */
+export const SITE_URL = (process.env.SITE_URL || 'https://spacekidlabs.com').replace(/\/$/, '');
 
 export const SITE_NAME = 'SPACEKID LABS';
 

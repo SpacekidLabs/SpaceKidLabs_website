@@ -1,0 +1,29 @@
+// Cloudflare Workers config for spacekidlabs.com. See docs/HOSTING.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "spacekidlabs",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-11-01",
+
+  // The pre-rendered site (npm run build:site). Cloudflare serves these files directly, free and without
+  // running the Worker: /download serves download.html, and unknown URLs get 404.html with a 404 status.
+  // Cache headers are in public/_headers.
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
+  },
+
+  // Contact form (POST /api/contact): emails each message through Cloudflare Email Routing.
+  // The recipient is the CONTACT_TO secret (set in the Cloudflare dashboard, not in this repo) and must be a
+  // verified destination address in Email Routing for spacekidlabs.com.
+  "send_email": [{ "name": "CONTACT_EMAIL" }],
+  "vars": {
+    "CONTACT_FROM": "contact-form@spacekidlabs.com"
+  },
+
+  "routes": [{ "pattern": "spacekidlabs.com", "custom_domain": true }],
+  "workers_dev": true,
+  "observability": { "enabled": true }
+}

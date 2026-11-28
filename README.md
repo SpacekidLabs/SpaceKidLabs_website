@@ -33,10 +33,12 @@ The site runs at http://localhost:3000.
 | Command | What it does |
 | --- | --- |
 | `npm run dev` | Starts the Express server with Vite middleware (hot reload) |
-| `npm run build:site` | Builds the site into `dist/`, pre-renders every page, and generates `sitemap.xml` and `robots.txt` (this is what Netlify runs) |
+| `npm run build:site` | Builds the site into `dist/`, pre-renders every page, and generates `sitemap.xml` and `robots.txt` (this is what Cloudflare runs) |
 | `npm run build` | Same as `build:site`, plus bundles the Node server into `dist/server.cjs` |
 | `npm start` | Runs the production build (set `NODE_ENV=production`) |
-| `npm run lint` | Type-checks the project with `tsc` (also runs on GitHub for every push and pull request) |
+| `npm run preview:cf` | Builds the site and serves it on Cloudflare's runtime at http://localhost:8787, including the contact form |
+| `npm run deploy` | Builds and deploys to Cloudflare by hand (pushing to `main` does this automatically) |
+| `npm run lint` | Type-checks the site and the Cloudflare Worker with `tsc` (also runs on GitHub for every push and pull request) |
 | `npm run clean` | Deletes build output |
 | `npm run favicons` | Downloads icons for new links in the Resources post into `public/favicons/` (add `-- --force` to refetch all) |
 
@@ -98,7 +100,7 @@ The links in **Curated Resources & Bookmarks** live in `src/data/resources.ts`. 
 
 ## Deploying
 
-**Netlify (live site).** The site deploys to Netlify from this GitHub repo on every push to `main`. `netlify.toml` builds the frontend into `dist/` and sends every route to the React app.
+**Cloudflare (live site).** Every push to `main` builds and deploys spacekidlabs.com on Cloudflare Workers. The contact form, DNS and email forwarding are on Cloudflare too. See [docs/HOSTING.md](docs/HOSTING.md) for how it's set up and how to change it.
 
 **Your own Node server.**
 

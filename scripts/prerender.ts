@@ -4,7 +4,7 @@
  * then see real content without running JavaScript; in the browser, React takes over the same HTML (src/main.tsx).
  *
  * Output: dist/index.html for "/", dist/<path>.html for every other page (Netlify serves /archive/wavesets from
- * dist/archive/wavesets.html), and dist/shell.html, the empty app used for any other URL (see netlify.toml).
+ * dist/archive/wavesets.html), and dist/404.html, the empty app served with a 404 status for any other URL (see wrangler.jsonc).
  * It also writes dist/rss.xml, the archive's RSS feed, using the same post descriptions.
  *
  * Usage: npx tsx scripts/prerender.ts
@@ -119,7 +119,8 @@ if (!template.includes('<div id="root"></div>')) {
   throw new Error('dist/index.html is already pre-rendered; run `vite build` first');
 }
 // The empty app shell, served for URLs that weren't pre-rendered (e.g. typos -> the 404 page).
-writeFileSync(resolve(DIST, 'shell.html'), template);
+// Cloudflare serves 404.html with a 404 status (not_found_handling in wrangler.jsonc).
+writeFileSync(resolve(DIST, '404.html'), template);
 
 const vite = await createServer({
   server: { middlewareMode: true, hmr: false, watch: null },
