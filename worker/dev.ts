@@ -667,6 +667,10 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
       const gh = new GitHub({ GITHUB_TOKEN: env.GITHUB_TOKEN, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API });
       if (action === 'drive-folder' && method === 'GET') return json(200, await driveFolderStatus(env, gh, url.searchParams.get('pack')));
       if (action === 'drive-link' && method === 'POST') return json(200, await linkDriveIds(env, gh, ((await request.json()) as { pack: string }).pack));
+      if (action === 'drive-release' && method === 'POST') {
+        const input = (await request.json()) as { pack: string; category?: string; names?: string[]; maxSeconds?: number };
+        return json(200, await startRelease(env, gh, input));
+      }
       if (action === 'drive-upload' && method === 'POST') {
         const input = (await request.json()) as { pack: string; name: string; size: number; type: string };
         return json(200, await startUpload(env, { ...input, folder: await packFolder(gh, input.pack) }, siteOrigin(env, url)));

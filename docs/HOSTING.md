@@ -182,7 +182,7 @@ download button). `worker/drive.ts` connects the dashboard to the Drive of the a
   twice, non-audio files, and a warning if the folder isn't shared as "Anyone with the link". Subfolders are listed
   one level per query (40 folders at a time), to stay under the free plan's 50 outgoing requests per call.
 - **Claude:** "release the new files in the VRAC folder as Perc" → `start_release` queues them in D1 (`releases`).
-  Without a category, each file takes its subfolder's name ("Kicks/…" → Kicks), one queued release per subfolder;
+  (The same action is `POST /api/dev/drive-release` for the dashboard.) Without a category, each file takes its subfolder's name ("Kicks/…" → Kicks), one queued release per subfolder;
   the Launchpad says "N samples ready to release", and **Release** in /dev → Samples fetches each original through
   the Worker, makes its preview in your browser and publishes everything in one go. (The Worker has too little CPU
   to make previews itself.)
