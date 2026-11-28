@@ -2,7 +2,7 @@
 
 /**
  * The site's public address. On Netlify, `URL` is the site's main address (including a custom domain once added).
- * Local builds fall back to the netlify.app address.
+ * Local builds fall back to spacekidlabs.com.
  */
 export const SITE_URL = (process.env.URL || 'https://spacekidlabs.com').replace(/\/$/, '');
 

@@ -1,9 +1,21 @@
 import { motion } from 'motion/react';
 import { Layout } from '../components/Layout';
 import { usePageTitle } from '../lib/usePageTitle';
-import { Terminal, Copy, AlertOctagon, Download, CheckCircle, Apple } from 'lucide-react';
-import { useState } from 'react';
+import { Terminal, Copy, AlertOctagon, Download, CheckCircle, Apple, ExternalLink, HardDrive, ListChecks } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { ScrollReveal } from '../components/ScrollReveal';
+import {
+  ARCH_LABEL,
+  DATABEND_RELEASE as RELEASE,
+  DATABEND_RELEASES_URL,
+  DATABEND_REPO_URL,
+  DATABEND_WEB_URL,
+  MIN_MACOS,
+  formatDate,
+  formatSize,
+  noteLines,
+  type ReleaseAsset,
+} from '../data/databend';
 
 const CornerAccents = () => (
   <>
@@ -14,38 +26,74 @@ const CornerAccents = () => (
   </>
 );
 
-export function DownloadPage() {
-  usePageTitle('Download');
-  const [copied, setCopied] = useState(false);
+/** Apple Silicon first, then universal, then Intel; .dmg before .zip for the same Mac. */
+const ARCH_ORDER: ReleaseAsset['arch'][] = ['arm64', 'universal', 'x64', 'unknown'];
+const sortedAssets = [...RELEASE.assets].sort(
+  (a, b) => ARCH_ORDER.indexOf(a.arch) - ARCH_ORDER.indexOf(b.arch) || Number(b.name.endsWith('.dmg')) - Number(a.name.endsWith('.dmg')),
+);
+// One button per Mac type; prefer the .dmg when a release has both.
+const buttons = sortedAssets.filter((a, i) => sortedAssets.findIndex((b) => b.arch === a.arch) === i);
+const fromGitHub = RELEASE.source === 'github';
+const releaseDate = formatDate(RELEASE.date);
+const notes = noteLines(RELEASE.notes);
 
-  const copyChecksum = () => {
-    navigator.clipboard.writeText('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+const archs = new Set(buttons.map((b) => b.arch));
+/** Which Macs it runs on, worded from the files that exist. */
+const macTypes =
+  archs.has('arm64') && archs.has('x64')
+    ? 'Apple Silicon or Intel Mac: pick the download that matches yours (Apple menu → About This Mac → Chip or Processor)'
+    : archs.has('universal')
+      ? 'Apple Silicon or Intel Mac (one download works on both)'
+      : archs.has('arm64')
+        ? 'Apple Silicon Mac (M1 and later)'
+        : archs.has('x64')
+          ? 'Intel Mac, or Apple Silicon through Rosetta 2'
+          : 'Apple Silicon or Intel Mac';
+
+function Checksum({ asset }: { asset: ReleaseAsset }) {
+  const [copied, setCopied] = useState(false);
+  if (!asset.sha256) return null;
+  const copy = () => {
+    navigator.clipboard.writeText(asset.sha256!);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+  return (
+    <div className="font-mono text-[11px] text-zinc-500 flex items-center gap-2 min-w-0">
+      <span className="shrink-0">SHA-256</span>
+      <span className="truncate">{asset.sha256}</span>
+      <button onClick={copy} className="shrink-0 hover:text-white transition-colors" aria-label={`Copy SHA-256 checksum of ${asset.name}`}>
+        {copied ? <CheckCircle className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+      </button>
+    </div>
+  );
+}
+
+const SectionTitle = ({ icon: Icon, children }: { icon: typeof Terminal; children: ReactNode }) => (
+  <div className="flex items-center gap-3 mb-6 border-b border-zinc-800 pb-4">
+    <Icon className="w-5 h-5 text-brand-orange" />
+    <h2 className="text-xl font-display font-bold text-white uppercase tracking-widest">{children}</h2>
+  </div>
+);
+
+export function DownloadPage() {
+  usePageTitle('Download');
 
   return (
     <Layout>
       <div className="max-w-5xl mx-auto px-6 py-24 w-full">
-        
+
         {/* Header */}
-        <div className="mb-16 border-b border-white/10 pb-12 text-center md:text-left flex flex-col md:flex-row justify-between items-end gap-6">
-          <div>
-            <h1 className="text-4xl md:text-6xl font-display font-black text-white uppercase tracking-tighter mb-4 glitch-wrapper">
-              <span className="glitch-text text-glow" data-text="AQUIRE DATABEND">
-                AQUIRE DATABEND
-              </span>
-            </h1>
-            <p className="font-mono text-zinc-400">Current Stable Build: <span className="text-brand-gold">v1.4.0-chaos</span></p>
-          </div>
-          
-          <div className="font-mono border border-zinc-800 bg-black px-4 py-2 text-xs text-zinc-500 flex items-center gap-3">
-            <span>SHA-256</span>
-            <span className="truncate w-32 md:w-64">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
-            <button onClick={copyChecksum} className="hover:text-white transition-colors" title="Copy Checksum">
-              {copied ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-            </button>
-          </div>
+        <div className="mb-16 border-b border-white/10 pb-12 text-center md:text-left">
+          <h1 className="text-4xl md:text-6xl font-display font-black text-white uppercase tracking-tighter mb-4 glitch-wrapper">
+            <span className="glitch-text text-glow" data-text="ACQUIRE DATABEND">
+              ACQUIRE DATABEND
+            </span>
+          </h1>
+          <p className="font-mono text-zinc-400">
+            Latest version: <span className="text-brand-gold">v{RELEASE.version}</span>
+            {releaseDate && <span className="text-zinc-500"> · released {releaseDate}</span>}
+          </p>
         </div>
 
         {/* Description Section */}
@@ -70,7 +118,7 @@ export function DownloadPage() {
         </div>
 
         {/* Warning Toast / Banner */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="p-6 border-2 border-red-500/50 bg-red-500/10 rounded-sm flex items-start gap-4 mb-16 relative overflow-hidden"
@@ -80,28 +128,15 @@ export function DownloadPage() {
           <div>
             <h2 className="font-display font-bold text-red-500 text-lg uppercase tracking-widest mb-2">Notice of Volatility</h2>
             <p className="text-red-200/80 font-sans leading-relaxed text-sm md:text-base">
-              DATABEND is designed for experimental use. The Commit workflow is strictly destructive, permanently writing over the designated audio file region. 
-              Always work on duplicated audio stems. The developers hold zero responsibility for irrecoverably mangled project files or blasted studio monitors. 
+              DATABEND is designed for experimental use. The Commit workflow is strictly destructive, permanently writing over the designated audio file region.
+              Always work on duplicated audio stems. The developers hold zero responsibility for irrecoverably mangled project files or blasted studio monitors.
               Proceed with extreme caution.
             </p>
           </div>
         </motion.div>
 
         {/* Download Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-24 max-w-4xl mx-auto">
-          
-          {/* Web Version */}
-          <div className="border border-brand-orange bg-brand-orange/5 p-8 relative flex flex-col h-full hover:bg-brand-orange/10 transition-colors group">
-            <CornerAccents />
-            <h2 className="text-2xl font-display font-bold text-white mb-2 text-brand-orange">Web App</h2>
-            <p className="font-mono text-zinc-400 text-sm mb-8">Run directly in your browser</p>
-            <div className="mt-auto space-y-3">
-              <a href="https://databenddaw.netlify.app/" target="_blank" rel="noreferrer" className="w-full flex items-center justify-between px-4 py-3 bg-brand-orange text-black font-bold uppercase tracking-wider text-sm hover:bg-white transition-colors">
-                <span>Launch Web</span>
-                <Terminal className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16 max-w-4xl mx-auto">
 
           {/* macOS */}
           <div className="border border-brand-orange bg-brand-orange/5 p-8 relative flex flex-col h-full box-glow group">
@@ -111,48 +146,108 @@ export function DownloadPage() {
             </div>
             <div className="flex gap-3 items-center mb-2">
               <Apple className="w-6 h-6 text-white" />
-              <h2 className="text-2xl font-display font-bold text-white">macOS</h2>
+              <h2 className="text-2xl font-display font-bold text-white">macOS app</h2>
             </div>
-            <p className="font-mono text-zinc-400 text-sm mb-8">macOS 11.0+ (Apple Silicon / Intel)</p>
+            <p className="font-mono text-zinc-400 text-sm mb-8">Works offline · {MIN_MACOS.replace(' or later', '+')}</p>
+            <div className="mt-auto space-y-4">
+              {buttons.map((asset, i) => {
+                const size = formatSize(asset.size);
+                const label = buttons.length === 1 && asset.arch === 'unknown' ? `Download v${RELEASE.version}` : ARCH_LABEL[asset.arch];
+                return (
+                  <div key={asset.name} className="space-y-1.5">
+                    <a
+                      href={asset.url}
+                      rel="noreferrer"
+                      className={
+                        i === 0
+                          ? 'w-full flex items-center justify-between gap-3 px-4 py-3 bg-brand-orange text-black font-bold uppercase tracking-wider text-sm hover:bg-white transition-colors'
+                          : 'w-full flex items-center justify-between gap-3 px-4 py-3 border border-brand-orange/30 text-brand-orange font-bold uppercase tracking-wider text-sm hover:bg-brand-orange/10 transition-colors'
+                      }
+                    >
+                      <span>{label}</span>
+                      <span className="flex items-center gap-2 font-mono text-xs normal-case tracking-normal opacity-80">
+                        {asset.name.split('.').pop()}
+                        {size && ` · ${size}`}
+                        <Download className="w-4 h-4" />
+                      </span>
+                    </a>
+                    <Checksum asset={asset} />
+                  </div>
+                );
+              })}
+              <p className="font-mono text-xs text-zinc-500">
+                {fromGitHub ? (
+                  <a href={RELEASE.pageUrl ?? DATABEND_RELEASES_URL} target="_blank" rel="noreferrer" className="hover:text-brand-orange underline underline-offset-2">
+                    All files and older versions on GitHub
+                  </a>
+                ) : (
+                  <>Downloads from Google Drive, which may show a “can’t scan for viruses” page first: click <em>Download anyway</em>.</>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Web Version */}
+          <div className="border border-zinc-800 bg-zinc-950 p-8 relative flex flex-col h-full hover:border-brand-orange/50 transition-colors group">
+            <CornerAccents />
+            <h2 className="text-2xl font-display font-bold text-white mb-2">Web app</h2>
+            <p className="font-mono text-zinc-400 text-sm mb-8">Nothing to install · Chrome, Edge, Firefox or Safari · any OS</p>
             <div className="mt-auto space-y-3">
-              <a href="https://drive.google.com/uc?export=download&id=19MV8OS-jLAgpNr1-kBWwiN-gG_FzK3lN" target="_blank" rel="noreferrer" className="w-full flex items-center justify-between px-4 py-3 bg-brand-orange text-black font-bold uppercase tracking-wider text-sm hover:bg-white transition-colors">
-                <span>Apple Silicon (ARM)</span>
-                <Download className="w-4 h-4" />
+              <a href={DATABEND_WEB_URL} target="_blank" rel="noreferrer" className="w-full flex items-center justify-between px-4 py-3 border border-brand-orange/30 text-brand-orange font-bold uppercase tracking-wider text-sm hover:bg-brand-orange/10 transition-colors">
+                <span>Open in browser</span>
+                <ExternalLink className="w-4 h-4" />
               </a>
-               <a href="https://drive.google.com/uc?export=download&id=19MV8OS-jLAgpNr1-kBWwiN-gG_FzK3lN" target="_blank" rel="noreferrer" className="w-full flex items-center justify-between px-4 py-3 border border-brand-orange/30 text-brand-orange font-bold uppercase tracking-wider text-sm hover:bg-brand-orange/10 transition-colors">
-                <span>Intel (x86_64)</span>
-                <Download className="w-4 h-4" />
-              </a>
+              <p className="font-mono text-xs text-zinc-500">Use this on Windows or Linux, or to try it before installing.</p>
             </div>
           </div>
 
         </div>
 
-        {/* Release Notes Teaser */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* System requirements */}
+          <ScrollReveal className="border border-zinc-800 bg-zinc-950 p-8 rounded-sm">
+            <SectionTitle icon={HardDrive}>System requirements</SectionTitle>
+            <ul className="space-y-3 font-sans text-sm text-zinc-300 leading-relaxed list-disc pl-5 marker:text-brand-orange">
+              <li>{MIN_MACOS}</li>
+              <li>{macTypes}</li>
+              <li>Opens WAV, MP3, FLAC, OGG, AAC and M4A; saves WAV</li>
+              <li>No Windows or Linux app yet; use the web app instead</li>
+            </ul>
+          </ScrollReveal>
+
+          {/* Install */}
+          <ScrollReveal className="border border-zinc-800 bg-zinc-950 p-8 rounded-sm">
+            <SectionTitle icon={ListChecks}>Install</SectionTitle>
+            <ol className="space-y-3 font-sans text-sm text-zinc-300 leading-relaxed list-decimal pl-5 marker:text-brand-orange marker:font-mono">
+              <li>Open the downloaded file and drag <strong className="text-white">DATABEND</strong> into <strong className="text-white">Applications</strong>. (For a .zip, double-click it first, then move the app.)</li>
+              <li>
+                DATABEND isn’t signed with an Apple developer certificate yet, so the first launch is blocked with a message that Apple “could not verify” it.
+                Click <strong className="text-white">Done</strong>, then open <strong className="text-white">System Settings → Privacy &amp; Security</strong>, scroll down and click <strong className="text-white">Open Anyway</strong> next to DATABEND.
+              </li>
+              <li>On macOS 14 or earlier you can instead right-click (Control-click) the app and choose <strong className="text-white">Open</strong>.</li>
+              <li>
+                If macOS says the app “is damaged”, run this in Terminal, then open it again:
+                <code className="block mt-2 px-3 py-2 bg-black border border-zinc-800 font-mono text-xs text-brand-gold break-all">xattr -dr com.apple.quarantine /Applications/DATABEND.app</code>
+              </li>
+            </ol>
+          </ScrollReveal>
+        </div>
+
+        {/* Release notes */}
         <ScrollReveal className="border border-zinc-800 bg-zinc-950 p-8 rounded-sm">
-          <div className="flex items-center gap-3 mb-6 border-b border-zinc-800 pb-4">
-            <Terminal className="w-5 h-5 text-brand-orange" />
-            <h2 className="text-xl font-display font-bold text-white uppercase tracking-widest">Release Notes [v1.4.0]</h2>
-          </div>
-          
-          <ul className="space-y-4 font-mono text-sm">
-            <li className="flex gap-4">
-              <span className="text-green-500 w-16 shrink-0">[ADD]</span>
-              <span className="text-zinc-300">Added new "Entropy Injector" algorithm for chaotic bit flipping in selected regions.</span>
-            </li>
-            <li className="flex gap-4">
-              <span className="text-brand-orange w-16 shrink-0">[UPDATE]</span>
-              <span className="text-zinc-300">Waveset Averaging now processes 40% faster via WebAssembly core optimizations.</span>
-            </li>
-            <li className="flex gap-4">
-              <span className="text-red-500 w-16 shrink-0">[FIX]</span>
-              <span className="text-zinc-300">Resolved hard crash when committing granular freeze on clips exceeding 10 minutes.</span>
-            </li>
-            <li className="flex gap-4">
-              <span className="text-zinc-600 w-16 shrink-0">[NOTE]</span>
-              <span className="text-zinc-500">Legacy projects (v1.1) are NOT compatible with the new linear branching system.</span>
-            </li>
-          </ul>
+          <SectionTitle icon={Terminal}>What’s new in v{RELEASE.version}</SectionTitle>
+          {notes.length > 0 ? (
+            <ul className="space-y-3 font-mono text-sm text-zinc-300 list-disc pl-5 marker:text-brand-orange">
+              {notes.map((line, i) => <li key={i}>{line}</li>)}
+            </ul>
+          ) : (
+            <p className="font-sans text-sm text-zinc-400">No release notes for this version yet.</p>
+          )}
+          <p className="mt-6 font-mono text-xs text-zinc-500">
+            <a href={fromGitHub ? DATABEND_RELEASES_URL : DATABEND_REPO_URL} target="_blank" rel="noreferrer" className="hover:text-brand-orange underline underline-offset-2">
+              {fromGitHub ? 'Full changelog on GitHub' : 'Source code and history on GitHub'}
+            </a>
+          </p>
         </ScrollReveal>
 
       </div>

@@ -1,0 +1,15 @@
+{
+  "source": "fallback",
+  "version": "1.1.0",
+  "date": null,
+  "pageUrl": null,
+  "notes": "",
+  "assets": [
+    {
+      "name": "DATABEND-1.1.0.dmg",
+      "url": "https://drive.google.com/uc?export=download&id=19MV8OS-jLAgpNr1-kBWwiN-gG_FzK3lN",
+      "size": null,
+      "arch": "unknown"
+    }
+  ]
+}
