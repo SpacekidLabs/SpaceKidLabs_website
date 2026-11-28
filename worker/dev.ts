@@ -510,19 +510,27 @@ export async function packFolder(gh: GitHub, pack: unknown): Promise<string> {
   return link[1];
 }
 
-/** What's in a pack's Drive folder compared with the samples on the site, matched by file name. */
+/** What's in a pack's Drive folder (and its subfolders) compared with the samples on the site, matched by file name. */
 export async function driveFolderStatus(env: DevEnv, gh: GitHub, pack: unknown) {
   const folder = await packFolder(gh, pack);
   const [files, isPublic, { samples }] = await Promise.all([listFolder(env, folder), folderIsPublic(env, folder), listSamples(gh, String(pack))]);
-  const byName = new Map(files.map(f => [f.name.toLowerCase(), f]));
+  const audio = files.filter(f => AUDIO.test(f.name));
+  const byName = new Map<string, (typeof files)[number]>();
+  for (const f of audio) if (!byName.has(f.name.toLowerCase())) byName.set(f.name.toLowerCase(), f);
   const onSite = new Set(samples.map(s => s.name.toLowerCase()));
+  const seen = new Map<string, number>();
+  for (const f of audio) seen.set(f.name.toLowerCase(), (seen.get(f.name.toLowerCase()) ?? 0) + 1);
   return {
-    pack, folder, public: isPublic, filesOnDrive: files.length, samplesOnSite: samples.length,
-    notOnSite: files.filter(f => !onSite.has(f.name.toLowerCase()) && AUDIO.test(f.name)).map(f => ({ id: f.id, name: f.name, size: f.size })),
+    pack, folder, public: isPublic, audioOnDrive: audio.length, samplesOnSite: samples.length,
+    subfolders: [...new Set(files.map(f => f.path).filter(Boolean))].sort(),
+    notOnSite: audio.filter(f => !onSite.has(f.name.toLowerCase())).map(f => ({ id: f.id, name: f.name, size: f.size, path: f.path })),
     missingIds: samples.filter(s => !s.driveId).map(s => ({ id: s.id, name: s.name, driveFile: byName.get(s.name.toLowerCase())?.id ?? null })),
     notOnDrive: samples.filter(s => !byName.has(s.name.toLowerCase())).map(s => s.name),
-    /** Every file, so /dev can reuse one instead of uploading a duplicate. */
-    driveFiles: files.map(f => ({ id: f.id, name: f.name })),
+    /** Same file name in more than one place: name matching picks the first. */
+    duplicateNames: [...seen].filter(([, n]) => n > 1).map(([name]) => name),
+    otherFiles: files.filter(f => !AUDIO.test(f.name)).map(f => (f.path ? `${f.path}/${f.name}` : f.name)),
+    /** Every audio file, so /dev can reuse one instead of uploading a duplicate. */
+    driveFiles: audio.map(f => ({ id: f.id, name: f.name })),
   };
 }
 
@@ -535,17 +543,35 @@ export async function linkDriveIds(env: DevEnv, gh: GitHub, pack: unknown) {
   return { linked: r.changed, stillMissing: st.missingIds.filter(m => !m.driveFile).map(m => m.name), sha: r.sha };
 }
 
-/** Queues the audio files in the pack's folder that aren't on the site; /dev then makes previews and publishes. */
-export async function startRelease(env: DevEnv, gh: GitHub, input: { pack: string; category: string; names?: string[]; maxSeconds?: number }) {
-  const category = String(input.category ?? '').trim().slice(0, 60);
-  if (!category) throw new HttpError(400, 'Give the samples a category');
+/**
+ * Queues the audio files in the pack's folder that aren't on the site; /dev then makes previews and publishes.
+ * Without a category, each file takes the name of the subfolder it's in ("Kicks/VR Kick 9.wav" → Kicks), and one
+ * release is queued per category.
+ */
+export async function startRelease(env: DevEnv, gh: GitHub, input: { pack: string; category?: string; names?: string[]; maxSeconds?: number }) {
+  const fixed = String(input.category ?? '').trim().slice(0, 60);
   const st = await driveFolderStatus(env, gh, input.pack);
   const wanted = input.names?.length ? new Set(input.names.map(n => n.toLowerCase())) : null;
   const files = st.notOnSite.filter(f => !wanted || wanted.has(f.name.toLowerCase()));
   if (!files.length) throw new HttpError(400, wanted ? 'None of those files are in the folder and missing from the site' : 'Every audio file in the folder is already on the site');
   if (files.length > 500) throw new HttpError(400, 'At most 500 files per release; pass names to split it');
-  const id = await queueRelease(env, { pack: input.pack, category, maxSeconds: Math.max(0, Math.min(600, Number(input.maxSeconds) || 0)), files });
-  return { release: id, files: files.length, public: st.public, next: 'Open spacekidlabs.com/dev → Samples and press Release to make the previews and publish.' };
+  const groups = new Map<string, typeof files>();
+  const loose: string[] = [];
+  for (const f of files) {
+    const category = fixed || f.path.split('/').pop()!.slice(0, 60);
+    if (!category) { loose.push(f.name); continue; }
+    groups.set(category, [...(groups.get(category) ?? []), f]);
+  }
+  if (loose.length) {
+    throw new HttpError(400, `Give a category: ${loose.length} file${loose.length > 1 ? 's are' : ' is'} not in a subfolder (${loose.slice(0, 5).join(', ')}${loose.length > 5 ? '…' : ''})`);
+  }
+  const maxSeconds = Math.max(0, Math.min(600, Number(input.maxSeconds) || 0));
+  const releases = [];
+  for (const [category, list] of groups) {
+    const id = await queueRelease(env, { pack: input.pack, category, maxSeconds, files: list.map(({ id, name, size }) => ({ id, name, size })) });
+    releases.push({ release: id, category, files: list.length });
+  }
+  return { releases, public: st.public, next: 'Open spacekidlabs.com/dev → Samples and press Release on each, to make the previews and publish.' };
 }
 
 // ---------- Router ----------

@@ -188,22 +188,44 @@ export function folderId(linkOrId: string): string {
   return m[1];
 }
 
-export interface DriveFile { id: string; name: string; size: number; mimeType: string }
+export interface DriveFile {
+  id: string; name: string; size: number; mimeType: string;
+  /** Subfolder path inside the pack folder ("" at the top, "Kicks" or "Drums/Kicks" below). */
+  path: string;
+}
 
-/** Every file directly in a folder (not subfolders), by name. */
+const FOLDER = 'application/vnd.google-apps.folder';
+
+/**
+ * Every file in a folder and its subfolders. Lists one level at a time, with up to 40 folders per query, so even a
+ * pack with many category folders stays far below the free plan's 50 outgoing requests per call.
+ */
 export async function listFolder(env: DriveEnv, folder: string): Promise<DriveFile[]> {
   const out: DriveFile[] = [];
-  let page = '';
-  do {
-    const q = new URLSearchParams({
-      q: `'${folderId(folder)}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
-      fields: 'nextPageToken, files(id, name, size, mimeType)', pageSize: '1000', supportsAllDrives: 'true', includeItemsFromAllDrives: 'true',
-      ...(page && { pageToken: page }),
-    });
-    const r = await call<{ nextPageToken?: string; files: Array<{ id: string; name: string; size?: string; mimeType: string }> }>(env, `/files?${q}`);
-    out.push(...r.files.map(f => ({ id: f.id, name: f.name, size: Number(f.size ?? 0), mimeType: f.mimeType })));
-    page = r.nextPageToken ?? '';
-  } while (page && out.length < 10_000);
+  let level = new Map([[folderId(folder), '']]); // folder id → its path
+  for (let depth = 0; level.size && depth < 6; depth++) {
+    const next = new Map<string, string>();
+    const ids = [...level.keys()];
+    for (let i = 0; i < ids.length; i += 40) {
+      const parents = ids.slice(i, i + 40).map(id => `'${id}' in parents`).join(' or ');
+      let page = '';
+      do {
+        const q = new URLSearchParams({
+          q: `(${parents}) and trashed = false`,
+          fields: 'nextPageToken, files(id, name, size, mimeType, parents)', pageSize: '1000',
+          supportsAllDrives: 'true', includeItemsFromAllDrives: 'true', ...(page && { pageToken: page }),
+        });
+        const r = await call<{ nextPageToken?: string; files: Array<{ id: string; name: string; size?: string; mimeType: string; parents?: string[] }> }>(env, `/files?${q}`);
+        for (const f of r.files) {
+          const path = level.get(f.parents?.find(p => level.has(p)) ?? '') ?? '';
+          if (f.mimeType === FOLDER) next.set(f.id, path ? `${path}/${f.name}` : f.name);
+          else out.push({ id: f.id, name: f.name, size: Number(f.size ?? 0), mimeType: f.mimeType, path });
+        }
+        page = r.nextPageToken ?? '';
+      } while (page && out.length < 10_000);
+    }
+    level = next;
+  }
   return out;
 }
 

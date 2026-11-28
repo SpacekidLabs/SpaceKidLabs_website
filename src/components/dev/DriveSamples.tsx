@@ -13,8 +13,9 @@ import { button, errorText, ghostButton, label } from './ui';
 
 export interface DriveStatus { configured: boolean; connected: boolean; account: string | null }
 export interface FolderStatus {
-  pack: string; folder: string; public: boolean; filesOnDrive: number; samplesOnSite: number;
-  notOnSite: Array<{ id: string; name: string; size: number }>;
+  pack: string; folder: string; public: boolean; audioOnDrive: number; samplesOnSite: number; subfolders: string[];
+  notOnSite: Array<{ id: string; name: string; size: number; path: string }>;
+  duplicateNames: string[]; otherFiles: string[];
   missingIds: Array<{ id: number; name: string; driveFile: string | null }>;
   notOnDrive: string[];
   driveFiles: Array<{ id: string; name: string }>;
@@ -144,10 +145,15 @@ export function DriveFolder({ pack }: { pack: string }) {
       {error ? <p className="font-mono text-xs text-red-400">{error}</p> : !st ? <p className="text-xs text-zinc-500">Reading the folder…</p> : (
         <>
           <ul className="font-mono text-xs text-zinc-400 space-y-1">
-            <li>{st.filesOnDrive} files on Drive · {st.samplesOnSite} samples on the site</li>
+            <li>
+              {st.audioOnDrive} audio files on Drive{st.subfolders.length ? ` in ${st.subfolders.length} subfolder${st.subfolders.length === 1 ? '' : 's'} (${st.subfolders.slice(0, 6).join(', ')}${st.subfolders.length > 6 ? '…' : ''})` : ''}
+              {' · '}{st.samplesOnSite} samples on the site
+            </li>
             {!st.public && <li className="text-amber-400">The folder isn't shared as "Anyone with the link": download buttons won't work for visitors.</li>}
             {st.notOnSite.length > 0 && <li className="text-zinc-200">{st.notOnSite.length} audio file{st.notOnSite.length === 1 ? '' : 's'} on Drive not on the site yet (ask Claude to start a release, or add them below)</li>}
             {st.missingIds.length > 0 && <li className="text-amber-400">{st.missingIds.length} sample{st.missingIds.length === 1 ? '' : 's'} without a download link{linkable ? `, ${linkable} can be linked by name` : ''}</li>}
+            {st.duplicateNames.length > 0 && <li className="text-amber-400">Same file name in more than one place: {st.duplicateNames.slice(0, 3).join(', ')}{st.duplicateNames.length > 3 ? '…' : ''} (linking uses the first)</li>}
+            {st.otherFiles.length > 0 && <li>Not audio: {st.otherFiles.slice(0, 4).join(', ')}{st.otherFiles.length > 4 ? '…' : ''}</li>}
             {st.notOnDrive.length > 0 && <li>{st.notOnDrive.length} sample{st.notOnDrive.length === 1 ? '' : 's'} with no file of the same name on Drive</li>}
           </ul>
           {linkable > 0 && (

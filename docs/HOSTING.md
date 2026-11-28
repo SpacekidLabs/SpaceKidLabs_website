@@ -177,9 +177,12 @@ download button). `worker/drive.ts` connects the dashboard to the Drive of the a
   straight from your browser to Google (the Worker only opens a resumable upload session, so its 100 MB request
   limit doesn't apply), and the new rows get their Drive IDs, so download buttons work at once. A file with the same
   name already in the folder is linked instead of uploaded again.
-- **Folder check** under the pack picker: files on Drive not on the site, samples without a download link
-  (**Link N by name** fills them in), and a warning if the folder isn't shared as "Anyone with the link".
-- **Claude:** "release the new files in the VRAC folder as Perc" → `start_release` queues them in D1 (`releases`);
+- **Folder check** under the pack picker: the pack folder **and its subfolders** (matched by file name), files on
+  Drive not on the site, samples without a download link (**Link N by name** fills them in), file names that appear
+  twice, non-audio files, and a warning if the folder isn't shared as "Anyone with the link". Subfolders are listed
+  one level per query (40 folders at a time), to stay under the free plan's 50 outgoing requests per call.
+- **Claude:** "release the new files in the VRAC folder as Perc" → `start_release` queues them in D1 (`releases`).
+  Without a category, each file takes its subfolder's name ("Kicks/…" → Kicks), one queued release per subfolder;
   the Launchpad says "N samples ready to release", and **Release** in /dev → Samples fetches each original through
   the Worker, makes its preview in your browser and publishes everything in one go. (The Worker has too little CPU
   to make previews itself.)

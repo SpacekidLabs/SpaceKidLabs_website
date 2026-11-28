@@ -404,7 +404,7 @@ export function buildServer(rawEnv: DevEnv): McpServer {
 
   server.registerTool('drive_folder_status', {
     title: 'Drive folder status',
-    description: "Compares a sample pack's Google Drive folder with the samples on the site, by file name: audio files on Drive not on the site yet, samples without a Drive id (and whether a matching file exists), samples missing from Drive, and whether the folder is public.",
+    description: "Compares a sample pack's Google Drive folder (with its subfolders) with the samples on the site, by file name: audio files on Drive not on the site yet, samples without a Drive id (and whether a matching file exists), samples missing from Drive, and whether the folder is public.",
     inputSchema: { pack: z.string().describe('Pack id, e.g. "vrac" (list_samples shows pack ids)') },
     annotations: READ,
   }, ({ pack }) => run(async () => { const { driveFiles: _all, ...st } = await driveFolderStatus(env, gh, pack); return st; }));
@@ -418,10 +418,10 @@ export function buildServer(rawEnv: DevEnv): McpServer {
 
   server.registerTool('start_release', {
     title: 'Start a sample release',
-    description: "Queues the audio files in a pack's Drive folder that aren't on the site yet (all of them, or only `names`). Nothing is published yet: the owner opens /dev → Samples and presses Release, which makes the MP3 previews in the browser and publishes them with their Drive ids in one commit. Tell the user to do that.",
+    description: "Queues the audio files in a pack's Drive folder (and its subfolders) that aren't on the site yet (all of them, or only `names`). Nothing is published yet: the owner opens /dev → Samples and presses Release, which makes the MP3 previews in the browser and publishes them with their Drive ids in one commit. Tell the user to do that.",
     inputSchema: {
       pack: z.string(),
-      category: z.string().min(1).max(60).describe('Category for these samples, e.g. "Kicks" (list_samples shows the pack\'s categories)'),
+      category: z.string().min(1).max(60).optional().describe('Category for all of them, e.g. "Kicks". Leave out to use each file\'s subfolder name as its category (one release per subfolder)'),
       names: z.array(z.string()).max(500).optional().describe('Exact file names to release; default: every new audio file in the folder'),
       max_preview_seconds: z.number().int().min(0).max(600).optional().describe('Cut long previews to this many seconds (0 = whole file)'),
     },
