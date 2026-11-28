@@ -37,6 +37,8 @@ export interface SketchInput {
 export interface SketchEntry extends SketchInput {
   id: string;
   file?: string;
+  /** Saved but not on /sketches yet: a draft waiting for "Publish" (Claude's sketches start like this). */
+  hidden?: boolean;
 }
 
 export function cleanSketch(input: SketchInput): SketchInput {
@@ -50,11 +52,11 @@ export function cleanSketch(input: SketchInput): SketchInput {
 }
 
 /** Adds a sketch at the top. Returns the new file text and the entry (with its id). */
-export function addSketch(json: string, input: SketchInput, audioFor?: (id: string) => string) {
+export function addSketch(json: string, input: SketchInput, audioFor?: (id: string) => string, hidden = false) {
   const list = JSON.parse(json) as SketchEntry[];
   const clean = cleanSketch(input);
   const id = uniqueName(slugify(`${clean.date}-${clean.title}`) || clean.date, new Set(list.map(s => s.id)));
-  const entry: SketchEntry = { id, ...clean, ...(audioFor && { file: audioFor(id) }) };
+  const entry: SketchEntry = { id, ...clean, ...(audioFor && { file: audioFor(id) }), ...(hidden && { hidden: true }) };
   return { text: JSON.stringify([entry, ...list], null, 2) + '\n', entry };
 }
 
@@ -77,9 +79,19 @@ export function updateSketch(json: string, id: string, input: SketchInput, file?
   const old = list[i];
   const clean = cleanSketch(input);
   const keep = file === undefined ? old.file : file ?? undefined;
-  const entry: SketchEntry = { id, ...clean, ...(keep && { file: keep }) };
+  const entry: SketchEntry = { id, ...clean, ...(keep && { file: keep }), ...(old.hidden && { hidden: true }) };
   list[i] = entry;
   return { text: JSON.stringify(list, null, 2) + '\n', entry, oldFile: old.file };
+}
+
+/** Hides a sketch (a draft, not on /sketches) or shows it. Returns the new file text and the entry. */
+export function setSketchHidden(json: string, id: string, hidden: boolean) {
+  const list = JSON.parse(json) as SketchEntry[];
+  const i = list.findIndex(s => s.id === id);
+  if (i < 0) throw new Error(`No sketch with id "${id}"`);
+  const { hidden: _was, ...rest } = list[i];
+  list[i] = hidden ? { ...rest, hidden: true } : rest;
+  return { text: JSON.stringify(list, null, 2) + '\n', entry: list[i], was: Boolean(_was) };
 }
 
 // ---------- Samples (src/data/samples.ts) ----------

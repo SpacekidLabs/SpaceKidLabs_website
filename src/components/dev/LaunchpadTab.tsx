@@ -6,6 +6,7 @@ import { api, postJson } from '../../lib/devApi';
 import { analyse, encodeMp3 } from '../../lib/devAudio';
 import { useProjects } from './useProjects';
 import { Heatmap, NudgeStrip, useMomentum, useSound } from './Momentum';
+import { DraftsPanel } from './DraftsPanel';
 import { button, errorText, ghostButton, input, label } from './ui';
 
 /**
@@ -363,8 +364,8 @@ function IdeaCard({ idea, projects, site, onChange, onPost }: {
 
 // ---------- Tab ----------
 
-export function LaunchpadTab({ onPost, onIssues, onShip, onMessages, onSamples }: {
-  onPost: (handoff: PostHandoff) => void; onIssues: () => void; onShip: () => void; onMessages: () => void; onSamples: () => void;
+export function LaunchpadTab({ onPost, onIssues, onShip, onMessages, onSamples, onArchive }: {
+  onPost: (handoff: PostHandoff) => void; onIssues: () => void; onShip: () => void; onMessages: () => void; onSamples: () => void; onArchive: () => void;
 }) {
   const [status, setStatus] = useState<Status>('inbox');
   const [cheer, setCheer] = useState('');
@@ -406,6 +407,8 @@ export function LaunchpadTab({ onPost, onIssues, onShip, onMessages, onSamples }
         <NudgeStrip data={momentum.data} s={momentum.stats} sound={sound} cheer={cheer} onIssues={onIssues} onShip={onShip} onMessages={onMessages} onSamples={onSamples} />
         <Capture projects={projects} onSaved={() => { momentum.reload(); if (status === 'inbox') load(); else setStatus('inbox'); }} />
       </div>
+
+      <DraftsPanel onPublished={() => momentum.reload()} onEditPost={onArchive} />
 
       <Heatmap s={momentum.stats} data={momentum.data} error={momentum.error} />
 

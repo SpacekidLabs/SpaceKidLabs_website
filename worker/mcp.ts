@@ -12,10 +12,13 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { z } from 'zod';
 import {
   addTextSketch, changeSketch, cleanEnv, content, deletePost, deleteSamples, editPost, editSamples, getPost, GitHub, HttpError,
-  driveFolderStatus, linkDriveIds, listPosts, listSamples, postFiles, promoteIdea, publishPost, setVisibility, startRelease, removeSketchById, BRANCH, type DevEnv,
+  driveFolderStatus, linkDriveIds, listDrafts, listPosts, listSamples, postFiles, promoteIdea, publishDrafts, publishPost, setVisibility,
+  startRelease, removeSketchById, BRANCH, type DevEnv,
 } from './dev';
 import { addIdea, IdeaError, listIdeas } from './ideas';
-import { listMessages } from './messages';
+import { listMessages, markMessage, MessageError } from './messages';
+import { momentum, type MomentumEvent } from './momentum';
+import { releaseNotes, releases, SKIP, ShipError, tickPromo } from './ship';
 import { DriveError, listReleases } from './drive';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue, type Rest } from './issues';
 import { githubStats, projects } from './stats';
@@ -33,7 +36,8 @@ async function run(fn: () => Promise<unknown>): Promise<Result> {
   try {
     return ok(await fn());
   } catch (err) {
-    const known = err instanceof HttpError || err instanceof IssueError || err instanceof IdeaError || err instanceof DriveError;
+    const known = err instanceof HttpError || err instanceof IssueError || err instanceof IdeaError || err instanceof DriveError
+      || err instanceof MessageError || err instanceof ShipError;
     const message = err instanceof Error ? err.message : String(err);
     if (!known) console.error('MCP tool:', message);
     return { content: [{ type: 'text', text: message.slice(0, 500) }], isError: true };
@@ -43,6 +47,28 @@ async function run(fn: () => Promise<unknown>): Promise<Result> {
 const today = () => new Date().toISOString().slice(0, 10);
 const READ = { readOnlyHint: true, openWorldHint: false } as const;
 const WRITE = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
+
+const DAY = 86_400_000;
+const PUBLIC_KINDS = new Set(['sketch', 'samples', 'post', 'release']);
+
+/** YYYY-MM-DD of a time in a time zone (an IANA name like "Europe/Paris"); UTC if the name is unknown. */
+function dayIn(timeZone: string) {
+  let f: Intl.DateTimeFormat;
+  try { f = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }); }
+  catch { f = new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' }); }
+  return (t: number) => f.format(new Date(t));
+}
+
+/** The same streak rule as the Launchpad (src/components/dev/Momentum.tsx): alive until midnight. */
+function streakOf(events: MomentumEvent[], timeZone: string) {
+  const day = dayIn(timeZone);
+  const days = new Set(events.map(e => day(e.t)));
+  const now = Date.now();
+  const today = events.filter(e => day(e.t) === day(now)).length;
+  let streak = 0;
+  for (let t = today ? now : now - DAY; days.has(day(t)); t -= DAY) streak++;
+  return { streak, today, alive: today > 0 };
+}
 
 /** The next archive post number: the highest `index:` in src/posts and its drafts. */
 async function nextPostIndex(gh: GitHub): Promise<number> {
@@ -68,7 +94,9 @@ export function buildServer(rawEnv: DevEnv): McpServer {
         `Repository names are short names under ${owner} (e.g. "${siteName}", "data-bend"); call list_projects to see them. ` +
         'capture_idea saves a private note to the idea inbox on /dev (nothing public); use it whenever the user says ' +
         '"save idea", "note this", "remember this idea" or similar. ' +
-        'Sketch, archive and sample tools commit to the website, which goes live about 2 minutes later. ' +
+        'New sketches and archive posts you add are saved as hidden drafts: show the user what you made (list_drafts), and ' +
+        'call publish_drafts only after they say yes in this chat. They can also publish them from /dev (Launchpad → Drafts). ' +
+        'Edits to things already on the site commit straight to the website, which goes live about 2 minutes later. ' +
         'Deleting asks for nothing more, so confirm with the user before delete_post, delete_sketch or delete_samples.',
     },
   );
@@ -188,7 +216,7 @@ export function buildServer(rawEnv: DevEnv): McpServer {
 
   server.registerTool('add_sketch', {
     title: 'Add a sketch',
-    description: `Adds an idea (text) or a demo placeholder (no audio; add audio later from ${SITE}/dev) to the Sketches page. Commits to the website.`,
+    description: `Saves an idea (text) or a demo placeholder (no audio; add audio later from ${SITE}/dev) for the Sketches page, as a hidden draft: it isn't on the site until publish_drafts (after the user says yes) or Publish in /dev.`,
     inputSchema: {
       kind: z.enum(['idea', 'demo']).optional().describe('Default: idea'),
       title: z.string().min(1).max(200),
@@ -198,8 +226,8 @@ export function buildServer(rawEnv: DevEnv): McpServer {
     },
     annotations: WRITE,
   }, ({ kind, title, text, tags, date }) => run(async () => {
-    const r = await addTextSketch(gh, { kind: kind ?? 'idea', title, text: text ?? '', tags: tags ?? [], date: date ?? today() });
-    return { ...r, url: `${SITE}/sketches#${r.id}`, live: 'in about 2 minutes' };
+    const r = await addTextSketch(gh, { kind: kind ?? 'idea', title, text: text ?? '', tags: tags ?? [], date: date ?? today() }, true);
+    return { ...r, draft: true, note: 'Saved as a hidden draft. Ask the user, then publish_drafts with this id.', review: `${SITE}/dev#launchpad` };
   }));
 
   server.registerTool('delete_sketch', {
@@ -265,7 +293,7 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       description: z.string().max(300).nullable().optional().describe('null removes it'),
       highlighted: z.boolean().optional(),
       body: z.string().min(1).max(100_000).optional().describe('New text, same format as publish_archive_post'),
-      draft: z.boolean().optional().describe('true takes the post off the site and keeps it as a draft; false publishes a draft'),
+      draft: z.literal(true).optional().describe('true takes the post off the site and keeps it as a draft. To publish a draft, use publish_drafts'),
     },
     annotations: { ...WRITE, idempotentHint: true },
   }, ({ slug, accent_color, highlighted, body, draft, ...rest }) => run(async () => {
@@ -337,10 +365,11 @@ export function buildServer(rawEnv: DevEnv): McpServer {
   }, ({ ids }) => run(() => deleteSamples(gh, ids)));
 
   server.registerTool('publish_archive_post', {
-    title: 'Publish an archive post',
+    title: 'Write an archive post (draft)',
     description:
-      `Publishes a new post at ${SITE}/archive/<slug>. Text format: blank line between paragraphs, "## " headings, ` +
-      '"- " list items, [links](https://...), **bold**. Interactive labs and images still need code. Commits to the website.',
+      `Writes a new post for ${SITE}/archive/<slug>, saved as a draft: it isn't on the site until publish_drafts (after the ` +
+      'user says yes) or Publish in /dev. Text format: blank line between paragraphs, "## " headings, ' +
+      '"- " list items, [links](https://...), **bold**. Interactive labs and images still need code.',
     inputSchema: {
       title: z.string().min(1).max(200),
       body: z.string().min(1).max(100_000),
@@ -349,15 +378,45 @@ export function buildServer(rawEnv: DevEnv): McpServer {
       tags: z.array(z.string()).max(12).optional(),
       description: z.string().max(300).optional().describe('One line for link previews; default: the first paragraph'),
       accent_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe('Default: #ffaa00'),
-      draft: z.boolean().optional().describe('true saves it as a draft that is not on the site until published (update_post with draft: false)'),
     },
     annotations: WRITE,
-  }, ({ title, body, slug, date, tags, description, accent_color, draft }) => run(async () => {
+  }, ({ title, body, slug, date, tags, description, accent_color }) => run(async () => {
     const r = await publishPost(gh, {
       title, body, slug: slug ? slugify(slug) : slugify(title), date: date ?? today(), tags: tags ?? [],
-      description, accentColor: accent_color ?? '#ffaa00', index: await nextPostIndex(gh), draft,
+      description, accentColor: accent_color ?? '#ffaa00', index: await nextPostIndex(gh), draft: true,
     });
-    return r.draft ? { ...r, note: 'Saved as a draft: not on the site' } : { ...r, url: `${SITE}/archive/${r.slug}`, live: 'in about 2 minutes' };
+    return { ...r, note: 'Saved as a draft: not on the site. Ask the user, then publish_drafts with this slug.', review: `${SITE}/dev#launchpad` };
+  }));
+
+  // ---------- Drafts ----------
+
+  server.registerTool('list_drafts', {
+    title: 'List drafts',
+    description: 'Everything saved but not on the site yet: draft archive posts (slug, title, date, tags, summary) and hidden sketches. Use get_post to read a draft post\'s text.',
+    inputSchema: {},
+    annotations: READ,
+  }, () => run(async () => {
+    const d = await listDrafts(gh);
+    return {
+      posts: d.posts.map(p => ({ slug: p.slug, title: p.meta.title, date: p.meta.date, tags: p.meta.tags, summary: p.meta.description })),
+      sketches: d.sketches.map(({ hidden: _h, ...s }) => s),
+      review: `${SITE}/dev#launchpad`,
+    };
+  }));
+
+  server.registerTool('publish_drafts', {
+    title: 'Publish drafts',
+    description:
+      'Puts draft posts and hidden sketches on the site (live about 2 minutes later). Only call this after the user has said yes ' +
+      'to publishing these exact items in the chat. One commit per item, so each counts as a ship on the Launchpad.',
+    inputSchema: {
+      posts: z.array(z.string()).max(50).optional().describe('Draft post slugs (list_drafts)'),
+      sketches: z.array(z.string()).max(50).optional().describe('Hidden sketch ids (list_drafts)'),
+    },
+    annotations: { ...WRITE, idempotentHint: true },
+  }, ({ posts, sketches }) => run(async () => {
+    const r = await publishDrafts(gh, { posts, sketches });
+    return { ...r, published: r.published.map(p => ({ ...p, url: `${SITE}${p.url}` })), live: 'in about 2 minutes' };
   }));
 
   // ---------- Idea inbox (private) ----------
@@ -393,7 +452,7 @@ export function buildServer(rawEnv: DevEnv): McpServer {
 
   server.registerTool('promote_idea', {
     title: 'Promote idea',
-    description: 'Turns an inbox idea into a GitHub issue (target "issue", needs repo) or a sketch on the website (target "sketch"; becomes a demo if the idea has an MP3). Marks the idea as promoted.',
+    description: 'Turns an inbox idea into a GitHub issue (target "issue", needs repo) or a hidden sketch draft (target "sketch"; becomes a demo if the idea has an MP3; publish it with publish_drafts after the user says yes). Marks the idea as promoted.',
     inputSchema: {
       id: z.string().describe('Idea id from list_ideas'),
       target: z.enum(['issue', 'sketch']),
@@ -405,7 +464,7 @@ export function buildServer(rawEnv: DevEnv): McpServer {
   }, ({ id, target, title, text, repo }) => run(async () => {
     const ideas = await listIdeas(env, 'inbox', 500);
     const idea = ideas.ideas.find(i => i.id === id);
-    return promoteIdea(env, gh, rest, owner, { id, target, title, text: text ?? idea?.text ?? '', repo });
+    return promoteIdea(env, gh, rest, owner, { id, target, title, text: text ?? idea?.text ?? '', repo, hidden: true });
   }));
 
   // ---------- Google Drive: releasing samples ----------
@@ -447,7 +506,7 @@ export function buildServer(rawEnv: DevEnv): McpServer {
 
   server.registerTool('list_messages', {
     title: 'List contact messages',
-    description: 'Messages sent through the contact form on the site: not answered yet (default, oldest first) or answered. Reply by email; the owner marks them answered in /dev.',
+    description: 'Messages sent through the contact form on the site: not answered yet (default, oldest first) or answered. The owner replies by email; then mark_message_answered.',
     inputSchema: { status: z.enum(['unanswered', 'answered']).optional() },
     annotations: READ,
   }, ({ status }) => run(async () => {
@@ -455,10 +514,146 @@ export function buildServer(rawEnv: DevEnv): McpServer {
     return {
       count: r.count,
       messages: r.messages.map(m => ({
-        received: new Date(m.created).toISOString(), name: m.name, email: m.email, about: m.service, message: m.message,
+        id: m.id, received: new Date(m.created).toISOString(), name: m.name, email: m.email, about: m.service, message: m.message,
         links: m.links || undefined, answered: m.answered ? new Date(m.answered).toISOString() : undefined,
       })),
     };
+  }));
+
+  server.registerTool('mark_message_answered', {
+    title: 'Mark a message answered',
+    description: 'Marks a contact message as answered (or, with answered: false, as waiting again). Only when the user says they replied.',
+    inputSchema: { id: z.string().describe('From list_messages'), answered: z.boolean().optional().describe('Default: true') },
+    annotations: { ...WRITE, idempotentHint: true },
+  }, ({ id, answered }) => run(() => markMessage(env, { id, answered: answered ?? true })));
+
+  // ---------- Momentum, promo, stats, releases ----------
+
+  const loadMomentum = () => momentum(env, (q, v) => pg.graphql(q, v), owner, siteName);
+
+  server.registerTool('momentum', {
+    title: 'Momentum and nudges',
+    description:
+      'What the /dev Launchpad shows: the daily streak (alive until midnight in the given time zone), what shipped in the last 7 days, ' +
+      'days since something public, and the nudges: open issues untouched for 3+ weeks, unanswered contact messages, ' +
+      'samples queued for release, ships whose promo isn\'t done, and ideas waiting in the inbox.',
+    inputSchema: {
+      time_zone: z.string().optional().describe('IANA time zone of the user, e.g. "Europe/Paris". Default: UTC'),
+    },
+    annotations: READ,
+  }, ({ time_zone }) => run(async () => {
+    const [m, ideas] = await Promise.all([loadMomentum(), listIdeas(env, 'inbox', 1)]);
+    const week = m.events.filter(e => e.t >= Date.now() - 7 * DAY);
+    const lastPublic = [...m.events].reverse().find(e => PUBLIC_KINDS.has(e.kind));
+    const promoOpen = m.promo?.items.filter(i => !i.done) ?? [];
+    return {
+      ...streakOf(m.events, time_zone ?? 'UTC'),
+      daysSincePublic: lastPublic ? Math.floor((Date.now() - lastPublic.t) / DAY) : null,
+      lastSevenDays: week.reverse().map(e => ({ when: new Date(e.t).toISOString(), kind: e.kind, what: e.label })),
+      nudges: {
+        staleIssues: { count: m.staleCount, olderThanDays: m.staleDays, oldest: m.stale.map(i => ({ repo: i.repo, number: i.number, title: i.title, updated: i.updated })) },
+        unansweredMessages: m.messages?.unanswered ?? null,
+        samplesQueuedForRelease: m.queuedSamples,
+        promoNotDone: promoOpen.length,
+        ideasInInbox: ideas.count.inbox,
+      },
+      errors: m.errors.length ? m.errors : undefined,
+    };
+  }));
+
+  server.registerTool('promo_checklist', {
+    title: 'Promo checklist',
+    description: 'Every public ship (sketch, samples, post, release) since promo tracking began, with the owner\'s channels ticked or not. Default: only the ones not done.',
+    inputSchema: { include_done: z.boolean().optional() },
+    annotations: READ,
+  }, ({ include_done }) => run(async () => {
+    const m = await loadMomentum();
+    if (!m.promo) throw new HttpError(502, m.errors.join('; ') || 'Promo is not available');
+    const { channels, items } = m.promo;
+    return {
+      channels,
+      items: items.filter(i => include_done || !i.done).map(i => ({
+        ref: i.ref, kind: i.kind, what: i.label, shipped: new Date(i.t).toISOString(),
+        ticked: Object.keys(i.ticks).filter(c => c !== SKIP), notDone: i.skipped ? [] : channels.filter(c => !(c in i.ticks)),
+        noPromoNeeded: i.skipped || undefined, done: i.done,
+      })),
+    };
+  }));
+
+  server.registerTool('tick_promo', {
+    title: 'Tick off promo',
+    description: `Marks channels as done (or not) for one ship from promo_checklist, after the user says they posted there. Channel "${SKIP}" means "no promo needed". A tick counts toward the streak.`,
+    inputSchema: {
+      ref: z.string().url().describe('The ship\'s ref from promo_checklist'),
+      channels: z.array(z.string().min(1).max(40)).min(1).max(12),
+      done: z.boolean().optional().describe('Default: true; false un-ticks'),
+      what: z.string().max(200).optional().describe('The ship\'s name (promo_checklist "what"), shown on the Launchpad'),
+    },
+    annotations: { ...WRITE, idempotentHint: true },
+  }, ({ ref, channels, done, what }) => run(async () => {
+    for (const channel of channels) await tickPromo(env, { ref, channel, done: done ?? true, label: what ?? '' });
+    return { ref, channels, done: done ?? true };
+  }));
+
+  server.registerTool('play_stats', {
+    title: 'Plays and downloads',
+    description:
+      'Counts for the last 7 and 30 days: sample plays and downloads (top samples, and totals per pack), full-pack downloads, ' +
+      'DATABEND downloads, labs started and contact messages. Nothing about visitors is stored.',
+    inputSchema: {},
+    annotations: READ,
+  }, () => run(async () => {
+    const counts = await eventCounts(env);
+    if (!counts.configured) return { configured: false, note: 'CF_API_TOKEN / CF_ACCOUNT_ID are not set (docs/HOSTING.md)' };
+    if (!counts.ok) throw new HttpError(502, counts.error);
+    const { samples } = await listSamples(gh);
+    const packOf = new Map(samples.map(s => [String(s.id), s.pack]));
+    return {
+      events: counts.events.map(e => {
+        const perPack = e.event.startsWith('sample_')
+          ? Object.values(e.top.reduce<Record<string, { pack: string; week: number; month: number }>>((acc, t) => {
+            const pack = packOf.get(t.key.split(' ')[0]) ?? 'unknown';
+            const p = (acc[pack] ??= { pack, week: 0, month: 0 });
+            p.week += t.week; p.month += t.month;
+            return acc;
+          }, {})).sort((a, b) => b.month - a.month)
+          : undefined;
+        return { event: e.event, label: e.label, last7Days: e.week, last30Days: e.month, top: e.top, perPackFromTop: perPack };
+      }),
+    };
+  }));
+
+  server.registerTool('list_releases', {
+    title: 'Releases',
+    description: 'Every repository with GitHub releases: the last 5 releases each, publish date, and downloads per release and per file.',
+    inputSchema: {},
+    annotations: READ,
+  }, () => run(() => releases((q, v) => pg.graphql(q, v), owner)));
+
+  server.registerTool('release_notes', {
+    title: 'Changelog draft',
+    description:
+      'A changelog draft for the next release of a repository: issues closed as done and pull requests merged since its latest release ' +
+      '(or since a date). Returns markdown to edit, plus the link to GitHub\'s new-release page. Nothing is published.',
+    inputSchema: {
+      repo: z.string(),
+      since: z.string().optional().describe('ISO date; default: when the latest release was published'),
+    },
+    annotations: READ,
+  }, ({ repo, since }) => run(async () => {
+    const full = ownRepo(repo, owner);
+    let from = since ?? null;
+    let latest: { tag: string; published: string } | null = null;
+    if (!from) {
+      // 404 = no releases yet: everything counts.
+      const r = await pg.get<{ tag_name: string; published_at: string }>(`/repos/${full}/releases/latest`);
+      if (r.data) {
+        latest = { tag: r.data.tag_name, published: r.data.published_at };
+        from = r.data.published_at;
+      }
+    }
+    const notes = await releaseNotes((q, v) => pg.graphql(q, v), full, from);
+    return { ...notes, latestRelease: latest, newReleasePage: `https://github.com/${full}/releases/new` };
   }));
 
   return server;

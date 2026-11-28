@@ -53,8 +53,12 @@ const QUERY = `query ($owner: String!, $site: String!, $since: GitTimestamp!, $c
   }
 }`;
 
-/** Commits that add things count; removals, edits and fixes don't. */
-const isAdd = (message: string) => !/\b(remove|removed|delete|deleted|edit|edited|fix|fixes|rename|revert)\b/i.test(message);
+/**
+ * Commits that add things count; removals, edits and fixes don't. Drafts and hidden things aren't public yet:
+ * they count when they're published ("Sketches: publish …", "Archive: publish …").
+ */
+const isAdd = (message: string) =>
+  !/\b(remove|removed|delete|deleted|edit|edited|fix|fixes|rename|revert|draft|hidden|hide|unpublish)\b/i.test(message);
 
 /** "Sketches: add "Foo"" → "Foo"; anything else stays as it is. */
 const what = (message: string) => /"(.+)"/.exec(message)?.[1] ?? message.replace(/^[^:]{1,30}:\s*/, '');

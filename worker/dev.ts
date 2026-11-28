@@ -14,7 +14,8 @@
  */
 import {
   addSketch, appendSamples, parseSamples, postFile, readHidden, readPost, rebaseImports, readPacks, removeSamples, removeSketch, setHidden,
-  updatePost, updateSamples, updateSketch,
+  setSketchHidden, updatePost, updateSamples, updateSketch,
+  type SketchEntry,
   type PostInfo, type PostInput, type PostMetaPatch, type SampleChange, type SampleInput, type SketchInput,
 } from './content';
 import { githubStats, projects } from './stats';
@@ -276,15 +277,15 @@ async function saveSketch(request: Request, gh: GitHub) {
   return addSketchWithAudio(gh, input, input.kind === 'demo' ? await mp3(form, 'audio') : null);
 }
 
-/** Adds a sketch, with its MP3 in the same commit when there is one. */
-async function addSketchWithAudio(gh: GitHub, input: SketchInput, audio: Uint8Array | null) {
+/** Adds a sketch, with its MP3 in the same commit when there is one. `hidden`: saved as a draft, off the site. */
+async function addSketchWithAudio(gh: GitHub, input: SketchInput, audio: Uint8Array | null, hidden = false) {
   let id = '';
-  const sha = await gh.change(`Sketches: add "${String(input.title).slice(0, 60)}"`, async read => {
-    const { text, entry } = addSketch(await must(read, SKETCHES), input, audio ? i => `/audio/sketches/${i}.mp3` : undefined);
+  const sha = await gh.change(`Sketches: ${hidden ? 'draft' : 'add'} "${String(input.title).slice(0, 60)}"`, async read => {
+    const { text, entry } = addSketch(await must(read, SKETCHES), input, audio ? i => `/audio/sketches/${i}.mp3` : undefined, hidden);
     id = entry.id;
     return [{ path: SKETCHES, content: text }, ...(audio ? [{ path: `public${entry.file}`, content: audio }] : [])];
   });
-  return { sha, id };
+  return { sha, id, hidden };
 }
 
 async function deleteSketch(request: Request, gh: GitHub) {
@@ -302,15 +303,9 @@ export async function removeSketchById(gh: GitHub, id: string) {
   return { sha };
 }
 
-/** Adds a sketch without audio (an idea, or a demo placeholder). Used by the MCP connector. */
-export async function addTextSketch(gh: GitHub, input: SketchInput) {
-  let id = '';
-  const sha = await gh.change(`Sketches: add "${String(input.title).slice(0, 60)}"`, async read => {
-    const { text, entry } = addSketch(await must(read, SKETCHES), input);
-    id = entry.id;
-    return [{ path: SKETCHES, content: text }];
-  });
-  return { sha, id };
+/** Adds a sketch without audio (an idea, or a demo placeholder). Used by the MCP connector, which adds drafts. */
+export async function addTextSketch(gh: GitHub, input: SketchInput, hidden = false) {
+  return addSketchWithAudio(gh, input, null, hidden);
 }
 
 /** Edits a sketch. `audio`: "keep" (default), "remove", or a new MP3 in the form (field "audio"). */
@@ -522,6 +517,53 @@ export async function content(gh: GitHub) {
   return { head, sketches: JSON.parse((await gh.read(SKETCHES, head)) ?? '[]') };
 }
 
+// ---------- Drafts: saved, not on the site yet ----------
+
+/** Draft posts (src/posts/drafts) and hidden sketches: what's waiting for "Publish". */
+export async function listDrafts(gh: GitHub) {
+  const [{ posts }, { sketches }] = await Promise.all([listPosts(gh), content(gh)]);
+  return {
+    posts: posts.filter(p => p.draft).map(({ draft: _d, linkedFrom: _l, ...p }) => p),
+    sketches: (sketches as SketchEntry[]).filter(s => s.hidden),
+  };
+}
+
+/**
+ * Puts drafts on the site: draft posts move to src/posts, hidden sketches lose `hidden`. One commit per item, named
+ * "… publish "…"", so each counts as a public ship on the Launchpad (and gets its promo checklist).
+ */
+export async function publishDrafts(gh: GitHub, input: { posts?: unknown; sketches?: unknown }) {
+  const list = (v: unknown) => (Array.isArray(v) ? v.map(String).slice(0, 50) : []);
+  const posts = list(input.posts);
+  const sketches = list(input.sketches);
+  if (!posts.length && !sketches.length) throw new HttpError(400, 'Nothing to publish');
+  const published: Array<{ kind: 'post' | 'sketch'; id: string; url: string }> = [];
+  const failed: Array<{ kind: 'post' | 'sketch'; id: string; error: string }> = [];
+  for (const slug of posts) {
+    try {
+      await editPost(gh, slug, {}, undefined, false);
+      published.push({ kind: 'post', id: slug, url: `/archive/${slug}` });
+    } catch (err) {
+      failed.push({ kind: 'post', id: slug, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  // The title goes in the commit message: the Launchpad shows it as the ship's name.
+  const titles = sketches.length ? new Map((((await content(gh)).sketches) as SketchEntry[]).map(s => [s.id, s.title])) : new Map<string, string>();
+  for (const id of sketches) {
+    try {
+      await gh.change(`Sketches: publish "${(titles.get(id) ?? id).slice(0, 60)}"`, async read => {
+        const r = setSketchHidden(await must(read, SKETCHES), id, false);
+        if (!r.was) throw new HttpError(400, `"${id}" is already on the site`);
+        return [{ path: SKETCHES, content: r.text }];
+      });
+      published.push({ kind: 'sketch', id, url: `/sketches#${id}` });
+    } catch (err) {
+      failed.push({ kind: 'sketch', id, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  return { published, failed };
+}
+
 // ---------- Ideas: promote ----------
 
 /**
@@ -549,8 +591,9 @@ export async function promoteIdea(
     const withAudio = audio && isMp3(audio) ? audio : null;
     const today = new Date().toISOString().slice(0, 10);
     const tags = Array.isArray(input.tags) ? input.tags.map(String) : [];
-    const r = await addSketchWithAudio(gh, { kind: withAudio ? 'demo' : 'idea', title, date: today, text, tags }, withAudio);
-    promotedTo = { kind: 'sketch', label: title, url: `/sketches#${r.id}` };
+    const hidden = input.hidden === true;
+    const r = await addSketchWithAudio(gh, { kind: withAudio ? 'demo' : 'idea', title, date: today, text, tags }, withAudio, hidden);
+    promotedTo = { kind: 'sketch', label: hidden ? `${title} (draft)` : title, url: `/sketches#${r.id}` };
   } else {
     throw new HttpError(400, 'Promote to "issue" or "sketch"');
   }
@@ -805,6 +848,8 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
     if (action === 'sketch' && method === 'POST') return json(200, await saveSketch(request, gh));
     if (action === 'sketch-delete' && method === 'POST') return json(200, await deleteSketch(request, gh));
     if (action === 'sketch-update' && method === 'POST') return json(200, await editSketch(request, gh));
+    if (action === 'drafts' && method === 'GET') return json(200, await listDrafts(gh));
+    if (action === 'drafts-publish' && method === 'POST') return json(200, await publishDrafts(gh, (await request.json()) as Record<string, unknown>));
     if (action === 'posts' && method === 'GET') return json(200, await listPosts(gh));
     if (action === 'post-get' && method === 'GET') return json(200, await getPost(gh, url.searchParams.get('slug')));
     if (action === 'post-update' && method === 'POST') {

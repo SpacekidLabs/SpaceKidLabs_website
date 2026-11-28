@@ -77,7 +77,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 
 | Group | Tab | What it does |
 | --- | --- | --- |
-| Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Above it: your **streak** and nudges; below it: a year **heatmap** of what you shipped (see Momentum below). Ideas are stored in Cloudflare D1, not in the repo (see below) |
+| Lab | Launchpad | the first screen: a capture box (type and press Enter, paste a link or screenshot, drop audio or any file, record a voice memo) and the **private idea inbox**. Each idea can become a GitHub issue, a sketch (a demo with the audio if it has an MP3) or an archive post (opens the Archive tab filled in), or go in the bin. Press **N** on any tab to jump to the box. Under the box: **Drafts**, everything saved but not on the site yet (what Claude adds lands there), to preview and publish. Above it: your **streak** and nudges; below it: a year **heatmap** of what you shipped (see Momentum below). Ideas are stored in Cloudflare D1, not in the repo (see below) |
 | Lab | Ship | **Tell people:** every public ship (sketch, samples, post, release) gets a promo checklist of your channels by itself; tick each one off, or mark "No promo needed". **Releases:** every repository with releases, its latest version, days since, and downloads per release and per file; open one for a changelog draft (issues closed as done and pull requests merged since the last release) to copy, or to open GitHub's new-release page with the next version and the notes filled in (`worker/ship.ts`) |
 | Lab | Messages | contact form messages, oldest unanswered first: **Reply** opens your mail app with the message quoted, then **Mark answered**; delete when done. The Launchpad nudges about unanswered ones (`worker/messages.ts`) |
 | All projects | Projects | every repository you own, grouped by kind (plugins & instruments, apps & tools, research, websites) with search and public/private filters. Open one for its pushes per week, recent commits, issues, pull requests, releases and Actions runs (`worker/stats.ts`). Reads only |
@@ -233,12 +233,24 @@ on the free plan, with no extra secrets.
 | `list_issues`, `get_issue` | issues of one project or all of them; one issue with comments |
 | `create_issue`, `update_issue`, `comment_on_issue` | open, edit, label, close/reopen, comment |
 | `site_traffic` | Cloudflare analytics for the site (7 or 30 days), plus plays and downloads |
-| `list_sketches`, `add_sketch`, `update_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; new audio still goes through /dev) |
-| `list_posts`, `get_post`, `publish_archive_post`, `update_post`, `delete_post` | archive posts, with the same limits as /dev |
+| `list_sketches`, `add_sketch`, `update_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; new audio still goes through /dev). `add_sketch` saves a **hidden draft** |
+| `list_posts`, `get_post`, `publish_archive_post`, `update_post`, `delete_post` | archive posts, with the same limits as /dev. `publish_archive_post` saves a **draft** |
+| `list_drafts`, `publish_drafts` | what's saved but not on the site (draft posts, hidden sketches); publish them, which Claude does only after you say yes in the chat |
 | `list_samples`, `update_samples`, `delete_samples` | samples: rename, category, pack, Drive ID, delete |
 | `drive_folder_status`, `link_drive_ids`, `start_release`, `list_queued_releases` | a pack's Drive folder vs the site; fill in missing download IDs by file name; queue the new files in a folder for release (then press Release in /dev → Samples) |
-| `list_messages` | contact form messages, unanswered or answered (read only) |
-| `capture_idea`, `list_ideas`, `promote_idea` | the private idea inbox: save an idea ("save idea: …"), list them, turn one into an issue or a sketch |
+| `list_messages`, `mark_message_answered` | contact form messages, unanswered or answered; mark one answered after you replied |
+| `capture_idea`, `list_ideas`, `promote_idea` | the private idea inbox: save an idea ("save idea: …"), list them, turn one into an issue or a hidden sketch draft |
+| `momentum` | the Launchpad: streak (in your time zone), the last 7 days, days since something public, and the nudges (stale issues, unanswered messages, queued samples, promo not done, ideas waiting) |
+| `promo_checklist`, `tick_promo` | the Ship tab's promo checklists; tick channels off after you posted |
+| `play_stats` | plays and downloads for 7 and 30 days, top samples and totals per pack |
+| `list_releases`, `release_notes` | releases with download counts in every repository; a changelog draft since the latest release (nothing is published) |
+
+**Drafts first.** Anything *new* Claude adds to the site (sketches, archive posts, sketches from ideas) is saved
+hidden: draft posts in `src/posts/drafts/`, sketches with `"hidden": true` in `src/data/sketches.json` (left out of
+/sketches by `src/data/sketches.ts`). They wait in **/dev → Launchpad → Drafts**, with a preview, until you press
+**Publish** there or tell Claude yes. Each publish is its own commit (`Archive: publish "…"`, `Sketches: publish "…"`),
+which is when it counts as a ship for the streak and gets a promo checklist; saving a draft doesn't count. Edits to
+things already on the site still go live directly. Sample releases were already gated: they wait for **Release** in /dev.
 
 **Connecting.** In Claude: **Settings → Connectors → Add custom connector**, URL `https://spacekidlabs.com/mcp`. Claude
 opens a spacekidlabs.com page that shows which app is asking; enter the /dev password there. In Claude Code:

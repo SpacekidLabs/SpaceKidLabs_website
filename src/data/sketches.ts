@@ -8,6 +8,7 @@ import data from './sketches.json';
  * - kind 'demo': a rough recording. Put the mp3 in public/audio/sketches/ and set `file` to its path,
  *   e.g. '/audio/sketches/night-drive.mp3'. Leave `file` out and the card shows "audio coming soon".
  * - kind 'idea': a written note. `text` can hold several paragraphs separated by a blank line.
+ * - `hidden: true`: a draft, left off the page until it's published.
  */
 
 export type SketchKind = 'demo' | 'idea';
@@ -24,6 +25,8 @@ export interface Sketch {
   file?: string;
   /** Optional extras shown as small chips, e.g. BPM, key, gear. */
   tags?: string[];
+  /** A draft: saved, but not shown until it's published from /dev (or by Claude, when you say so). */
+  hidden?: boolean;
 }
 
-export const SKETCHES = data as Sketch[];
+export const SKETCHES = (data as Sketch[]).filter(s => !s.hidden);

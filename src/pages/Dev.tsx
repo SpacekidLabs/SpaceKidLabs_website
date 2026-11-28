@@ -167,13 +167,17 @@ function SketchesTab() {
       </form>
 
       <div>
-        <h2 className={label}>On the site ({list?.length ?? '…'})</h2>
+        <h2 className={label}>Sketches ({list?.length ?? '…'}{list?.some(s => s.hidden) ? `, ${list.filter(s => s.hidden).length} draft` : ''})</h2>
         <ul className="divide-y divide-zinc-900 border-y border-zinc-900">
           {list?.map(s => (
             <li key={s.id} className="flex items-center gap-3 py-2.5">
               {s.kind === 'demo' ? <Mic className="w-4 h-4 text-brand-orange shrink-0" aria-hidden /> : <Lightbulb className="w-4 h-4 text-brand-gold shrink-0" aria-hidden />}
               <span className="flex-grow min-w-0">
-                <span className="block truncate text-sm text-zinc-200">{s.title}</span>
+                <span className="block truncate text-sm text-zinc-200">
+                  {s.hidden && <span className="mr-2 px-1.5 py-0.5 border border-amber-700/70 font-mono text-[9px] uppercase tracking-widest text-amber-300 align-middle"
+                    title="Not on the site yet. Publish it from the Launchpad (Drafts).">Draft</span>}
+                  {s.title}
+                </span>
                 <span className="font-mono text-[10px] text-zinc-500">{s.date}{s.kind === 'demo' && !s.file && ' · no audio'}</span>
               </span>
               <button type="button" onClick={() => startEdit(s)} disabled={status.kind === 'busy'} aria-label={`Edit ${s.title}`}
@@ -847,7 +851,7 @@ function useHashRoute() {
 
 function ActiveTab({ tab, sub, go }: { tab: TabId; sub: string; go: (tab: TabId, sub?: string) => void }) {
   switch (tab) {
-    case 'launchpad': return <LaunchpadTab onPost={h => { sessionStorage.setItem(POST_HANDOFF, JSON.stringify(h)); go('archive'); }} onIssues={() => go('issues')} onShip={() => go('ship')} onMessages={() => go('messages')} onSamples={() => go('samples')} />;
+    case 'launchpad': return <LaunchpadTab onPost={h => { sessionStorage.setItem(POST_HANDOFF, JSON.stringify(h)); go('archive'); }} onIssues={() => go('issues')} onShip={() => go('ship')} onMessages={() => go('messages')} onSamples={() => go('samples')} onArchive={() => go('archive')} />;
     case 'ship': return <ShipTab />;
     case 'messages': return <MessagesTab />;
     case 'projects': return <ProjectsTab open={sub} onOpen={name => go('projects', name)} onIssues={repo => go('issues', repo)} />;
