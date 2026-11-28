@@ -306,10 +306,10 @@ export function SamplesPage() {
             </h1>
           </div>
 
-          <div className="max-w-5xl mx-auto space-y-12">
+          <div className="max-w-6xl mx-auto space-y-12">
 
             {/* Packs: pick one to browse it below */}
-            <div className="grid md:grid-cols-2 gap-6" role="radiogroup" aria-label="Sample pack">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6" role="radiogroup" aria-label="Sample pack">
               {PACKS.map((p, i) => (
                 <PackCard key={p.id} pack={p} latest={i === 0} selected={p.id === packId} onSelect={() => choosePack(p.id)} />
               ))}

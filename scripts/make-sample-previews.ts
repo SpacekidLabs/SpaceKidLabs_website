@@ -16,6 +16,8 @@
  * Only one pack:      --pack weird-breaks   (other packs' rows are kept as they are)
  * Originals on disk:  LOCAL_SAMPLES="/path/to/folder" (files named exactly like `name`; used
  *                     instead of Drive, so this works before the pack is uploaded)
+ * Shorter previews:   --max-preview 30  (seconds; longer sounds get the first 30 s with a fade-out.
+ *                     Duration, size and waveform still describe the whole original.)
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -30,6 +32,7 @@ const CACHE = process.env.SAMPLE_CACHE || join(tmpdir(), 'spacekid-sample-origin
 const FORCE = process.argv.includes('--force');
 const ONLY_PACK = process.argv.includes('--pack') ? process.argv[process.argv.indexOf('--pack') + 1] : null;
 const LOCAL = process.env.LOCAL_SAMPLES;
+const MAX_PREVIEW = process.argv.includes('--max-preview') ? Number(process.argv[process.argv.indexOf('--max-preview') + 1]) : 0;
 
 /** "SP26 Kick 1+.wav" -> "sp26-kick-1" */
 export function previewName(name: string): string {
@@ -112,13 +115,16 @@ for (const sample of SAMPLES) {
   const preview = join(OUT_DIR, `${base}.mp3`);
   if (original !== local) await download(sample.driveId, original);
 
-  if (FORCE || !existsSync(preview)) {
-    // VBR MP3 around 190 kbps: transparent for previews, about a tenth of the 24-bit WAV size.
-    run('ffmpeg', ['-v', 'error', '-y', '-i', original, '-vn', '-map_metadata', '-1', '-c:a', 'libmp3lame', '-q:a', '2', preview]);
-  }
   const seconds = Number(
     run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', original]).trim(),
   );
+  if (FORCE || !existsSync(preview)) {
+    const cut = MAX_PREVIEW > 0 && seconds > MAX_PREVIEW
+      ? ['-t', String(MAX_PREVIEW), '-af', `afade=t=out:st=${MAX_PREVIEW - 1.5}:d=1.5`]
+      : [];
+    // VBR MP3 around 190 kbps: transparent for previews, about a tenth of the 24-bit WAV size.
+    run('ffmpeg', ['-v', 'error', '-y', '-i', original, '-vn', ...cut, '-map_metadata', '-1', '-c:a', 'libmp3lame', '-q:a', '2', preview]);
+  }
   updated.push({
     ...sample,
     duration: formatDuration(seconds),

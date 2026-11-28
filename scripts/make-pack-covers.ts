@@ -131,10 +131,76 @@ function trapTape(samples: Sample[]) {
   return frame(out, 'TRAP & TAPE', `${samples.length} SOUNDS // LOOPS 808S FX // SPACEKID LABS`);
 }
 
+/** Cybernetics: every sound as one raster line, loud parts lit; a few lines tear sideways. One path per colour and
+ * brightness step keeps the file small. */
+function cybernetics(samples: Sample[]) {
+  const rand = seededRandom(1984);
+  const left = 40, top = 40, w = SIZE - 80, h = SIZE - 190, CELLS = 32;
+  const rowH = h / samples.length, cellW = w / CELLS;
+  const paths = new Map<string, string>();
+  samples.forEach((s, i) => {
+    const y = top + i * rowH;
+    const tear = rand() < 0.08 ? (rand() - 0.5) * 160 : 0;
+    const v = levels(s);
+    const color = s.category === 'Textures' ? '#ffffff' : s.category === 'Glitch Hits' ? '#8a8a8a' : ORANGE;
+    for (let k = 0; k < CELLS; k++) {
+      const level = Math.max(v[k * 2], v[k * 2 + 1]) ** 2; // squared: only the loud parts light up
+      if (level < 0.12) continue;
+      const step = Math.min(4, Math.floor(level * 5));
+      const key = `${color}|${step}`;
+      paths.set(key, (paths.get(key) ?? '') + `M${f(left + k * cellW + tear)} ${f(y)}h${f(cellW - 0.6)}v${f(Math.max(rowH - 0.4, 0.6))}h${f(-(cellW - 0.6))}z`);
+    }
+  });
+  let out = '';
+  for (const [key, d] of paths) { const [color, step] = key.split('|'); out += `<path d="${d}" fill="${color}" opacity="${(0.2 + Number(step) * 0.2).toFixed(1)}"/>\n`; }
+  return frame(out, 'CYBERNETICS', `${samples.length} GLITCH HITS, SLICES + TEXTURES // SPACEKID LABS`);
+}
+
+/** Drum Hits Vol. 2: a pad grid; each pad is one hit's waveform drawn around a circle. */
+function drumHits(samples: Sample[]) {
+  const cols = Math.ceil(Math.sqrt(samples.length * 1.1));
+  const rows = Math.ceil(samples.length / cols);
+  const pad = 50, cell = Math.min((SIZE - pad * 2) / cols, (SIZE - pad - 150) / rows);
+  const x0 = (SIZE - cols * cell) / 2;
+  const shades: Record<string, string> = { Kicks: ORANGE, 'Tape Hits': '#ffffff', 'Synth Hits': '#8a8a8a' };
+  let out = '';
+  samples.forEach((s, i) => {
+    const cx = x0 + (i % cols) * cell + cell / 2, cy = pad + Math.floor(i / cols) * cell + cell / 2;
+    const bars = levels(s), r0 = cell * 0.12;
+    // The hit's waveform runs from the top of the pad down both sides, so each pad is symmetric.
+    const side = (dir: number) => bars.map((v, k) => {
+      const a = -Math.PI / 2 + dir * (k / (bars.length - 1)) * Math.PI, r = r0 + v * cell * 0.33;
+      return `${f(cx + Math.cos(a) * r)},${f(cy + Math.sin(a) * r)}`;
+    });
+    const pts = [...side(1), ...side(-1).reverse()];
+    out += `<path d="M${pts.join('L')}Z" fill="${shades[s.category] ?? ORANGE}" opacity="0.9"/>\n`;
+  });
+  return frame(out, 'DRUM HITS VOL. 2', `${samples.length} KICKS, TAPE HITS + SYNTH HITS // SPACEKID LABS`);
+}
+
+/** Shlims: every sound as a thin translucent waveform line, smeared into one stream. */
+function shlims(samples: Sample[]) {
+  const left = 40, right = SIZE - 40, mid = 330;
+  const shades: Record<string, string> = { Loops: ORANGE, 'DATABEND & NoiseForge': '#ffffff', Smears: '#00d8ff', 'Metals & Objects': '#8a8a8a' };
+  let out = '';
+  samples.forEach((s, i) => {
+    const bars = levels(s), step = (right - left) / (bars.length - 1);
+    const drift = Math.sin(i * 0.7) * 120 * (i / samples.length);
+    const top = bars.map((v, k) => `${f(left + k * step)},${f(mid + drift - v * 110)}`);
+    const bottom = bars.map((v, k) => `${f(left + k * step)},${f(mid + drift + v * 110)}`).reverse();
+    out += `<path d="M${top.join('L')}L${bottom.join('L')}Z" fill="${shades[s.category] ?? ORANGE}" opacity="0.07"/>\n`;
+    out += `<path d="M${top.join('L')}" fill="none" stroke="${shades[s.category] ?? ORANGE}" stroke-width="0.6" opacity="0.5"/>\n`;
+  });
+  return frame(out, 'SHLIMS', `${samples.length} LOOPS, EXPORTS, SMEARS + METALS // SPACEKID LABS`);
+}
+
 mkdirSync(OUT, { recursive: true });
 const pack = (id: string) => SAMPLES.filter(s => s.pack === id && s.peaks);
 writeFileSync(join(OUT, 'weird-breaks.svg'), weirdBreaks(pack('weird-breaks')));
 writeFileSync(join(OUT, 'databend.svg'), databend(pack('databend')));
 writeFileSync(join(OUT, 'one-shots.svg'), oneShots(pack('one-shots')));
 writeFileSync(join(OUT, 'trap-tape.svg'), trapTape(pack('trap-tape')));
+writeFileSync(join(OUT, 'cybernetics.svg'), cybernetics(pack('cybernetics')));
+writeFileSync(join(OUT, 'drum-hits-2.svg'), drumHits(pack('drum-hits-2')));
+writeFileSync(join(OUT, 'shlims.svg'), shlims(pack('shlims')));
 console.log('Wrote the pack covers in public/packs/');
