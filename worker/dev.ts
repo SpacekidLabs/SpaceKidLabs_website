@@ -242,7 +242,9 @@ async function content(gh: GitHub) {
 
 // ---------- Router ----------
 
-export async function handleDev(request: Request, env: DevEnv, pathname: string): Promise<Response> {
+export async function handleDev(request: Request, rawEnv: DevEnv, pathname: string): Promise<Response> {
+  // Pasted secrets often carry a stray space or line break; GitHub then answers "Bad credentials".
+  const env: DevEnv = { ...rawEnv, GITHUB_TOKEN: rawEnv.GITHUB_TOKEN?.trim(), DEV_PASSWORD: rawEnv.DEV_PASSWORD?.trim() };
   const action = pathname.slice('/api/dev/'.length);
   const method = request.method;
 
