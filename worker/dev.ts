@@ -21,11 +21,15 @@ import { cloudflareAnalytics, type AnalyticsEnv } from './analytics';
 import { eventCounts } from './events';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue } from './issues';
 import { momentum } from './momentum';
+import {
+  callback as driveCallback, connectUrl, disconnect as driveDisconnect, downloadFile, DriveError, driveStatus, folderIsPublic,
+  listFolder, listReleases, queueRelease, removeRelease, siteOrigin, startUpload, type DriveEnv,
+} from './drive';
 import { deleteMessage, listMessages, markMessage, MessageError } from './messages';
 import { releaseNotes, releases, setChannels, ShipError, tickPromo } from './ship';
 import { addIdea, deleteIdea, getIdea, IdeaError, ideaFileResponse, listIdeas, readIdeaFile, updateIdea, type IdeasEnv } from './ideas';
 
-export interface DevEnv extends AnalyticsEnv, IdeasEnv {
+export interface DevEnv extends AnalyticsEnv, IdeasEnv, DriveEnv {
   DEV_PASSWORD?: string;
   GITHUB_TOKEN?: string;
   GITHUB_PROJECTS_TOKEN?: string;
@@ -490,6 +494,60 @@ export async function promoteIdea(
   return { idea: await updateIdea(env, { id: idea.id, status: 'promoted', promotedTo }) };
 }
 
+// ---------- Google Drive: samples ----------
+
+const AUDIO = /\.(wav|aiff?|flac|mp3|ogg|m4a)$/i;
+
+/** A pack's Drive folder link, read from PACKS in samples.ts on GitHub. */
+export async function packFolder(gh: GitHub, pack: unknown): Promise<string> {
+  const ts = await must(p => gh.read(p, 'main'), SAMPLES);
+  const id = String(pack ?? '');
+  const at = ts.indexOf(`id: ${JSON.stringify(id)},`);
+  const end = ts.indexOf('export const SAMPLES');
+  const link = at >= 0 && at < end ? /driveFolder: "([^"]*)"/.exec(ts.slice(at, end)) : null;
+  if (!link) throw new HttpError(404, `No pack "${id}"`);
+  if (!link[1]) throw new HttpError(400, `The pack "${id}" has no Drive folder link yet`);
+  return link[1];
+}
+
+/** What's in a pack's Drive folder compared with the samples on the site, matched by file name. */
+export async function driveFolderStatus(env: DevEnv, gh: GitHub, pack: unknown) {
+  const folder = await packFolder(gh, pack);
+  const [files, isPublic, { samples }] = await Promise.all([listFolder(env, folder), folderIsPublic(env, folder), listSamples(gh, String(pack))]);
+  const byName = new Map(files.map(f => [f.name.toLowerCase(), f]));
+  const onSite = new Set(samples.map(s => s.name.toLowerCase()));
+  return {
+    pack, folder, public: isPublic, filesOnDrive: files.length, samplesOnSite: samples.length,
+    notOnSite: files.filter(f => !onSite.has(f.name.toLowerCase()) && AUDIO.test(f.name)).map(f => ({ id: f.id, name: f.name, size: f.size })),
+    missingIds: samples.filter(s => !s.driveId).map(s => ({ id: s.id, name: s.name, driveFile: byName.get(s.name.toLowerCase())?.id ?? null })),
+    notOnDrive: samples.filter(s => !byName.has(s.name.toLowerCase())).map(s => s.name),
+    /** Every file, so /dev can reuse one instead of uploading a duplicate. */
+    driveFiles: files.map(f => ({ id: f.id, name: f.name })),
+  };
+}
+
+/** Saves the Drive id of every sample in the pack that has none yet and has a file of the same name on Drive. */
+export async function linkDriveIds(env: DevEnv, gh: GitHub, pack: unknown) {
+  const st = await driveFolderStatus(env, gh, pack);
+  const changes = st.missingIds.filter(m => m.driveFile).map(m => ({ id: m.id, driveId: m.driveFile! }));
+  if (!changes.length) return { linked: 0, stillMissing: st.missingIds.map(m => m.name), sha: null };
+  const r = await editSamples(gh, changes);
+  return { linked: r.changed, stillMissing: st.missingIds.filter(m => !m.driveFile).map(m => m.name), sha: r.sha };
+}
+
+/** Queues the audio files in the pack's folder that aren't on the site; /dev then makes previews and publishes. */
+export async function startRelease(env: DevEnv, gh: GitHub, input: { pack: string; category: string; names?: string[]; maxSeconds?: number }) {
+  const category = String(input.category ?? '').trim().slice(0, 60);
+  if (!category) throw new HttpError(400, 'Give the samples a category');
+  const st = await driveFolderStatus(env, gh, input.pack);
+  const wanted = input.names?.length ? new Set(input.names.map(n => n.toLowerCase())) : null;
+  const files = st.notOnSite.filter(f => !wanted || wanted.has(f.name.toLowerCase()));
+  if (!files.length) throw new HttpError(400, wanted ? 'None of those files are in the folder and missing from the site' : 'Every audio file in the folder is already on the site');
+  if (files.length > 500) throw new HttpError(400, 'At most 500 files per release; pass names to split it');
+  const id = await queueRelease(env, { pack: input.pack, category, maxSeconds: Math.max(0, Math.min(600, Number(input.maxSeconds) || 0)), files });
+  return { release: id, files: files.length, public: st.public, next: 'Open spacekidlabs.com/dev → Samples and press Release to make the previews and publish.' };
+}
+
 // ---------- Router ----------
 
 /** Pasted secrets often carry a stray space or line break; GitHub then answers "Bad credentials". */
@@ -519,6 +577,7 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
   }
 
   if (action === 'login' && method === 'POST') return login(request, env);
+  if (action === 'google-callback' && method === 'GET') return driveCallback(env, new URL(request.url));
   if (action === 'logout' && method === 'POST') return logout();
   const loggedIn = await isLoggedIn(request, env);
   if (action === 'session' && method === 'GET') {
@@ -564,6 +623,32 @@ export async function handleDev(request: Request, rawEnv: DevEnv, pathname: stri
       if (err instanceof MessageError || err instanceof IdeaError) return json(err.status, { error: err.message });
       console.error('Messages:', err instanceof Error ? err.message : String(err));
       return json(500, { error: 'Messages failed. See the Worker logs.' });
+    }
+    return json(404, { error: 'Not found' });
+  }
+
+  if (action.startsWith('drive-') || action === 'releases-queued' || action === 'release-remove') {
+    const url = new URL(request.url);
+    try {
+      if (action === 'drive-status' && method === 'GET') return json(200, await driveStatus(env));
+      if (action === 'drive-connect' && method === 'GET') return json(200, { url: await connectUrl(env, siteOrigin(env, url)) });
+      if (action === 'drive-disconnect' && method === 'POST') return json(200, await driveDisconnect(env));
+      if (action === 'drive-file' && method === 'GET') return await downloadFile(env, url.searchParams.get('id'));
+      if (action === 'releases-queued' && method === 'GET') return json(200, { releases: await listReleases(env) });
+      if (action === 'release-remove' && method === 'POST') return json(200, await removeRelease(env, ((await request.json()) as { id: string }).id));
+      // The rest needs the samples list on GitHub.
+      if (!env.GITHUB_TOKEN || !env.GITHUB_REPO) return json(503, { error: 'GITHUB_TOKEN or GITHUB_REPO is not set (see docs/HOSTING.md)' });
+      const gh = new GitHub({ GITHUB_TOKEN: env.GITHUB_TOKEN, GITHUB_REPO: env.GITHUB_REPO, GITHUB_API: env.GITHUB_API });
+      if (action === 'drive-folder' && method === 'GET') return json(200, await driveFolderStatus(env, gh, url.searchParams.get('pack')));
+      if (action === 'drive-link' && method === 'POST') return json(200, await linkDriveIds(env, gh, ((await request.json()) as { pack: string }).pack));
+      if (action === 'drive-upload' && method === 'POST') {
+        const input = (await request.json()) as { pack: string; name: string; size: number; type: string };
+        return json(200, await startUpload(env, { ...input, folder: await packFolder(gh, input.pack) }, siteOrigin(env, url)));
+      }
+    } catch (err) {
+      if (err instanceof DriveError || err instanceof HttpError) return json(err.status, { error: err.message });
+      console.error('Drive:', err instanceof Error ? err.message : String(err));
+      return json(500, { error: 'Drive failed. See the Worker logs.' });
     }
     return json(404, { error: 'Not found' });
   }

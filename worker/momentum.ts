@@ -10,6 +10,7 @@ import type { IdeasEnv } from './ideas';
 import { dbReady, ideasDb } from './ideas';
 import { promoEvents, promoQueue } from './ship';
 import { messageCounts } from './messages';
+import { listReleases } from './drive';
 
 export type MomentumKind = 'idea' | 'sketch' | 'samples' | 'post' | 'release' | 'issue' | 'promo';
 export interface MomentumEvent { t: number; kind: MomentumKind; label: string; url?: string }
@@ -125,5 +126,11 @@ export async function momentum(env: IdeasEnv, graphql: GraphQL | null, owner: st
   } catch (err) {
     errors.push(`Messages: ${err instanceof Error ? err.message : String(err)}`);
   }
-  return { events, stale, staleCount, staleDays: STALE_DAYS, promo, messages, errors };
+  let queuedSamples = 0;
+  try {
+    queuedSamples = (await listReleases(env)).reduce((n, r) => n + r.files.length, 0);
+  } catch {
+    // The releases table appears with the Drive feature; nothing queued is the right answer before that.
+  }
+  return { events, stale, staleCount, staleDays: STALE_DAYS, promo, messages, queuedSamples, errors };
 }

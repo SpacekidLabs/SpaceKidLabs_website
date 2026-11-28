@@ -12,10 +12,11 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { z } from 'zod';
 import {
   addTextSketch, changeSketch, cleanEnv, content, deletePost, deleteSamples, editPost, editSamples, getPost, GitHub, HttpError,
-  listPosts, listSamples, promoteIdea, publishPost, removeSketchById, BRANCH, type DevEnv,
+  driveFolderStatus, linkDriveIds, listPosts, listSamples, promoteIdea, publishPost, startRelease, removeSketchById, BRANCH, type DevEnv,
 } from './dev';
 import { addIdea, IdeaError, listIdeas } from './ideas';
 import { listMessages } from './messages';
+import { DriveError, listReleases } from './drive';
 import { commentIssue, IssueError, listAllIssues, listIssues, ownRepo, readIssue, saveIssue, type Rest } from './issues';
 import { githubStats, projects } from './stats';
 import { cloudflareAnalytics } from './analytics';
@@ -32,7 +33,7 @@ async function run(fn: () => Promise<unknown>): Promise<Result> {
   try {
     return ok(await fn());
   } catch (err) {
-    const known = err instanceof HttpError || err instanceof IssueError || err instanceof IdeaError;
+    const known = err instanceof HttpError || err instanceof IssueError || err instanceof IdeaError || err instanceof DriveError;
     const message = err instanceof Error ? err.message : String(err);
     if (!known) console.error('MCP tool:', message);
     return { content: [{ type: 'text', text: message.slice(0, 500) }], isError: true };
@@ -398,6 +399,41 @@ export function buildServer(rawEnv: DevEnv): McpServer {
     const idea = ideas.ideas.find(i => i.id === id);
     return promoteIdea(env, gh, rest, owner, { id, target, title, text: text ?? idea?.text ?? '', repo });
   }));
+
+  // ---------- Google Drive: releasing samples ----------
+
+  server.registerTool('drive_folder_status', {
+    title: 'Drive folder status',
+    description: "Compares a sample pack's Google Drive folder with the samples on the site, by file name: audio files on Drive not on the site yet, samples without a Drive id (and whether a matching file exists), samples missing from Drive, and whether the folder is public.",
+    inputSchema: { pack: z.string().describe('Pack id, e.g. "vrac" (list_samples shows pack ids)') },
+    annotations: READ,
+  }, ({ pack }) => run(async () => { const { driveFiles: _all, ...st } = await driveFolderStatus(env, gh, pack); return st; }));
+
+  server.registerTool('link_drive_ids', {
+    title: 'Link Drive ids',
+    description: 'Fills in the missing Drive file id of every sample in a pack that has a file with the same name in the pack\'s Drive folder, so its download button works. One commit to the website.',
+    inputSchema: { pack: z.string() },
+    annotations: WRITE,
+  }, ({ pack }) => run(() => linkDriveIds(env, gh, pack)));
+
+  server.registerTool('start_release', {
+    title: 'Start a sample release',
+    description: "Queues the audio files in a pack's Drive folder that aren't on the site yet (all of them, or only `names`). Nothing is published yet: the owner opens /dev → Samples and presses Release, which makes the MP3 previews in the browser and publishes them with their Drive ids in one commit. Tell the user to do that.",
+    inputSchema: {
+      pack: z.string(),
+      category: z.string().min(1).max(60).describe('Category for these samples, e.g. "Kicks" (list_samples shows the pack\'s categories)'),
+      names: z.array(z.string()).max(500).optional().describe('Exact file names to release; default: every new audio file in the folder'),
+      max_preview_seconds: z.number().int().min(0).max(600).optional().describe('Cut long previews to this many seconds (0 = whole file)'),
+    },
+    annotations: WRITE,
+  }, ({ pack, category, names, max_preview_seconds }) => run(() => startRelease(env, gh, { pack, category, names, maxSeconds: max_preview_seconds })));
+
+  server.registerTool('list_queued_releases', {
+    title: 'Queued releases',
+    description: 'Sample releases waiting for the owner to press Release in /dev.',
+    inputSchema: {},
+    annotations: READ,
+  }, () => run(async () => ({ releases: (await listReleases(env)).map(r => ({ id: r.id, pack: r.pack, category: r.category, files: r.files.length, queued: new Date(r.created).toISOString() })) })));
 
   // ---------- Contact messages ----------
 

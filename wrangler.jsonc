@@ -39,7 +39,9 @@
     // Traffic numbers on /dev (worker/analytics.ts). These are identifiers, not credentials: reading anything
     // needs the CF_API_TOKEN secret (analytics read-only), which is set in Cloudflare, never here.
     "CF_ZONE_ID": "4b13163242261480a3f6acfdc865f248",
-    "CF_ACCOUNT_ID": "a33a51651bcfc4f9dbad002c944bb8e7"
+    "CF_ACCOUNT_ID": "a33a51651bcfc4f9dbad002c944bb8e7",
+    // Google OAuth client for Drive (worker/drive.ts); public. The secret is GOOGLE_CLIENT_SECRET in Cloudflare.
+    "GOOGLE_CLIENT_ID": "910926826548-n736okln1plri99e49cbvt42ftclspd9.apps.googleusercontent.com"
   },
 
   // MCP connector sign-ins (worker/oauth.ts): registered apps and grants, tokens stored only as hashes.

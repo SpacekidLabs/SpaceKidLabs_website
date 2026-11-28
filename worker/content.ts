@@ -85,6 +85,8 @@ export function updateSketch(json: string, id: string, input: SketchInput, file?
 
 export interface SampleInput {
   name: string;
+  /** Google Drive file id of the original, when it was uploaded or linked (download button). */
+  driveId?: string;
   duration: string;
   format: string;
   sizeBytes: number;
@@ -121,12 +123,13 @@ export function appendSamples(ts: string, pack: string, category: string, items:
     const base = uniqueName(slugify(name) || 'sample', taken);
     taken.add(base);
     const preview = `/audio/${base}.mp3`;
+    const driveId = it.driveId && /^[A-Za-z0-9_-]{10,100}$/.test(it.driveId) ? it.driveId : '';
     previews.push(preview);
     return (
       `  { id: ${nextId++}, pack: ${JSON.stringify(pack)}, name: ${JSON.stringify(name)}, category: ${JSON.stringify(category)}, ` +
       `duration: ${JSON.stringify(String(it.duration).slice(0, 12))}, format: ${JSON.stringify(String(it.format).slice(0, 30))}, ` +
       `sizeBytes: ${Math.max(0, Math.round(Number(it.sizeBytes) || 0))}, ` +
-      `preview: ${JSON.stringify(preview)}, driveId: "",\n    peaks: ${JSON.stringify(it.peaks)} },`
+      `preview: ${JSON.stringify(preview)}, driveId: ${JSON.stringify(driveId)},\n    peaks: ${JSON.stringify(it.peaks)} },`
     );
   });
 

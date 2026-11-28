@@ -14,6 +14,7 @@ import { IssuesTab } from '../components/dev/IssuesTab';
 import { ProjectsTab } from '../components/dev/ProjectsTab';
 import { ShipTab } from '../components/dev/ShipTab';
 import { MessagesTab } from '../components/dev/MessagesTab';
+import { DriveConnection, DriveFolder, publishSamples, QueuedReleases, uploadOriginal, useDrive, type FolderStatus } from '../components/dev/DriveSamples';
 import { LaunchpadTab, POST_HANDOFF, type PostHandoff } from '../components/dev/LaunchpadTab';
 import { button, errorText, Field, ghostButton, input, label } from '../components/dev/ui';
 
@@ -186,13 +187,18 @@ function SketchesTab() {
 
 // ---------- Samples ----------
 
-function SamplesTab() {
+function SamplesTab({ sub }: { sub: string }) {
   const [pack, setPack] = useState(PACKS[0].id);
   const [category, setCategory] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [maxSeconds, setMaxSeconds] = useState(0);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
   const [fileKey, setFileKey] = useState(0);
+  const drive = useDrive();
+  const [toDrive, setToDrive] = useState(true);
+  const upload = toDrive && Boolean(drive.status?.connected);
+  /** "drive:<message>" after coming back from Google's sign-in. */
+  const driveNotice = sub.startsWith('drive:') ? sub.slice(6) : '';
 
   const categories = useMemo(() => [...new Set(SAMPLES.filter(s => s.pack === pack).map(s => s.category))], [pack]);
   const counts = useMemo(() => Object.fromEntries(PACKS.map(p => [p.id, SAMPLES.filter(s => s.pack === p.id).length])), []);
@@ -200,30 +206,28 @@ function SamplesTab() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     try {
-      const done: Array<{ meta: { name: string; duration: string; format: string; sizeBytes: number; peaks: string }; mp3: Blob }> = [];
+      // Files already in the pack's Drive folder (same name) are linked, not uploaded again.
+      const existing = new Map<string, string>();
+      if (upload) {
+        setStatus({ kind: 'busy', text: 'Reading the pack\'s Drive folder…' });
+        const st = await api<FolderStatus>(`drive-folder?pack=${encodeURIComponent(pack)}`);
+        for (const f of st.driveFiles) existing.set(f.name.toLowerCase(), f.id);
+      }
+      const done: Parameters<typeof publishSamples>[2] = [];
       for (const [i, file] of files.entries()) {
-        setStatus({ kind: 'busy', text: `Converting ${i + 1} of ${files.length}: ${file.name}` });
+        const n = `${i + 1} of ${files.length}: ${file.name}`;
+        let driveId: string | undefined;
+        if (upload) {
+          driveId = existing.get(file.name.toLowerCase());
+          if (!driveId) driveId = await uploadOriginal(pack, file, f => setStatus({ kind: 'busy', text: `Uploading to Drive ${n} (${Math.round(f * 100)}%)` }));
+        }
+        setStatus({ kind: 'busy', text: `Making preview ${n}` });
         const a = await analyse(file);
         const mp3 = await encodeMp3(a.buffer, { kbps: 192, maxSeconds });
-        done.push({ meta: { name: file.name, duration: a.duration, format: a.format, sizeBytes: file.size, peaks: a.peaks }, mp3 });
+        done.push({ meta: { name: file.name, duration: a.duration, format: a.format, sizeBytes: file.size, peaks: a.peaks, ...(driveId && { driveId }) }, mp3 });
       }
-      // Several commits if the previews are large.
-      const batches: typeof done[] = [[]];
-      let size = 0;
-      for (const d of done) {
-        if (size + d.mp3.size > BATCH_BYTES && batches[batches.length - 1].length) { batches.push([]); size = 0; }
-        batches[batches.length - 1].push(d);
-        size += d.mp3.size;
-      }
-      let sha = '';
-      for (const [i, batch] of batches.entries()) {
-        setStatus({ kind: 'busy', text: `Uploading${batches.length > 1 ? ` part ${i + 1} of ${batches.length}` : ''}…` });
-        const form = new FormData();
-        form.set('meta', JSON.stringify({ pack, category, items: batch.map(b => b.meta) }));
-        batch.forEach((b, j) => form.set(`preview${j}`, b.mp3, `preview${j}.mp3`));
-        sha = (await api<{ sha: string }>('samples', { method: 'POST', body: form })).sha;
-      }
-      setStatus({ kind: 'ok', text: `Added ${files.length} sample${files.length > 1 ? 's' : ''} to ${PACKS.find(p => p.id === pack)?.title}:`, sha, href: `/samples?pack=${pack}` });
+      const sha = await publishSamples(pack, category, done, text => setStatus({ kind: 'busy', text }));
+      setStatus({ kind: 'ok', text: `Added ${files.length} sample${files.length > 1 ? 's' : ''} to ${PACKS.find(p => p.id === pack)?.title}${upload ? ', originals on Drive' : ''}:`, sha, href: `/samples?pack=${pack}` });
       setFiles([]); setFileKey(k => k + 1);
     } catch (err) {
       setStatus({ kind: 'error', text: errorText(err) });
@@ -232,6 +236,10 @@ function SamplesTab() {
 
   return (
     <div className="space-y-16">
+    <div className="space-y-6">
+      <DriveConnection drive={drive} notice={driveNotice} />
+      {drive.status?.connected && <QueuedReleases />}
+    </div>
     <form onSubmit={submit} className="space-y-5 max-w-xl">
       <h2 className="font-display font-bold text-xl text-white">Add samples</h2>
       <Field name="Pack">
@@ -239,21 +247,32 @@ function SamplesTab() {
           {PACKS.map(p => <option key={p.id} value={p.id}>{p.title} ({counts[p.id]})</option>)}
         </select>
       </Field>
+      {drive.status?.connected && <DriveFolder pack={pack} />}
       <Field name="Category" hint={categories.length ? `In this pack: ${categories.join(', ')}` : 'A new category name'}>
         <input className={input} value={category} onChange={e => setCategory(e.target.value)} list="dev-categories" required maxLength={60} />
         <datalist id="dev-categories">{categories.map(c => <option key={c} value={c} />)}</datalist>
       </Field>
-      <Field name="Files" hint="Pick several at once. Names are kept as they are (e.g. “VRAC Kick 7.wav”). The originals stay on your computer; only MP3 previews are uploaded.">
+      <Field name="Files" hint={upload
+        ? 'Pick several at once. Names are kept as they are (e.g. “VRAC Kick 7.wav”). The originals go to the pack\'s Drive folder, and MP3 previews to the site.'
+        : 'Pick several at once. Names are kept as they are (e.g. “VRAC Kick 7.wav”). The originals stay on your computer; only MP3 previews are uploaded.'}>
         <input key={fileKey} type="file" multiple accept="audio/*,.wav,.mp3,.aif,.aiff,.flac" onChange={e => setFiles([...(e.target.files ?? [])])}
           className="block w-full text-sm text-zinc-400 file:mr-4 file:px-4 file:py-2 file:border-0 file:bg-zinc-800 file:text-zinc-200 file:font-mono file:text-xs file:uppercase" />
       </Field>
+      {drive.status?.connected && (
+        <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+          <input type="checkbox" checked={toDrive} onChange={e => setToDrive(e.target.checked)} className="accent-brand-orange" />
+          Upload the originals to the pack's Drive folder and link them (download buttons work right away)
+        </label>
+      )}
       <Field name="Preview length limit (seconds)" hint="0 = whole file. For long clips, e.g. 30 keeps the first 30 s with a fade-out.">
         <input type="number" min={0} max={600} className={cn(input, 'w-32')} value={maxSeconds} onChange={e => setMaxSeconds(Number(e.target.value) || 0)} />
       </Field>
-      <p className="text-xs text-zinc-500">
-        Downloads link to Google Drive. New samples have no Drive link yet, so they show without a download button
-        until the Drive IDs are added.
-      </p>
+      {!upload && (
+        <p className="text-xs text-zinc-500">
+          Downloads link to Google Drive. Without the Drive upload, new samples show without a download button until
+          their Drive IDs are linked.
+        </p>
+      )}
       <button className={button} disabled={status.kind === 'busy' || !files.length || !category}>
         Add {files.length || ''} sample{files.length === 1 ? '' : 's'}
       </button>
@@ -685,14 +704,14 @@ function useHashRoute() {
 
 function ActiveTab({ tab, sub, go }: { tab: TabId; sub: string; go: (tab: TabId, sub?: string) => void }) {
   switch (tab) {
-    case 'launchpad': return <LaunchpadTab onPost={h => { sessionStorage.setItem(POST_HANDOFF, JSON.stringify(h)); go('archive'); }} onIssues={() => go('issues')} onShip={() => go('ship')} onMessages={() => go('messages')} />;
+    case 'launchpad': return <LaunchpadTab onPost={h => { sessionStorage.setItem(POST_HANDOFF, JSON.stringify(h)); go('archive'); }} onIssues={() => go('issues')} onShip={() => go('ship')} onMessages={() => go('messages')} onSamples={() => go('samples')} />;
     case 'ship': return <ShipTab />;
     case 'messages': return <MessagesTab />;
     case 'projects': return <ProjectsTab open={sub} onOpen={name => go('projects', name)} onIssues={repo => go('issues', repo)} />;
     case 'issues': return <IssuesTab repo={sub || '*'} onRepo={repo => go('issues', repo === '*' ? '' : repo)} />;
     case 'overview': return <OverviewTab onIssues={() => go('issues', REPO_URL.split('/').pop())} />;
     case 'sketches': return <SketchesTab />;
-    case 'samples': return <SamplesTab />;
+    case 'samples': return <SamplesTab sub={sub} />;
     case 'archive': return <ArchiveTab />;
   }
 }

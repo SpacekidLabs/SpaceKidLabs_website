@@ -363,8 +363,8 @@ function IdeaCard({ idea, projects, site, onChange, onPost }: {
 
 // ---------- Tab ----------
 
-export function LaunchpadTab({ onPost, onIssues, onShip, onMessages }: {
-  onPost: (handoff: PostHandoff) => void; onIssues: () => void; onShip: () => void; onMessages: () => void;
+export function LaunchpadTab({ onPost, onIssues, onShip, onMessages, onSamples }: {
+  onPost: (handoff: PostHandoff) => void; onIssues: () => void; onShip: () => void; onMessages: () => void; onSamples: () => void;
 }) {
   const [status, setStatus] = useState<Status>('inbox');
   const [cheer, setCheer] = useState('');
@@ -403,7 +403,7 @@ export function LaunchpadTab({ onPost, onIssues, onShip, onMessages }: {
   return (
     <div className="space-y-10">
       <div>
-        <NudgeStrip data={momentum.data} s={momentum.stats} sound={sound} cheer={cheer} onIssues={onIssues} onShip={onShip} onMessages={onMessages} />
+        <NudgeStrip data={momentum.data} s={momentum.stats} sound={sound} cheer={cheer} onIssues={onIssues} onShip={onShip} onMessages={onMessages} onSamples={onSamples} />
         <Capture projects={projects} onSaved={() => { momentum.reload(); if (status === 'inbox') load(); else setStatus('inbox'); }} />
       </div>
 

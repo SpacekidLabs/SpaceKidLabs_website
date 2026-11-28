@@ -84,7 +84,7 @@ deploys the site like any other, so a new item is live about 2 minutes after sav
 | All projects | Issues | GitHub issues of one project or all of them: list, create, edit title/text/labels, comment, close (done or not planned), reopen (`worker/issues.ts`). Changes issues, not files |
 | Website | Overview | Cloudflare traffic (`worker/analytics.ts`), plays and downloads (`worker/events.ts`), live version vs main, counts of sketches, samples and posts, DATABEND downloads, and the website repo's GitHub activity. Reads only |
 | Website | Sketches | add, edit (all fields; replace or remove audio) and delete. `src/data/sketches.json`, demo audio in `public/audio/sketches/` (a replaced file gets a new name, since browsers cache /audio for a week) |
-| Website | Samples | add (rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`; originals stay on your computer), and edit: rename, change category or pack, set the Drive file ID (download button), delete with the preview |
+| Website | Samples | **Google Drive** (see below): connect, upload originals to the pack's Drive folder while adding, check a pack's folder and link missing download IDs, and **Ready to release** for releases Claude queued. Add (rows appended to `src/data/samples.ts`, MP3 previews in `public/audio/`), and edit: rename, change category or pack, set the Drive file ID (download button), delete with the preview |
 | Website | Archive | list, write, edit and delete posts (`src/posts/<slug>.tsx`). Title, date, tags, order, colour, summary and highlight can be changed on any post; the text only on posts written in the dashboard (they keep their plain text in a comment at the end of the file). Hand-written posts with labs are code: change their text in the code. The URL (slug) never changes |
 
 **Pull before working locally.** The dashboard commits straight to GitHub, so run `git pull` before editing in this
@@ -168,6 +168,41 @@ a year) plus the D1 inbox; without a token only ideas count.
 - When something you do makes today count for the first time, a random hit from your **VRAC** snares, claps and perc
   plays. The speaker button turns it off (remembered in this browser).
 
+### Google Drive (releasing samples)
+
+Pack originals live in public Google Drive folders (`driveFolder` in `PACKS`, `driveId` on each sample for its
+download button). `worker/drive.ts` connects the dashboard to the Drive of the account that owns those folders:
+
+- **/dev → Samples → Add samples** with "Upload the originals to the pack's Drive folder": each original goes
+  straight from your browser to Google (the Worker only opens a resumable upload session, so its 100 MB request
+  limit doesn't apply), and the new rows get their Drive IDs, so download buttons work at once. A file with the same
+  name already in the folder is linked instead of uploaded again.
+- **Folder check** under the pack picker: files on Drive not on the site, samples without a download link
+  (**Link N by name** fills them in), and a warning if the folder isn't shared as "Anyone with the link".
+- **Claude:** "release the new files in the VRAC folder as Perc" → `start_release` queues them in D1 (`releases`);
+  the Launchpad says "N samples ready to release", and **Release** in /dev → Samples fetches each original through
+  the Worker, makes its preview in your browser and publishes everything in one go. (The Worker has too little CPU
+  to make previews itself.)
+
+Setup (done on 2026-11-28; here in case it needs redoing):
+
+1. Google Cloud project **SpaceKidLabs Dev** (`spacekidlabs-dev`, on spacekid700@gmail.com) with the **Google Drive
+   API** enabled.
+2. **Google Auth Platform**: External, app name "SpaceKidLabs Dev", home page and `/privacy` link, authorized domain
+   `spacekidlabs.com`, publishing status **In production** (in Testing, Google ends the connection every 7 days).
+3. OAuth client **spacekidlabs.com dev dashboard** (Web application), redirect URIs
+   `https://spacekidlabs.com/api/dev/google-callback` and `http://localhost:8787/api/dev/google-callback`.
+   Its ID is `GOOGLE_CLIENT_ID` in `wrangler.jsonc` (not secret); its secret is the Cloudflare secret
+   `GOOGLE_CLIENT_SECRET`. Google shows a client secret only once: to replace it, add a new secret on the client
+   page, update the Cloudflare secret, then delete the old one.
+4. /dev → Samples → **Connect Google Drive**, signed in as the account that owns the pack folders. Google says the
+   app isn't verified (it's your own, with full Drive access): **Advanced → Go to SpaceKidLabs Dev**.
+
+The refresh token is stored in D1 (`settings`), encrypted with a key derived from `GOOGLE_CLIENT_SECRET`;
+**Disconnect** deletes it and revokes it at Google. To cut access from Google's side: myaccount.google.com →
+Security → Third-party connections → SpaceKidLabs Dev → remove. Locally, set `SITE_ORIGIN=http://localhost:8787`
+in `.dev.vars` so Google returns to localhost.
+
 To try the dashboard locally: `npm run preview:cf` with `DEV_PASSWORD` (and a `GITHUB_TOKEN` if you want saves to
 really commit) in `.dev.vars`. Saving from there commits to the real `main`.
 
@@ -198,6 +233,7 @@ on the free plan, with no extra secrets.
 | `list_sketches`, `add_sketch`, `update_sketch`, `delete_sketch` | the Sketches page (ideas and demo placeholders; new audio still goes through /dev) |
 | `list_posts`, `get_post`, `publish_archive_post`, `update_post`, `delete_post` | archive posts, with the same limits as /dev |
 | `list_samples`, `update_samples`, `delete_samples` | samples: rename, category, pack, Drive ID, delete |
+| `drive_folder_status`, `link_drive_ids`, `start_release`, `list_queued_releases` | a pack's Drive folder vs the site; fill in missing download IDs by file name; queue the new files in a folder for release (then press Release in /dev → Samples) |
 | `list_messages` | contact form messages, unanswered or answered (read only) |
 | `capture_idea`, `list_ideas`, `promote_idea` | the private idea inbox: save an idea ("save idea: …"), list them, turn one into an issue or a sketch |
 

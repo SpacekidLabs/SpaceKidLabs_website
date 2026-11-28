@@ -54,6 +54,9 @@ const SCHEMA = [
     id TEXT PRIMARY KEY, created INTEGER NOT NULL, name TEXT NOT NULL, email TEXT NOT NULL, service TEXT NOT NULL,
     links TEXT NOT NULL, page TEXT NOT NULL, message TEXT NOT NULL, answered INTEGER)`,
   'CREATE INDEX IF NOT EXISTS messages_open ON messages (answered, created)',
+  // Sample releases queued by Claude from a Drive folder, waiting for /dev to make the previews (worker/drive.ts).
+  `CREATE TABLE IF NOT EXISTS releases (
+    id TEXT PRIMARY KEY, pack TEXT NOT NULL, category TEXT NOT NULL, max_seconds INTEGER NOT NULL, files TEXT NOT NULL, created INTEGER NOT NULL)`,
 ];
 
 /** Tables are created on first use in each Worker instance (cheap: IF NOT EXISTS), so no migration step is needed. */
